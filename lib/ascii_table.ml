@@ -3,54 +3,6 @@ open Core.Std
 let list_sum ~f lst = List.fold lst ~init:0 ~f:(fun a b -> a + (f b))
 let list_max ~f lst = List.fold lst ~init:0 ~f:(fun a b -> max a (f b))
 
-module Make_art(Border : sig
-  val vertical : string
-  val horizontal : char
-  val angle : string
-end) = struct (* Used when drawing the table. *)
-  type t = Console.Ansi.attr list * string
-  let none : t = ([], "")
-  let spaces num_spaces = String.make num_spaces ' '
-  let left ~spacing = ([], Border.vertical^(spaces spacing))
-  let mid ~spacing = ([], (spaces spacing)^Border.vertical^(spaces spacing))
-  let right_newline ~spacing = ([], (spaces spacing)^Border.vertical^"\n")
-
-  let top w = ([], Border.vertical^(String.make (w-1) Border.horizontal)^Border.vertical^"\n")
-  let mid_plusses ~spacing widths = match List.map widths ~f:((+)(spacing*2)) with
-    | w1::ws_right ->
-      let str_right w = Border.angle^(String.make w Border.horizontal) in
-      let str = (String.make w1 Border.horizontal)
-        ^(String.concat (List.map ~f:str_right ws_right))
-      in
-      ([], Border.vertical^str^Border.vertical^"\n")
-    | [] -> raise (Failure "Need at least one column to draw midline with plusses.")
-  ;;
-  let bottom w = ([], Border.vertical^(String.make (w-1) Border.horizontal)^Border.vertical^"\n")
-
-  (* Add a list of attributes to a pirce of art. *)
-  let style (old_attrs, str) attrs = (attrs @ old_attrs, str)
-
-  let emptyp (_, str) = String.length str = 0
-  let trail (attrs, str) = (* "abcdef" -> "abc..." *)
-    let strlen = String.length str in
-    attrs,
-    if strlen < 3
-    then String.make strlen '.'
-    else (String.mapi str ~f:(fun i c -> if (strlen-i) <= 3 then '.' else c))
-  ;;
-end
-
-module Art = Make_art(struct
-  let vertical = "|"
-  let horizontal = '-'
-  let angle = "+"
-end)
-module Art_blank = Make_art(struct
-  let vertical = " "
-  let horizontal = ' '
-  let angle = " "
-end)
-
 module El = struct (* One element in the table. *)
   type t = Console.Ansi.attr list * string list
   type row = t list
@@ -62,40 +14,42 @@ module El = struct (* One element in the table. *)
     list_sum lines ~f:(fun s -> max (((String.length s)+(width-1))/width) 1)
   ;;
 
-  let rec slice width (alst, lines) desired_row align_func = match lines with
-    | [] -> [([], String.make width ' ')]
-    | visual_row::remaining_rows ->
-      let vrow_len = String.length visual_row in
-      let num_vrows = (max ((vrow_len - 1) / width) 0)+1 in
-      if num_vrows <= desired_row
-      then slice width (alst, remaining_rows) (desired_row-num_vrows) align_func
-      else let pos = desired_row*width in
-           let len = min width (vrow_len - pos) in
-           align_func
-             alst
-             (if (pos < vrow_len) then (String.sub visual_row ~pos ~len) else "")
-             (if len < width then (min width (width - len)) else 0)
+  let rec slices width lines =
+    match lines with
+    | [] -> []
+    | line :: lines ->
+      slices_split width lines line (String.length line) 0
+
+  and slices_split width lines line line_len pos =
+    if pos >= line_len then
+      slices width lines
+    else
+      let chunk_len = min width (line_len - pos) in
+      let chunk = String.sub line ~pos ~len:chunk_len in
+      chunk :: slices_split width lines line line_len (pos + width)
   ;;
 end
 
 module Align = struct
-  type t = Console.Ansi.attr list -> string -> int -> Art.t list
-  let left alst text num_spaces = [(alst, text); ([], String.make num_spaces ' ')]
-  let right alst text num_spaces = [([], String.make num_spaces ' '); (alst, text)]
-  let center alst text num_spaces =
-    let num_left = num_spaces/2 in
-    let num_right = num_spaces - num_left in
-    [([], String.make num_left ' '); (alst, text); ([], String.make num_right ' ')]
-  ;;
+  type t =
+  | Left
+  | Right
+  | Center
+  let left = Left
+  let right = Right
+  let center = Center
 end
+
+type show = [ `Yes | `No | `If_not_empty ]
 
 module Column = struct
   type 'a t = {
     max_text_width : int;
     header : string;
     col_func : 'a -> El.t;
-    align_func : Align.t;
+    align : Align.t;
     min_width : int option;
+    show : show;
   }
 
   type constraints = {
@@ -104,19 +58,21 @@ module Column = struct
   } with sexp
   exception Impossible_table_constraints of constraints with sexp
 
-  let create_attr ?(align=Align.left) ?min_width ?(max_width=90)
+  let create_attr ?(align=Align.Left) ?min_width ?(max_width=90) ?(show=`Yes)
       str parse_func = {
     max_text_width = max_width+1;
     header = str;
     col_func = (fun x -> match parse_func x with (a, b) -> El.create a b);
-    align_func = align;
+    align = align;
     (* We add one for the '|' on the left. *)
     min_width = Option.map min_width ~f:((+)1);
+    show;
   };;
 
-  let create ?(align=Align.left) ?min_width ?(max_width=90)
+  let create ?(align=Align.Left) ?min_width ?(max_width=90) ?show
       str parse_func =
-    create_attr ?min_width ~align ~max_width str (fun x -> [], (parse_func x))
+    create_attr ?min_width ~align ~max_width ?show str
+      (fun x -> [], (parse_func x))
   ;;
   let header_to_el alst t = El.create alst t.header
   let make col_val t = t.col_func col_val
@@ -173,160 +129,277 @@ module Column = struct
   ;;
 end
 
+module Draw = struct
+  type point =
+  | Line
+  | Char of Console.Ansi.attr list * char
+
+  type screen = {
+    data : point array array;
+    rows : int;
+    cols : int;
+  }
+
+  let create_screen ~rows ~cols =
+    let data = Array.make_matrix ~dimx:rows ~dimy:cols (Char ([], ' ')) in
+    { data; rows; cols }
+  ;;
+
+  let hline ~screen ~row ~col1 ~col2 =
+    for col = col1 to col2 do
+      screen.data.(row).(col) <- Line
+    done
+  ;;
+
+  let vline ~screen ~col ~row1 ~row2 =
+    for row = row1 to row2 do
+      screen.data.(row).(col) <- Line
+    done
+  ;;
+
+  let char ~screen ~row ~col ~char ~attr =
+    screen.data.(row).(col) <- Char (attr, char)
+  ;;
+
+  let string ~screen ~row ~col ~string ~attr =
+    for i = 0 to String.length string - 1 do
+      char ~screen ~row ~col:(col + i) ~char:string.[i] ~attr
+    done
+  ;;
+
+  let aligned ~screen ~row ~col ~string:str ~attr ~width ~align =
+    let col =
+      match align with
+      | Align.Left   -> col
+      | Align.Right  -> col + width - String.length str
+      | Align.Center -> col + (max 0 (width - String.length str)) / 2
+    in
+    string ~screen ~row ~col ~string:str ~attr
+  ;;
+
+  let get_symbol ~screen ~row ~col =
+    let top    = row > 0               && screen.data.(row - 1).(col    ) = Line in
+    let bottom = row < screen.rows - 1 && screen.data.(row + 1).(col    ) = Line in
+    let left   = col > 0               && screen.data.(row    ).(col - 1) = Line in
+    let right  = col < screen.cols - 1 && screen.data.(row    ).(col + 1) = Line in
+    match top, bottom, left, right with
+    | false, false,  true,  true -> ('-', "\226\148\128")
+    |  true,  true, false, false -> ('|', "\226\148\130")
+    | false,  true, false,  true -> ('|', "\226\148\140")
+    | false,  true,  true, false -> ('|', "\226\148\144")
+    |  true, false, false,  true -> ('|', "\226\148\148")
+    |  true, false,  true, false -> ('|', "\226\148\152")
+    |  true,  true, false,  true -> ('|', "\226\148\156")
+    |  true,  true,  true, false -> ('|', "\226\148\164")
+    | false,  true,  true,  true -> ('-', "\226\148\172")
+    |  true, false,  true,  true -> ('-', "\226\148\180")
+    |  true,  true,  true,  true -> ('+', "\226\148\188")
+    | false, false,  true, false -> ('|', "\226\149\180")
+    |  true, false, false, false -> ('|', "\226\149\181")
+    | false, false, false,  true -> ('|', "\226\149\182")
+    | false,  true, false, false -> ('|', "\226\149\183")
+    | false, false, false, false -> (' ', " ")
+  ;;
+
+  let render ~screen ~bars ~output ~close =
+    let buf = Buffer.create 1024 in
+    let current_attr = ref [] in
+    let update_attr attr =
+      let attr = List.sort ~cmp:Pervasives.compare attr in
+      if attr <> !current_attr then begin
+        if Buffer.length buf > 0 then output !current_attr buf;
+        current_attr := attr;
+      end;
+    in
+    for row = 0 to screen.rows - 1 do
+      for col = 0 to screen.cols - 1 do
+        match screen.data.(row).(col) with
+        | Char (attr, ch) ->
+          update_attr attr;
+          Buffer.add_char buf ch
+        | Line ->
+          update_attr [];
+          let ascii, utf8 = get_symbol ~screen ~row ~col in
+          match bars with
+          | `Ascii -> Buffer.add_char buf ascii
+          | `Unicode -> Buffer.add_string buf utf8
+      done;
+      update_attr [];
+      Buffer.add_char buf '\n'
+    done;
+    output !current_attr buf;
+    close buf
+  ;;
+
+  let output ~oc ~screen ~bars =
+    render ~screen ~bars ~close:ignore ~output:(fun attr buf ->
+      Console.Ansi.output_string attr oc (Buffer.contents buf);
+      Buffer.clear buf)
+  ;;
+
+  let to_string ~screen ~bars =
+    let buf = Buffer.create 1024 in
+    render ~screen ~bars
+      ~output:(fun attr buf' ->
+        Buffer.add_string buf (Console.Ansi.string_with_attr attr (Buffer.contents buf'));
+        Buffer.clear buf')
+      ~close:(fun _ -> Buffer.contents buf)
+  ;;
+
+  let to_string_noattr ~screen ~bars =
+    render ~screen ~bars ~output:(fun _ _ -> ()) ~close:Buffer.contents
+  ;;
+end
+
+module Display = struct
+  type t =
+  | Short_box
+  | Tall_box
+  | Line
+  | Blank
+
+  let short_box = Short_box
+  let tall_box = Tall_box
+  let line = Line
+  let blank = Blank
+end
+
 module Grid = struct
   type t = {
     data: El.grid;
     heights: int list;
     widths: int list;
-    align_funcs: Align.t list;
+    aligns: Align.t list;
   }
 
-  let create ~spacing max_width h_attr cols raw_data =
+  let create ~spacing ~display max_width h_attr cols raw_data =
+    let body = List.map raw_data ~f:(fun x -> List.map cols ~f:(Column.make x)) in
+    let empty =
+      List.fold body ~init:(List.map cols ~f:(fun _ -> true))
+        ~f:(List.map2_exn ~f:(fun is_empty (_attr, lines) ->
+          is_empty && List.for_all lines ~f:(String.equal "")))
+    in
+    let keep = List.map2_exn cols empty ~f:(fun { Column.show; _ } is_empty ->
+      match show with
+      | `Yes          -> true
+      | `No           -> false
+      | `If_not_empty -> not is_empty)
+    in
+    let filter l = List.filter_opt (List.map2_exn keep l ~f:Option.some_if) in
+    let cols = filter cols in
+    let body = List.map body ~f:filter in
     (* We subtract 1 from max_width because later we're going to add a line of
        '|'s to form the right wall of the table. *)
     let widths = Column.layout ~spacing (max_width-1) cols raw_data in
-    let body = List.map raw_data ~f:(fun x -> List.map cols ~f:(Column.make x)) in
     let grid_data = (List.map cols ~f:(Column.header_to_el h_attr))::body in
-    let heights = List.map grid_data ~f:(fun row ->
-      assert(List.length widths = List.length row);
-      list_max ~f:Fn.id (List.map2_exn widths row ~f:El.height))
+    let heights =
+      if display = Display.Line then
+        List.map grid_data ~f:(fun _ -> 1)
+      else
+        List.map grid_data ~f:(fun row ->
+          assert(List.length widths = List.length row);
+          list_max ~f:Fn.id (List.map2_exn widths row ~f:El.height))
     in
-    let align_funcs = List.map cols ~f:(fun c -> c.Column.align_func) in
-    {data = grid_data; heights = heights; widths = widths; align_funcs=align_funcs}
+    let aligns = List.map cols ~f:(fun c -> c.Column.align) in
+    {data = grid_data; heights = heights; widths = widths; aligns=aligns}
   ;;
 
   let draw ~spacing ~display t =
-    (* The total width of the table includes the '|'s to the left of
-       elements, so we add 1 and the spacing on either side when summing. *)
-    let width = list_sum t.widths ~f:((+)(1+(spacing*2))) in
-    let to_draw = Doubly_linked.create() in
-    (* [add] adds an (attr,string) pair to the list of things to draw *)
-    let add x = Fn.ignore (Doubly_linked.insert_last to_draw x) in
-    add (Art.top width);
     assert(List.length t.data = List.length t.heights);
-    List.iteri (List.zip_exn t.data t.heights)
-      ~f:(display ~spacing ~add ~grid:t);
-    add (Art.bottom width);
-    Doubly_linked.to_list to_draw;
+    let mid_row = if display = Display.Tall_box then 1 else 0 in
+    (* The total width of the table includes the '|'s to the left of elements, so we add 1
+       and the spacing on either side when summing. *)
+    let cols = list_sum t.widths  ~f:((+) (1 + (spacing * 2))) + 1               in
+    let rows = list_sum t.heights ~f:((+) mid_row)             + 3 - 2 * mid_row in
+    let screen = Draw.create_screen ~rows ~cols in
+    Draw.hline ~screen ~row:0          ~col1:0 ~col2:(cols - 1);
+    Draw.hline ~screen ~row:(rows - 1) ~col1:0 ~col2:(cols - 1);
+    if display <> Display.Blank then begin
+      Draw.vline ~screen ~col:0 ~row1:0 ~row2:(rows - 1);
+      ignore (
+        List.fold t.widths ~init:0 ~f:(fun col width ->
+          let col = col + 1 + width + spacing * 2 in
+          Draw.vline ~screen ~col ~row1:0 ~row2:(rows - 1);
+          col)
+          : int
+      );
+    end;
+    ignore (
+      List.fold2_exn t.data t.heights ~init:1 ~f:(fun row row_elements height ->
+        let header_row = row = 1 in
+        ignore (
+          List.fold2_exn row_elements (List.zip_exn t.widths t.aligns) ~init:(1 + spacing)
+            ~f:(fun col (attr, lines) (width, align) ->
+              let strings = El.slices width lines in
+              if display = Display.Line then
+                match strings with
+                | [] ->
+                  ()
+                | [string] ->
+                  Draw.aligned ~screen ~row ~col ~attr ~string ~align ~width
+                | string :: _ ->
+                  Draw.aligned ~screen ~row ~col ~attr ~string ~align ~width;
+                  for col = col + (max 0 (width - 3)) to col + width - 1 do
+                    Draw.char ~screen ~row ~col ~char:'.' ~attr:[]
+                  done
+              else
+                ignore (
+                  List.fold strings ~init:row ~f:(fun row string ->
+                    Draw.aligned ~screen ~row ~col ~attr ~string ~align ~width;
+                    row + 1)
+                    : int
+                );
+              col + 1 + spacing * 2 + width)
+            : int
+        );
+        let row = row + height in
+        if display = Display.Tall_box || header_row then begin
+          if display <> Display.Blank then
+            Draw.hline ~screen ~row ~col1:0 ~col2:(cols - 1);
+          row + 1
+        end else
+          row)
+        : int
+    );
+    screen
   ;;
 end
-
-module Display = struct
-  open Grid
-  type t = spacing:int -> add:(Art.t -> unit)
-    -> grid:Grid.t -> int -> El.row *  int -> unit
-
-  let box_gen ~spacing ~add ~grid ~art_mid index (row, height) =
-    begin match index with
-    | 0 -> ()
-    | 1 -> add (Art.mid_plusses ~spacing grid.widths)
-    | _ -> add art_mid
-    end;
-    let add_visual_row visual_row =
-      assert(List.length row = List.length grid.widths
-            && List.length grid.widths = List.length grid.align_funcs);
-      List.iter2_exn row (List.zip_exn grid.widths grid.align_funcs)
-        ~f:(fun el (column_width, align_func) ->
-          let art =
-            if not (List.is_empty row) && phys_equal el (List.hd_exn row)
-            then Art.left ~spacing
-            else Art.mid ~spacing
-          in
-          add (Art.style art []);
-          List.iter ~f:add (El.slice column_width el visual_row align_func));
-      add (Art.right_newline ~spacing);
-    in
-    for i=0 to (height-1) do add_visual_row i done;
-  ;;
-
-  let tall_box ~spacing ~add ~grid index row_height =
-    box_gen ~art_mid:(Art.mid_plusses ~spacing grid.widths)
-      ~spacing ~add ~grid index row_height
-  ;;
-  let short_box ~spacing ~add ~grid index row_height =
-    box_gen ~art_mid:(Art.none)
-      ~spacing ~add ~grid index row_height
-  ;;
-  let blank ~spacing ~add ~grid index (row, height) =
-    begin match index with
-    | 0 -> ()
-    | 1 -> add (Art_blank.mid_plusses ~spacing grid.widths)
-    | _ -> add Art_blank.none
-    end;
-    let add_visual_row visual_row =
-      assert(List.length row = List.length grid.widths
-            && List.length grid.widths = List.length grid.align_funcs);
-      List.iter2_exn row (List.zip_exn grid.widths grid.align_funcs)
-        ~f:(fun el (column_width, align_func) ->
-          let art =
-            if not (List.is_empty row) && phys_equal el (List.hd_exn row)
-            then Art_blank.left ~spacing
-            else Art_blank.mid ~spacing
-          in
-          add (Art_blank.style art []);
-          List.iter ~f:add (El.slice column_width el visual_row align_func));
-      add (Art_blank.right_newline ~spacing);
-    in
-    for i=0 to (height-1) do add_visual_row i done;
-  ;;
-
-  let line ~spacing ~add ~grid _index (row, _) =
-    assert(List.length row = List.length grid.widths
-          && List.length grid.widths = List.length grid.align_funcs);
-    List.iter2_exn row (List.zip_exn grid.widths grid.align_funcs)
-      ~f:(fun el (column_width, align_func) ->
-        let art =
-          if not (List.is_empty row) && phys_equal el (List.hd_exn row)
-          then Art.left ~spacing
-          else Art.mid ~spacing
-        in
-        add (Art.style art []);
-        let to_add = El.slice column_width el 0 align_func in
-        List.iter ~f:add
-          begin match List.filter to_add ~f:(Fn.non Art.emptyp) with
-          | [x] ->
-            if El.height column_width el > 1
-            then [Art.trail x]
-            else [x]
-          | _::_ -> to_add
-          | [] -> raise (Failure "El.slice returned all empty strings!")
-          end);
-    add (Art.right_newline ~spacing);
-    if not (List.is_empty grid.data) && phys_equal row (List.hd_exn grid.data)
-    then add (Art.mid_plusses ~spacing grid.widths);
-  ;;
-end
-
-let console_print outc (attrs, str) = Console.Ansi.output_string attrs outc str
 
 type ('a,'rest) renderer =
   ?display : Display.t (* Default: short_box *)
   -> ?spacing : int (* Default: 1 *)
   -> ?limit_width_to : int (* defaults to 90 characters *)
   -> ?header_attr : Console.Ansi.attr list
+  -> ?bars : [ `Ascii | `Unicode ]
   -> 'a Column.t list
   -> 'a list
   -> 'rest
 
 let output ?(display=Display.short_box) ?(spacing=1) ?(limit_width_to=90)
-    ?(header_attr=[]) cols data ~oc:outc =
-  if cols = [] then () else
-    List.iter ~f:(console_print outc)
-      (Grid.draw ~spacing ~display
-         (Grid.create ~spacing limit_width_to header_attr cols data))
+    ?(header_attr=[]) ?(bars=`Ascii) cols data ~oc =
+  if cols = [] then
+    ()
+  else
+    let screen =
+      Grid.draw ~spacing ~display
+        (Grid.create ~spacing ~display limit_width_to header_attr cols data)
+    in
+    Draw.output ~oc ~screen ~bars
 ;;
 
 let to_string_gen ?(display=Display.short_box) ?(spacing=1) ?(limit_width_to=90)
-    ?(header_attr=[]) cols data ~use_attr =
-  let apply_attrs (attrs,text) =
-    if use_attr then Console.Ansi.string_with_attr attrs text
-    else text
-  in
-  if cols = [] then "" else
-    String.concat
-      (List.map ~f:apply_attrs
-         (Grid.draw ~spacing ~display
-            (Grid.create ~spacing limit_width_to header_attr cols data)))
+    ?(header_attr=[]) ?(bars=`Ascii) cols data ~use_attr =
+  if cols = [] then
+    ""
+  else
+    let screen =
+      Grid.draw ~spacing ~display
+        (Grid.create ~spacing ~display limit_width_to header_attr cols data)
+    in
+    if use_attr then
+      Draw.to_string ~screen ~bars
+    else
+      Draw.to_string_noattr ~screen ~bars
 ;;
 
 

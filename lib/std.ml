@@ -106,7 +106,6 @@ module Memo = struct
 end
 module Multi_map = Multi_map
 module Net_utils = Net_utils
-module Or_exn = Or_exn
 module Pp = Pp
 module Printc = Printc
 module Process = Process

@@ -65,7 +65,6 @@ let tests () = OUnit.TestList [
     Multi_map.ounit_tests ();
     Net_utils.ounit_tests ();
     Number.ounit_tests ();
-    Or_exn.ounit_tests ();
     Patience_diff.ounit_tests ();
     Posix_clock.ounit_tests ();
     Pp.ounit_tests ();

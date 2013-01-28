@@ -28,7 +28,7 @@ module Nano_mutex : Mutex = struct
 end
 
 let () =
-  Bench.bench
+  Bench.bench ~columns:[ `Name; `Cycles; `If_not_empty `Warnings ]
     (List.map ~f:(fun (name, thunk) -> Bench.Test.create ~name thunk)
        (
          make ~name:"Caml.Mutex" (module Caml.Mutex : Mutex)

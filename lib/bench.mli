@@ -71,7 +71,16 @@ type 'a with_benchmark_flags =
   -> ?clock:[`Wall | `Cpu ]
   -> 'a
 
-(** time_format (default auto):  select the units to report run times in.  If auto, the
+type column = [ `Name
+              | `Input_size
+              | `Run_time
+              | `Normalized_run_time
+              | `Cycles
+              | `Normalized_cycles
+              | `Allocated
+              | `Warnings ]
+
+(** [time_format] (default [`Auto]):  select the units to report run times in.  If auto, the
    units are chosen based on the times.
 
    The "Name" and "Input size" columns of the printed table reflect the values passed to
@@ -84,16 +93,23 @@ type 'a with_benchmark_flags =
      'M' indicates the maximum run time was more than 120% of the mean
      'c' indicates GC compactions occurred during testing
      'a' indicates the number of words allocated was not the same in all tests
+
+   [limit_with_to] defaults to 72.
+
+   [columns]: select which columns to display. [`If_not_empty c] means print the column
+   only if at least one cell contains something. It defaults to:
+     [\[`If_not_empty `Name; `Normalized_cycles; `If_not_empty `Warnings\]].
 *)
 type 'a with_print_flags =
   ?time_format:[`Ns | `Ms | `Us | `S | `Auto]
   -> ?limit_width_to:int
+  -> ?columns:[ column | `If_not_empty of column ] list
   -> 'a
 
 val bench : (Test.t list -> unit) with_benchmark_flags with_print_flags
 
-(** [bench_raw] returns a list documenting the runtimes rather than printing to stdout. These can be
-   fed to print for results identical to calling bench. *)
+(** [bench_raw] returns a list documenting the runtimes rather than printing to
+   stdout. These can be fed to print for results identical to calling bench. *)
 val bench_raw : (Test.t list -> Result.t list) with_benchmark_flags
 
 val print : (Result.t list -> unit) with_print_flags

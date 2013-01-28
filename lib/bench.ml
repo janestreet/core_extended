@@ -152,7 +152,7 @@ let make_time ~time_format (_name_opt, _size_opt, results) =
   time_string ~time_format ((Result.mean results).Result.Stat.run_time)
 ;;
 
-let make_norm ~time_format (_name_opt, size_opt, results) =
+let make_norm_time ~time_format (_name_opt, size_opt, results) =
   match size_opt with
   | Some size ->
     if size > 0 then
@@ -177,7 +177,19 @@ let make_promoted (_name_opt, _size_opt, results) =
 ;;
 
 let make_cycles (_name_opt, _size_opt, results) =
-  Int.to_string (Result.mean results).Result.Stat.run_cycles
+  Core.Int_conversions.insert_underscores
+    (Int.to_string (Result.mean results).Result.Stat.run_cycles)
+;;
+
+let make_norm_cycles (_name_opt, size_opt, results) =
+  match size_opt with
+  | Some size ->
+    if size > 0 then
+      let mean_cycles = (Result.mean results).Result.Stat.run_cycles in
+      Core.Int_conversions.insert_underscores (Int.to_string (mean_cycles / size))
+    else
+      ""
+  | None -> ""
 ;;
 
 let make_warn (_name_opt, _size_opt, results) =
@@ -195,37 +207,96 @@ let make_warn (_name_opt, _size_opt, results) =
   ^ maybe_string "A" (Result.major_allocated_varied results)
 ;;
 
-let print ?(time_format=`Auto) ?limit_width_to data =
-  let module Col = Ascii_table.Column in
-  let right = Ascii_table.Align.right in
-  let name_col      = Col.create "Name" make_name in
-  let size_col      = Col.create ~align:right "Input size" make_size in
-  let time_col      = Col.create ~align:right "Run time" (make_time ~time_format) in
-  let cycles_col    = Col.create ~align:right "Cycles" make_cycles in
-  let norm_col      = Col.create ~align:right "Normalized" (make_norm ~time_format) in
-  let minor_allocated_col =
-    Col.create ~align:right "Allocated (minor)" make_minor_allocated
-  in
-  let major_allocated_col =
-    Col.create ~align:right "Allocated (major)" make_major_allocated
-  in
-  let promoted_col  = Col.create ~align:right "Promoted" make_promoted in
-  let warn_col      = Col.create ~align:right "Warnings" make_warn in
+let bars =
+  match Sys.getenv "BENCH_BARS_MODE" with
+  | None -> `Unicode
+  | Some "ascii" -> `Ascii
+  | Some "unicode" -> `Unicode
+  | Some _ ->
+    prerr_endline "invalid value of the environment variable BENCH_BARS_MODE.\n\
+                   must be one of 'ascii' or 'unicode'.";
+    exit 1
+;;
 
-  let exists_name = List.exists data ~f:(fun (name_opt, _, _) -> is_some name_opt) in
-  let exists_size = List.exists data ~f:(fun (_, size_opt, _) -> is_some size_opt) in
-  Ascii_table.output ~oc:stdout ?limit_width_to
-    begin
-      List.concat [
-        (if exists_name then [name_col] else []);
-        (if exists_size then [size_col] else []);
-        [time_col];
-        [cycles_col];
-        (if exists_size then [norm_col] else []);
-        [minor_allocated_col; major_allocated_col; promoted_col; warn_col]
-      ]
+type column = [ `Name
+              | `Input_size
+              | `Run_time
+              | `Normalized_run_time
+              | `Cycles
+              | `Normalized_cycles
+              | `Allocated
+              | `Warnings ] with sexp, compare
+
+module CMap = Map.Make (struct
+  type t = column with sexp
+  let compare = compare_column
+end)
+
+let default_columns = [ `If_not_empty `Name; `Normalized_cycles; `If_not_empty `Warnings ]
+
+module Warning_set = Set.Make (struct
+  type t = Char.t with sexp
+  (* Case-insensitive compare, lowercase first in case of equality. *)
+  let compare a b =
+    match a, b with
+    | ('a' .. 'z' | 'A' .. 'Z'), ('a' .. 'z' | 'A' .. 'Z') -> begin
+      let a' = Char.lowercase a in
+      let b' = Char.lowercase b in
+      match Char.compare a' b' with
+      | 0 -> Int.neg (Char.compare a b)
+      | d -> d
     end
-    data
+    | _ ->
+      Char.compare a b
+end)
+
+let print ?(time_format=`Auto) ?(limit_width_to=72) ?(columns=default_columns) data =
+  let left, right = Ascii_table.Align.(left, right) in
+  (* Map displayed columns to `If_not_empty or `Yes. *)
+  let displayed =
+    List.fold columns ~init:CMap.empty ~f:(fun cmap column ->
+      match column with
+      | `If_not_empty c -> CMap.add cmap ~key:c ~data:`If_not_empty
+      | #column as c    -> CMap.add cmap ~key:c ~data:`Yes)
+  in
+  let col tag name make align =
+    Ascii_table.Column.create name make ~align
+      ~show:(Option.value (CMap.find displayed tag) ~default:`No)
+  in
+  let columns = [
+    col `Name                "Name"                 make_name                    left ;
+    col `Input_size          "Input size"           make_size                    right;
+    col `Run_time            "Run time"            (make_time ~time_format)      right;
+    col `Normalized_run_time "Normalized run time" (make_norm_time ~time_format) right;
+    col `Cycles              "Cycles"               make_cycles                  right;
+    col `Normalized_cycles   "Normalized cycles"    make_norm_cycles             right;
+    col `Allocated           "Allocated (minor)"    make_minor_allocated         right;
+    col `Allocated           "Allocated (major)"    make_major_allocated         right;
+    col `Allocated           "Promoted"             make_promoted                right;
+    col `Warnings            "Warnings"             make_warn                    right;
+  ] in
+  Ascii_table.output ~oc:stdout ~limit_width_to ~bars columns data;
+  (* Print the meaning of warnings. *)
+  if CMap.mem displayed `Warnings then begin
+    (* Collect used warnings. *)
+    let warnings = List.fold_left data ~init:Warning_set.empty ~f:(fun cset x ->
+      let warn = make_warn x in
+      String.fold warn ~init:cset ~f:Warning_set.add)
+    in
+    if not (Warning_set.is_empty warnings) then begin
+      print_string "\nWarnings:\n";
+      Warning_set.iter warnings ~f:(fun c ->
+        let msg = match c with
+          | 'm' -> "the minimum run time was less than 80% of the mean"
+          | 'M' -> "the maximum run time was more than 120% of the mean"
+          | 'c' -> "GC compactions occurred during testing"
+          | 'a' -> "the number of minor words allocated was not the same in all tests"
+          | 'A' -> "the number of major words allocated was not the same in all tests"
+          | _   -> "???"
+        in
+        Printf.printf "%c: %s\n" c msg)
+    end
+  end
 ;;
 
 (* end printing functions *)
@@ -382,6 +453,7 @@ type 'a with_benchmark_flags =
 type 'a with_print_flags =
   ?time_format:[`Ns | `Ms | `Us | `S | `Auto]
   -> ?limit_width_to:int
+  -> ?columns:[ column | `If_not_empty of column ] list
   -> 'a
 
 let default_run_count = 100
@@ -396,7 +468,7 @@ let bench_raw
 ;;
 
 let bench
-    ?time_format ?limit_width_to ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests =
-  print ?time_format ?limit_width_to
+    ?time_format ?limit_width_to ?columns ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests =
+  print ?time_format ?limit_width_to ?columns
     (bench_raw ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests)
 ;;
