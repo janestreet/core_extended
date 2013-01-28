@@ -1,6 +1,6 @@
 # OASIS_START
-# DO NOT EDIT (digest: 98ad594ac4a5e33cdd448272802db160)
-version = "108.07.00"
+# DO NOT EDIT (digest: 0097ad897aa7f04a34cb724538d1f047)
+version = "108.07.01"
 description = "Jane Street Capital's standard library overlay"
 requires =
 "sexplib.syntax sexplib fieldslib.syntax fieldslib bin_prot bin_prot.syntax pa_ounit pa_pipebang core bigarray pcre res unix threads"
