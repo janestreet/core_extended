@@ -3,25 +3,29 @@ open Core.Std
 let list_sum ~f lst = List.fold lst ~init:0 ~f:(fun a b -> a + (f b))
 let list_max ~f lst = List.fold lst ~init:0 ~f:(fun a b -> max a (f b))
 
-module Art = struct (* Used when drawing the table. *)
+module Make_art(Border : sig
+  val vertical : string
+  val horizontal : char
+  val angle : string
+end) = struct (* Used when drawing the table. *)
   type t = Console.Ansi.attr list * string
-  let none = ([], "")
+  let none : t = ([], "")
   let spaces num_spaces = String.make num_spaces ' '
-  let left ~spacing = ([], "|"^(spaces spacing))
-  let mid ~spacing = ([], (spaces spacing)^"|"^(spaces spacing))
-  let right_newline ~spacing = ([], (spaces spacing)^"|\n")
+  let left ~spacing = ([], Border.vertical^(spaces spacing))
+  let mid ~spacing = ([], (spaces spacing)^Border.vertical^(spaces spacing))
+  let right_newline ~spacing = ([], (spaces spacing)^Border.vertical^"\n")
 
-  let top w = ([], "|"^(String.make (w-1) '-')^"|\n")
+  let top w = ([], Border.vertical^(String.make (w-1) Border.horizontal)^Border.vertical^"\n")
   let mid_plusses ~spacing widths = match List.map widths ~f:((+)(spacing*2)) with
     | w1::ws_right ->
-      let str_right w = "+"^(String.make w '-') in
-      let str = (String.make w1 '-')
+      let str_right w = Border.angle^(String.make w Border.horizontal) in
+      let str = (String.make w1 Border.horizontal)
         ^(String.concat (List.map ~f:str_right ws_right))
       in
-      ([], "|"^str^"|\n")
+      ([], Border.vertical^str^Border.vertical^"\n")
     | [] -> raise (Failure "Need at least one column to draw midline with plusses.")
   ;;
-  let bottom w = ([], "|"^(String.make (w-1) '-')^"|\n")
+  let bottom w = ([], Border.vertical^(String.make (w-1) Border.horizontal)^Border.vertical^"\n")
 
   (* Add a list of attributes to a pirce of art. *)
   let style (old_attrs, str) attrs = (attrs @ old_attrs, str)
@@ -35,6 +39,17 @@ module Art = struct (* Used when drawing the table. *)
     else (String.mapi str ~f:(fun i c -> if (strlen-i) <= 3 then '.' else c))
   ;;
 end
+
+module Art = Make_art(struct
+  let vertical = "|"
+  let horizontal = '-'
+  let angle = "+"
+end)
+module Art_blank = Make_art(struct
+  let vertical = " "
+  let horizontal = ' '
+  let angle = " "
+end)
 
 module El = struct (* One element in the table. *)
   type t = Console.Ansi.attr list * string list
@@ -232,6 +247,28 @@ module Display = struct
     box_gen ~art_mid:(Art.none)
       ~spacing ~add ~grid index row_height
   ;;
+  let blank ~spacing ~add ~grid index (row, height) =
+    begin match index with
+    | 0 -> ()
+    | 1 -> add (Art_blank.mid_plusses ~spacing grid.widths)
+    | _ -> add Art_blank.none
+    end;
+    let add_visual_row visual_row =
+      assert(List.length row = List.length grid.widths
+            && List.length grid.widths = List.length grid.align_funcs);
+      List.iter2_exn row (List.zip_exn grid.widths grid.align_funcs)
+        ~f:(fun el (column_width, align_func) ->
+          let art =
+            if not (List.is_empty row) && phys_equal el (List.hd_exn row)
+            then Art_blank.left ~spacing
+            else Art_blank.mid ~spacing
+          in
+          add (Art_blank.style art []);
+          List.iter ~f:add (El.slice column_width el visual_row align_func));
+      add (Art_blank.right_newline ~spacing);
+    in
+    for i=0 to (height-1) do add_visual_row i done;
+  ;;
 
   let line ~spacing ~add ~grid _index (row, _) =
     assert(List.length row = List.length grid.widths
@@ -295,3 +332,31 @@ let to_string_gen ?(display=Display.short_box) ?(spacing=1) ?(limit_width_to=90)
 
 let to_string_noattr = to_string_gen ~use_attr:false
 let to_string        = to_string_gen ~use_attr:true
+
+TEST =
+  let col1 = Column.create "a" (fun (x, _, _) -> x) in
+  let col2 = Column.create "b" (fun (_, x, _) -> x) in
+  let col3 = Column.create "c" (fun (_, _, x) -> x) in
+  let stringify display =
+    Printf.sprintf "%s\n%!"
+      (to_string ~display [col1; col2; col3] [("a1", "b1", "c1"); ("a2", "b2", "c2")]) in
+  let s_box = stringify Display.short_box in
+  let s_blank = stringify Display.blank in
+  s_box = "\
+|--------------|
+| a  | b  | c  |
+|----+----+----|
+| a1 | b1 | c1 |
+| a2 | b2 | c2 |
+|--------------|
+
+" &&
+  s_blank = String.concat ~sep:"\n" [
+"|--------------|";
+"  a    b    c   ";
+"                ";
+"  a1   b1   c1  ";
+"  a2   b2   c2  ";
+"|--------------|";
+"";
+""]

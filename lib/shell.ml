@@ -131,7 +131,7 @@ module Process = struct
       and stdoutf =
         if verbose then
           (fun s len ->
-            Console.Ansi.output [`Green] stderr s 0 len;
+            Console.Ansi.output [`Green] stdout s 0 len;
             stdoutf s len)
         else stdoutf
       in

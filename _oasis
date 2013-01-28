@@ -3,7 +3,7 @@
 OASISFormat:  0.3
 OCamlVersion: >= 3.12.1
 Name:         core_extended
-Version:      108.07.01
+Version:      108.08.00
 Synopsis:     Jane Street Capital's standard library overlay
 Authors:      Jane street capital
 Copyrights:   (C) 2008-2012 Jane Street Capital LLC
@@ -83,7 +83,7 @@ Test test_runner
   WorkingDirectory:   lib_test
   TestTools:          core_hello,core_extended_hello
 
-Document "core-extended"
+Document "core_extended"
   Title:                Jane street's core extended library
   Type:                 ocamlbuild (0.3)
   BuildTools+:          ocamldoc

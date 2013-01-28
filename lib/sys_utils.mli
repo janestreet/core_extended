@@ -94,3 +94,15 @@ module Cpu_use : sig
       the last 2 calls to [update_exn]. *)
   val cpu_use : t -> float
 end
+
+(* The Linux Standard Base (LSB) standardizes a few OS properties. *)
+module Lsb_release : sig
+  type t =
+    {
+      distributor_id : string; (* e.g. "Red Hat", "CentOS" *)
+      release        : float;  (* e.g. "5.7", "6.3" *)
+      codename       : string; (* e.g. "Final", "Lucid", etc. *)
+    }
+  with sexp, fields
+  val query : unit -> t
+end

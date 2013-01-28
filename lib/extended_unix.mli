@@ -63,6 +63,12 @@ val setreuid : uid:int -> euid:int -> unit
 
 val gettid : unit -> int
 
+(** Network to host order long, like C. *)
+external ntohl : Int32.t -> Int32.t = "extended_ml_ntohl"
+
+(** Host to network order long, like C. *)
+external htonl : Int32.t -> Int32.t = "extended_ml_htonl"
+
 type statvfs = {
   bsize: int;                           (** file system block size *)
   frsize: int;                          (** fragment size *)
@@ -99,3 +105,57 @@ module Extended_passwd : sig
   val of_passwd_file_exn : string -> t list
 end
 
+external strptime : fmt:string -> string -> Unix.tm = "unix_strptime"
+
+(** A representation of CIDR netmasks and functions to match if a given address is inside
+ the range or not. *)
+module Cidr : sig
+  type t = {
+    address: Unix.Inet_addr.t;
+    bits: int;
+  }
+
+  (** Generate a Cidr.t based on a string like "10.0.0.0/8". Addresses are not expanded
+  (i.e. "10/8" is invalid. *)
+  val of_string     : string -> t option
+  val of_string_exn : string -> t
+
+  (** Is the given address inside the given Cidr.t? Note that the broadcast and network
+  addresses are considered valid so match_ 10.0.0.0/8 10.0.0.0  is true. *)
+  val match_    : t -> Unix.Inet_addr.t -> bool option
+  val match_exn : t -> Unix.Inet_addr.t -> bool
+
+  (* val inet_addr_to_int : Unix.Inet_addr.t -> int option *)
+  val inet_addr_to_int_exn : Unix.Inet_addr.t -> Int32.t
+
+  (** Some things (like the kernel) report addresses and ports as hex or decimal integers.
+  Parse those . *)
+  val inet4_addr_of_int_exn : Int32.t -> Unix.Inet_addr.t
+end
+
+(** Simple int wrapper to be explicit about ports. *)
+module Inet_port : sig
+  type t
+
+  val of_int : int -> t option
+  val of_int_exn : int -> t
+
+  val of_string : string -> t option
+  val of_string_exn : string -> t
+
+  val to_int : t -> int
+  val to_string: t -> string
+end
+
+(* MAC-48 (Ethernet) adddresses *)
+module Mac_address : sig
+  type t with sexp
+  (* Supports standard "xx:xx:xx:xx:xx:xx", "xx-xx-xx-xx-xx-xx", and cisco
+     "xxxx.xxxx.xxxx" representations. *)
+  val of_string : string -> t
+  (* To standard representation "xx:xx:xx:xx:xx:xx".  Note the hex chars
+     will be downcased! *)
+  val to_string : t -> string
+  (* To cisco representation "xxxx.xxxx.xxxx" *)
+  val to_string_cisco : t -> string
+end

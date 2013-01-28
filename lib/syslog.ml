@@ -71,7 +71,7 @@ let compare_lev lev1 lev2 =
 external int_of_opt : opt -> int = "int_of_opt_stub"
 external int_of_fac : fac -> int = "int_of_fac_stub"
 external int_of_lev : lev -> int = "int_of_lev_stub"
-external openlog : string -> int -> int -> unit = "openlog_stub"
+external openlog : string option -> int -> int -> unit = "openlog_stub"
 external syslog : int -> string -> unit = "syslog_stub"
 external closelog : unit -> unit = "closelog_stub" "noalloc"
 external setlogmask : int -> unit = "setlogmask_stub" "noalloc"
@@ -84,21 +84,21 @@ let int_of_levs lst = List.fold ~f:coll_levs ~init:0 lst
 
 let fac_ref = ref USER
 
-let openlog ?(id = Sys.argv.(0)) ?(opt = []) ?(fac = USER) () =
+let openlog ?id ?(opt = []) ?(fac = USER) () =
   fac_ref := fac;
   openlog id (int_of_opts opt) (int_of_fac fac)
 
 let syslog ?(fac = !fac_ref) ?(lev = INFO) msg =
   syslog (int_of_lev lev lor int_of_fac fac) msg
 
-let syslog_printf ?fac ?lev fmt = ksprintf (syslog ?fac ?lev) fmt
+let syslogf ?fac ?lev fmt = ksprintf (syslog ?fac ?lev) fmt
 
 let esyslog ?(fac = !fac_ref) ?(lev = INFO) msg =
   syslog ~fac ~lev msg;
   eprintf "%s/%s: %s\n" (string_of_fac fac) (string_of_lev lev) msg;
   flush stderr
 
-let esyslog_printf ?fac ?lev fmt = ksprintf (esyslog ?fac ?lev) fmt
+let esyslogf ?fac ?lev fmt = ksprintf (esyslog ?fac ?lev) fmt
 
 let logmask_range ?(to_lev = EMERG) from_lev =
   let ix_to = array_el_ix all_levs to_lev in

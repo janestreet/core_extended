@@ -1,6 +1,12 @@
 (** Syslog Interface
 
     @author Markus Mottl <mmottl\@janestreet.com>
+
+    Syslog is great for system daemons that log free-form human readable
+    status messages or other debugging output, but not so great for archiving
+    structured data.  Access to read syslog's messages may also be restricted.
+    syslogd's logs are also not necessarily kept forever.  For application level
+    logging consider the [Logger] module instead.
 *)
 
 (** {2 Options for opening syslog} *)
@@ -82,13 +88,16 @@ val openlog : ?id : string -> ?opt : opt list -> ?fac : fac -> unit -> unit
     (possibly delayed) using prefixed identifier [id], options [opt],
     and faculty [fac].
 
-    WARNING: this function leaks memory!  No way around that if syslog
-    is called in a multi-threaded environment!  Therefore it shouldn't
-    be called too often.  What for, anyway?
+    WARNING: this function leaks the [id] argument, if provided.  No way
+    around that if syslog is called in a multi-threaded environment!
+    Therefore it shouldn't be called too often.  What for, anyway?
 
     @param id default = Sys.argv.(0)
-    @param opt default = [[]]
+    @param opt default = [ODELAY]
     @param fac default = [USER]
+
+    Calling [openlog] before [syslog] is optional.  If you forget, syslog will
+    do it for you with the defaults.
 *)
 
 val syslog : ?fac : fac -> ?lev : lev -> string -> unit
@@ -103,13 +112,11 @@ val esyslog : ?fac : fac -> ?lev : lev -> string -> unit
 (** [esyslog ?fac ?lev str] same as {!Syslog.syslog}, but also prints to
     [stderr]. *)
 
-val syslog_printf :
-  ?fac : fac -> ?lev : lev -> ('b, unit, string, unit) format4 -> 'b
+val syslogf : ?fac : fac -> ?lev : lev -> ('b, unit, string, unit) format4 -> 'b
 (** [syslog_printf ?fac ?lev fmt] same as {!Syslog.syslog}, but allows
     [printf]-style specification of the message using [fmt]. *)
 
-val esyslog_printf :
-  ?fac : fac -> ?lev : lev -> ('b, unit, string, unit) format4 -> 'b
+val esyslogf : ?fac : fac -> ?lev : lev -> ('b, unit, string, unit) format4 -> 'b
 (** [esyslog_printf ?fac ?lev fmt] same as {!Syslog.syslog_printf},
     but also prints to [stderr]. *)
 

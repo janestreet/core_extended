@@ -16,6 +16,7 @@
 # define __USE_ISOC99
 #endif
 #include <math.h>
+#include <arpa/inet.h>
 
 #include "ocaml_utils.h"
 
@@ -86,3 +87,12 @@ CAMLprim value getloadavg_stub (value v_unit __unused)
   Store_field(v_ret, 0, caml_copy_double(ret >= 1 ? loadavg[0] : NAN));
   CAMLreturn(v_ret);
 }
+
+CAMLprim value extended_ml_htonl (value v_num) {
+  return caml_copy_int32(htonl(Int32_val(v_num)));
+}
+
+CAMLprim value extended_ml_ntohl (value v_num) {
+  return caml_copy_int32(ntohl(Int32_val(v_num)));
+}
+

@@ -12,7 +12,7 @@ open Core.Std
    close the file twice.
 *)
 
-type 'a t
+type +'a t
 
 include Container.S1 with type 'a t := 'a t
 
@@ -36,6 +36,10 @@ val concat_seq_list: 'a t list -> 'a t
 val concat_list_seq: 'a list t -> 'a t
 
 val concat_map: 'a t -> f:('a -> 'b list) -> 'b t
+
+(* [length_if_at_most ~max t] returns Some len if [len = length t <= max], and otherwise
+   returns None. Non-lazy, but walks through only as much of the sequence as necessary. *)
+val length_if_at_most: max:int -> _ t -> int option
 
 (* [length_bounded_by ~min ~max t] returns true if [min <= length t] and [length t <= max]
    When [min] or [max] are not provided, the check for that bound is omitted.

@@ -10,7 +10,7 @@ type slot = {
 module type T = sig
   type main
   val slot_spec : unit -> (slot -> 'm, 'm) Command.Spec.t
-  val main_spec : (foreground:bool -> main, unit) Command.Spec.t
+  val main_spec : (foreground:bool -> main, unit -> unit) Command.Spec.t
   val main : slot -> main
 end
 
@@ -96,7 +96,7 @@ let status_command t =
   let module T = (val t : T) in let () = () in
   Command.basic ~summary:(sprintf "check status of daemon")
     (T.slot_spec ())
-    (fun slot ->
+    (fun slot () ->
       match check_lock_file slot with
       | `Not_running -> printf "%s is not running\n%!" slot.name
       | `Running_with_pid pid ->

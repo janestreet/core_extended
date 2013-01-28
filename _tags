@@ -325,3 +325,4 @@
 "lib/extended_linux.ml" : mlh, pkg_camlp4.macro
 "lib/malloc.ml"         : mlh, pkg_camlp4.macro
 "lib/posix_clock.ml"    : mlh, pkg_camlp4.macro
+"lib_test/test.ml"      : mlh, pkg_camlp4.macro

@@ -296,6 +296,55 @@ module Net : sig
 
   end
 
+  (* This should probably be somewhere else but I don't know where. *)
+  module Tcp_state : sig
+    type t =
+        TCP_ESTABLISHED
+        | TCP_SYN_SENT
+        | TCP_SYN_RECV
+        | TCP_FIN_WAIT1
+        | TCP_FIN_WAIT2
+        | TCP_TIME_WAIT
+        | TCP_CLOSE
+        | TCP_CLOSE_WAIT
+        | TCP_LAST_ACK
+        | TCP_LISTEN
+        | TCP_CLOSING
+        | TCP_MAX_STATES
+    val to_int : t -> int 
+    val of_int : int -> t 
+  end
+
+  (** /proc/net/tcp, or what netstat or lsof -i parses. *)
+  module Tcp : sig 
+    type t =
+      {
+        sl : int;
+        local_address : Core.Std.Unix.Inet_addr.t;
+        local_port : Extended_unix.Inet_port.t;
+        remote_address : Core.Std.Unix.Inet_addr.t;
+        remote_port : Extended_unix.Inet_port.t option; (* can be 0 if there's no
+        connection. *)
+        state : Tcp_state.t;
+        tx_queue : int;
+        rx_queue : int;
+        tr:int;
+        tm_when : int;
+        retrnsmt: int;
+        uid : int;
+        timeout : int;
+        inode : Process.Inode.t;
+        rest : string;
+      } with fields
+
+    (** These don't do any IO and should be async-ok *)
+    val of_line : string -> t option
+    val of_line_exn : string -> t 
+
+    (** This does IO and is not async-ok. *)
+    val load_exn : unit -> t list 
+
+  end
 end
 
 module Mount : sig

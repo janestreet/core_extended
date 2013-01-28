@@ -6,6 +6,9 @@
 #include <caml/signals.h>
 #include <caml/fail.h>
 
+#define Val_none Val_int(0)
+#define Some_val(v) Field(v,0)
+
 static int log_opts[] = {
   LOG_PID, LOG_CONS, LOG_ODELAY,
   LOG_NDELAY, LOG_NOWAIT, LOG_PERROR
@@ -35,15 +38,20 @@ CAMLprim value int_of_lev_stub(value v_priority) {
   return Val_int(log_priorities[Int_val(v_priority)]);
 }
 
-/* XXX: WARNING: this function leaks memory!  No way around that if
-   syslog is called in a multi-threaded environment!
+/* XXX: WARNING: this function leaks memory if v_ident is not None!
+   No way around that if syslog is called in a multi-threaded environment!
    Therefore it shouldn't be called too often.  What for, anyway? */
 CAMLprim value openlog_stub(value v_ident, value v_option, value v_facility) {
-  int len = caml_string_length(v_ident) + 1;
-  char *ident = caml_stat_alloc(len);
-  memcpy(ident, String_val(v_ident), len);
+  char *ident = NULL; /* default to argv[0], as per syslog(3) */
+  if (v_ident != Val_none) {
+    int len = caml_string_length(Some_val(v_ident)) + 1;
+    ident = caml_stat_alloc(len);
+    memcpy(ident, String_val(Some_val(v_ident)), len);
+  }
   caml_enter_blocking_section();
-    openlog(ident, Int_val(v_option), Int_val(v_facility));
+  openlog(ident, Int_val(v_option), Int_val(v_facility));
+  /* openlog doesn't inter ident (if specified), so freeing it here
+     would create an invalid program. */
   caml_leave_blocking_section();
   return Val_unit;
 }
@@ -53,8 +61,8 @@ CAMLprim value syslog_stub(value v_priority, value v_str) {
   char *str = caml_stat_alloc(len);
   memcpy(str, String_val(v_str), len);
   caml_enter_blocking_section();
-    syslog(Int_val(v_priority), str);
-    free(str);
+  syslog(Int_val(v_priority), str);
+  free(str);
   caml_leave_blocking_section();
   return Val_unit;
 }

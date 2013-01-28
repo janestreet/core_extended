@@ -10,7 +10,7 @@ type slot = {
 module type T = sig
   val slot_spec : unit -> (slot -> 'm, 'm) Command.Spec.t
   type main
-  val main_spec : (foreground:bool -> main, unit) Command.Spec.t
+  val main_spec : (foreground:bool -> main, unit -> unit) Command.Spec.t
   val main : slot -> main
 end
 

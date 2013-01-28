@@ -32,7 +32,7 @@ let create ?(listen_port = 65100) exns =
         try
           let { U.Select_fds.read = rd; _ } =
             U.select ~read:(s :: !clients) ~write:[] ~except:[]
-              ~timeout:(- 1.0) ()
+              ~timeout:`Never ()
           in
           if List.exists rd ~f:(fun fd -> fd = s) then
             push (fst (U.accept s));

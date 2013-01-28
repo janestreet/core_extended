@@ -30,18 +30,18 @@ val port_of_in_channel : in_channel -> int
 val tcp_socket : unit -> file_descr
 
 (** Connect a socket with a connect timeout *)
-val connect_tmout : file_descr -> sockaddr -> float -> bool
+val connect_tmout : file_descr -> sockaddr -> Core.Std.Unix.select_timeout -> bool
 
 (** Create a socket with timeouts *)
 val open_fd_connection_tmout :
-  con_timeout : float ->
+  con_timeout : Core.Std.Unix.select_timeout ->
   rcv_timeout : float ->
   snd_timeout : float ->
   sockaddr -> file_descr
 
 (** Open a connection with timeouts *)
 val open_connection_tmout :
-  con_timeout : float ->
+  con_timeout : Core.Std.Unix.select_timeout ->
   rcv_timeout : float ->
   snd_timeout : float ->
   sockaddr -> in_channel * out_channel

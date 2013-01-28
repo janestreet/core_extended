@@ -50,7 +50,7 @@ module Env = struct
         key
         ()
     else
-      add ~key ~data env
+      String.Map.add ~key ~data env
 
   let to_string_array env =
     String.Map.to_alist env
@@ -108,6 +108,12 @@ external seteuid : int -> unit = "extended_ml_seteuid"
 external setreuid : uid:int -> euid:int -> unit = "extended_ml_setreuid"
 external gettid : unit -> int = "extended_ml_gettid"
 
+external htonl : Int32.t -> Int32.t = "extended_ml_htonl"
+external ntohl : Int32.t -> Int32.t = "extended_ml_ntohl"
+
+TEST =
+  htonl (ntohl 0xdeadbeefl) = 0xdeadbeefl
+
 type statvfs = {
   bsize: int;                           (** file system block size *)
   frsize: int;                          (** fragment size *)
@@ -155,3 +161,246 @@ module Extended_passwd = struct
 
   let of_passwd_file f = Option.try_with (fun () -> of_passwd_file_exn f) ;;
 end
+
+external strptime : fmt:string -> string -> Unix.tm = "unix_strptime"
+
+(* This is based on jli's util code and the python iptools implementation. *)
+module Cidr = struct
+  type t = {
+    address : Unix.Inet_addr.t;
+    bits : int;
+  }
+
+  let of_string_exn s =
+    match String.split ~on:'/' s with
+    | [s_inet_address ; s_bits] ->
+      begin
+          let bits = Int.of_string s_bits in
+          assert (bits >= 0);
+          assert (bits <= 32);
+          {address=Unix.Inet_addr.of_string s_inet_address; bits=bits}
+      end
+    | _ -> failwith ("Unable to parse "^s^" into a CIDR address/mask pair.")
+
+  let of_string s =
+    try
+      Some (of_string_exn s)
+    with _ -> None
+
+  (** IPv6 addresses are not supported.
+    The RFC regarding how to properly format an IPv6 string is...painful.
+
+    Note the 0010 and 0000:
+     # "2a03:2880:0010:1f03:face:b00c:0000:0025" |! Unix.Inet_addr.of_string |!
+     Unix.Inet_addr.to_string ;;
+      - : string = "2a03:2880:10:1f03:face:b00c:0:25"
+    *)
+
+  let inet6_addr_to_int_exn _addr =
+    failwith "IPv6 isn't supported yet."
+
+  let ip4_valid_range =
+    List.map ~f:(fun y ->
+          assert (y <= 255) ;
+          assert (y >= 0);
+          y)
+
+  let inet4_addr_to_int_exn addr =
+    let stringified = Unix.Inet_addr.to_string addr in
+    match String.split ~on:'.' stringified
+    |! List.map ~f:Int.of_string
+    |! ip4_valid_range
+    with
+    | [a;b;c;d] ->
+      let lower_24 = Int32.of_int_exn ((b lsl 16) lor (c lsl 8) lor d)
+      and upper_8  = Int32.(shift_left (of_int_exn a) 24)
+      in Int32.bit_or upper_8 lower_24
+    | _ -> failwith (stringified ^ " is not a valid IPv4 address.")
+
+  let inet4_addr_of_int_exn l =
+    let lower_24 = Int32.(to_int_exn (bit_and l (of_int_exn 0xFF_FFFF))) in
+    let upper_8  = Int32.(to_int_exn (shift_right_logical l 24)) in
+    Unix.Inet_addr.of_string (sprintf "%d.%d.%d.%d"
+      (upper_8         land 0xFF)
+      (lower_24 lsr 16 land 0xFF)
+      (lower_24 lsr  8 land 0xFF)
+      (lower_24        land 0xFF))
+
+  let inet_addr_to_int_exn addr =
+    let stringified = Unix.Inet_addr.to_string addr in
+    let has_colon = String.contains stringified ':' in
+    let has_period = String.contains stringified '.' in
+    match has_colon, has_period with
+    | true, false -> inet6_addr_to_int_exn addr
+    | false, true -> inet4_addr_to_int_exn addr
+    | true, true -> failwith "Address cannot have both : and . in it."
+    | false, false -> failwith "No address delimter (: or .) found."
+
+  let cidr_to_block c =
+    let baseip = inet_addr_to_int_exn c.address in
+    let shift = 32 - c.bits in
+    Int32.(shift_left (shift_right_logical baseip shift) shift)
+
+  let match_exn t address =
+    Int32.equal (cidr_to_block t) (cidr_to_block {t with address})
+
+  let match_ t ip =
+    try
+      Some (match_exn t ip)
+    with _ -> None
+
+  (* This exists mostly to simplify the tests below. *)
+  let match_strings c a =
+    let c = of_string_exn c in
+    let a = Unix.Inet_addr.of_string a in
+    match_exn c a
+end
+
+(* Can we parse some random correct netmasks? *)
+TEST = Cidr.of_string "10.0.0.0/8" <> None
+TEST = Cidr.of_string "172.16.0.0/12" <> None
+TEST = Cidr.of_string "192.168.0.0/16" <> None
+TEST = Cidr.of_string "192.168.13.0/24" <> None
+TEST = Cidr.of_string "172.25.42.0/18" <> None
+
+(* Do we properly fail on some nonsense? *)
+TEST = Cidr.of_string "172.25.42.0/35" =  None
+TEST = Cidr.of_string "172.25.42.0/sandwich" =  None
+TEST = Cidr.of_string "sandwich/sandwich" =  None
+TEST = Cidr.of_string "sandwich/39" =  None
+TEST = Cidr.of_string "sandwich/16" =  None
+TEST = Cidr.of_string "172.52.43/16" =  None
+TEST = Cidr.of_string "172.52.493/16" =  None
+
+TEST_MODULE = struct
+
+  (* Can we convert ip addr to an int? *)
+  let test_inet_addr_to_int str num =
+    let inet = Unix.Inet_addr.of_string str in
+    Cidr.inet_addr_to_int_exn inet = num
+
+  TEST = test_inet_addr_to_int "0.0.0.1"           1l
+  TEST = test_inet_addr_to_int "1.0.0.0"         0x1000000l
+  TEST = test_inet_addr_to_int "255.255.255.255" 0xffffffffl
+  TEST = test_inet_addr_to_int "172.25.42.1"     0xac192a01l
+  TEST = test_inet_addr_to_int "4.2.2.1"         0x4020201l
+  TEST = test_inet_addr_to_int "8.8.8.8"         0x8080808l
+  TEST = test_inet_addr_to_int "173.194.73.103"  0xadc24967l
+  TEST = test_inet_addr_to_int "98.139.183.24"   0x628bb718l
+
+  (* And from an int to a string? *)
+  let test_inet_addr_of_int num str =
+    let inet = Unix.Inet_addr.of_string str in
+    Cidr.inet4_addr_of_int_exn num = inet
+
+  TEST = test_inet_addr_of_int 0xffffffffl "255.255.255.255"
+  TEST = test_inet_addr_of_int 0l          "0.0.0.0"
+  TEST = test_inet_addr_of_int 0x628bb718l "98.139.183.24"
+  TEST = test_inet_addr_of_int 0xadc24967l "173.194.73.103"
+
+(* And round trip for kicks *)
+  TEST_UNIT =
+    let inet  = Unix.Inet_addr.of_string "4.2.2.1" in
+    let inet' = Cidr.inet4_addr_of_int_exn (Cidr.inet_addr_to_int_exn inet) in
+    if inet <> inet' then
+      failwithf "round-tripping %s produced %s"
+        (Unix.Inet_addr.to_string inet)
+        (Unix.Inet_addr.to_string inet') ()
+end
+
+(* Basic match tests *)
+TEST = Cidr.match_strings "10.0.0.0/8" "9.255.255.255" = false
+TEST = Cidr.match_strings "10.0.0.0/8" "10.0.0.1" = true
+TEST = Cidr.match_strings "10.0.0.0/8" "10.34.67.1" = true
+TEST = Cidr.match_strings "10.0.0.0/8" "10.255.255.255" = true
+TEST = Cidr.match_strings "10.0.0.0/8" "11.0.0.1" = false
+
+TEST = Cidr.match_strings "172.16.0.0/12" "172.15.255.255" = false
+TEST = Cidr.match_strings "172.16.0.0/12" "172.16.0.0" = true
+TEST = Cidr.match_strings "172.16.0.0/12" "172.31.255.254" = true
+
+TEST = Cidr.match_strings "172.25.42.0/24" "172.25.42.1" = true
+TEST = Cidr.match_strings "172.25.42.0/24" "172.25.42.255" = true
+TEST = Cidr.match_strings "172.25.42.0/24" "172.25.42.0" = true
+
+TEST = Cidr.match_strings "172.25.42.0/16" "172.25.0.1" = true
+TEST = Cidr.match_strings "172.25.42.0/16" "172.25.255.254" = true
+TEST = Cidr.match_strings "172.25.42.0/16" "172.25.42.1" = true
+TEST = Cidr.match_strings "172.25.42.0/16" "172.25.105.237" = true
+
+(* And some that should fail *)
+TEST = Cidr.match_strings "172.25.42.0/24" "172.26.42.47" = false
+TEST = Cidr.match_strings "172.25.42.0/24" "172.26.42.208" = false
+
+module Inet_port = struct
+  type t = int
+
+  let of_int_exn x =
+    if x > 0 && x < 65536 then
+      x
+    else
+      failwith (sprintf "%d is not a valid port number." x)
+
+  let of_int x =
+    try
+      Some (of_int_exn x )
+    with _ ->
+      None
+
+  let of_string_exn x =
+    Int.of_string x |! of_int_exn
+
+  let of_string x =
+    try
+      Some (of_string_exn x)
+    with _ ->
+      None
+
+  let to_string x =
+    Int.to_string x
+
+  let to_int x =
+    x
+end
+
+TEST = Inet_port.of_string "88" = Some 88
+TEST = Inet_port.of_string "2378472398572" = None
+TEST = Inet_port.of_int 88 = Some 88
+TEST = Inet_port.of_int 872342 = None
+
+module Mac_address = struct
+  (* An efficient internal representation would be something like a 6 byte array,
+     but let's use a hex string to get this off the ground. *)
+  type t = string with sexp
+  let rex = Pcre.regexp "[^a-f0-9]"
+  let of_string s =
+    let addr = String.lowercase s |! Pcre.qreplace ~rex ~templ:"" in
+    let length = String.length addr in
+    if length <> 12 then
+      failwithf "MAC address '%s' has the wrong length: %d" s length ();
+    addr
+
+  let to_string t =
+    let rec loop acc = function
+      | a::b::rest ->
+        let x = String.of_char_list [a; b] in
+        loop (x :: acc) rest
+      | [] -> List.rev acc |! String.concat ~sep:":"
+      | _ -> assert false
+    in
+    loop [] (String.to_list t)
+
+  let to_string_cisco t =
+    let lst = String.to_list t in
+    let a = List.take lst 4 |! String.of_char_list
+    and b = List.take (List.drop lst 4) 4 |! String.of_char_list
+    and c = List.drop lst 8 |! String.of_char_list in
+    String.concat ~sep:"." [a; b; c]
+  let t_of_sexp sexp = String.t_of_sexp sexp |! of_string
+  let sexp_of_t t = to_string t |! String.sexp_of_t
+end
+
+TEST = Mac_address.to_string (Mac_address.of_string "00:1d:09:68:82:0f") = "00:1d:09:68:82:0f"
+TEST = Mac_address.to_string (Mac_address.of_string "00-1d-09-68-82-0f") = "00:1d:09:68:82:0f"
+TEST = Mac_address.to_string (Mac_address.of_string "001d.0968.820f") = "00:1d:09:68:82:0f"
+TEST = Mac_address.to_string_cisco (Mac_address.of_string "00-1d-09-68-82-0f") = "001d.0968.820f"

@@ -31,7 +31,7 @@ module Date_selector : sig
     | LT of Date.t
     | Between of Date.t * Date.t
     | On of Date.t
-    with of_sexp
+    with bin_io, sexp
 
   include Selector with type selector = t and type value = Date.t
 end
@@ -46,7 +46,7 @@ end
 *)
 module String_selector : sig
   module Regexp : sig
-    type t with sexp
+    type t with bin_io, sexp
 
     val of_regexp : string -> t
     val matches : t -> string -> bool
@@ -58,13 +58,13 @@ module String_selector : sig
     | Equal of string list
     | Matches of Regexp.t list
     | Mixed of [ `Regexp of Regexp.t | `Literal of string ] list
-    with of_sexp
+    with bin_io, sexp
 
   include Selector with type selector = t and type value = String.t
 end
 
 module String_list_selector : sig
-  type t = string list with sexp
+  type t = string list with bin_io, sexp
 
   include Selector with type selector = t and type value = string
 end

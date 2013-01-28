@@ -226,3 +226,25 @@ module Cpu_use = struct
     in
     my_jps /. jps
 end
+
+module Lsb_release = struct
+  type t =
+    {
+      distributor_id : string; (* e.g. "Red Hat", "CentOS" *)
+      release        : float;  (* e.g. "5.7", "6.3" *)
+      codename       : string; (* e.g. "Final", "Lucid", etc. *)
+    }
+  with sexp, fields
+
+  let query () =
+    let q flag =
+      match Shell.run_one "lsb_release" ["-s"; flag] with
+      | None -> failwithf "Lsb_release.query(%s): failed Shell.run_one" flag ()
+      | Some value -> value
+    in
+    {
+      distributor_id = q "-i";
+      release        = q "-r" |! Float.of_string;
+      codename       = q "-c"
+    }
+end

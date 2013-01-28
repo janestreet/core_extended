@@ -16,7 +16,7 @@ module Date_selector = struct
     | LT of Date.t
     | Between of Date.t * Date.t
     | On of Date.t
-    with sexp
+    with bin_io, sexp
   type selector = t
   type value = Date.t
 
@@ -27,8 +27,14 @@ module Date_selector = struct
     | List [Atom ">="; Atom _ as d]     -> GT (Date.add_days (Date.t_of_sexp d) (-1))
     | List [Atom "<"; Atom _ as d]      -> LT (Date.t_of_sexp d)
     | List [Atom "<="; Atom _ as d]     -> LT (Date.add_days (Date.t_of_sexp d) (1))
+    | List [Atom _ as d1; Atom "><"; Atom _ as d2]
+    | List [Atom "><"; Atom _ as d1; Atom _ as d2]
     | List [Atom _ as d1; Atom _ as d2] ->
-      Between ((Date.t_of_sexp d1), (Date.t_of_sexp d2))
+      begin
+        try
+          Between ((Date.t_of_sexp d1), (Date.t_of_sexp d2))
+        with _ -> t_of_sexp sexp
+      end
     | _ -> t_of_sexp sexp
 
   let eval t d =
@@ -41,16 +47,22 @@ end
 
 module String_selector = struct
   module Regexp : sig
-    type t with sexp
+    type t with bin_io, sexp
 
     val of_regexp : string -> t
     val to_string : t -> string
     val matches : t -> string -> bool
     val to_regexp : t -> Pcre.regexp
   end = struct
-    type t = string * Pcre.regexp
+    module T = struct
+      type t = string * Pcre.regexp
 
-    let of_regexp s = s, Pcre.regexp s
+      let to_string (s, _) = s
+      let of_regexp s = s, Pcre.regexp s
+      let of_string s = of_regexp s
+    end
+    include T
+    include Binable.Of_stringable(T)
 
     let t_of_sexp sexp =
       let fail () = of_sexp_error "expected string bounded with / on both sides" sexp in
@@ -64,7 +76,7 @@ module String_selector = struct
         else fail ()
 
     let sexp_of_t (s, _) = Sexp.Atom ("/" ^ s ^ "/")
-    let to_string (s, _) = s
+
     let to_regexp (_, p) = p
     let matches (_, rex) s = Pcre.pmatch ~rex s
   end
@@ -73,7 +85,7 @@ module String_selector = struct
     | Equal of string list
     | Matches of Regexp.t list
     | Mixed of [ `Regexp of Regexp.t | `Literal of string ] list
-    with of_sexp
+    with bin_io, sexp
   type selector = t
   type value = String.t
 
@@ -112,7 +124,7 @@ module String_selector = struct
 end
 
 module String_list_selector = struct
-  type t = string list with sexp
+  type t = string list with bin_io, sexp
   type selector = t
   type value = string
 

@@ -12,6 +12,7 @@ module Display : sig
   val short_box : t (* Default--cells can be multi-line. *)
   val tall_box  : t (* Puts --- between entries.         *)
   val line      : t (* Trails off with ... if necessary. *)
+  val blank     : t (* No lines *)
 end
 
 module Column : sig

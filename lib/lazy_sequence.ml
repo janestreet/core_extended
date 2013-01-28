@@ -141,29 +141,24 @@ let find_map t ~f =
   in
   wrap_finallys finallys (fun () -> find_map t ~f)
 
-let length_bounded_by ?min ?max t =
+let length_if_at_most ~max t =
   with_return (fun {return} ->
-    match min, max with
-    | None, None -> true
-    | Some min, None ->
-      if min <= 0 then return true;
-      ignore (fold t ~init:0 ~f:(fun len _ ->
-        if len + 1 >= min then return true else len + 1
-      ) : int);
-      false
-    | None, Some max ->
-      if max < 0 then return false;
-      ignore (fold t ~init:0 ~f:(fun len _ ->
-        if len + 1 > max then return false else len + 1
-      ) : int);
-      true
-    | Some min, Some max ->
-      if max < 0 || min > max then return false;
-      let len = fold t ~init:0 ~f:(fun len _ ->
-        if len + 1 > max then return false else len + 1)
-      in
-      len >= min
+    if max < 0 then return None;
+    Some (fold t ~init:0 ~f:(fun len _ ->
+      if len + 1 > max then return None else len + 1))
   )
+
+let length_bounded_by ?min ?max t =
+  match min, max with
+  | None, None -> true
+  | Some min, None ->
+    Option.is_none (length_if_at_most ~max:(min - 1) t)
+  | None, Some max ->
+    Option.is_some (length_if_at_most ~max t)
+  | Some min, Some max ->
+    match length_if_at_most ~max t with
+    | None -> false
+    | Some len -> len >= min
 
 let find t ~f = find_map t ~f:(fun x -> if f x then Some x else None)
 
@@ -421,6 +416,14 @@ TEST = length_bounded_by ~min:2 ~max:3 (seq [5]) = false
 TEST = length_bounded_by ~min:2 ~max:3 (seq [5;6]) = true
 TEST = length_bounded_by ~min:2 ~max:3 (seq [5;6;7]) = true
 TEST = length_bounded_by ~min:2 ~max:3 (seq [5;6;7;8]) = false
+TEST = length_if_at_most ~max:(-1) (seq []) = None
+TEST = length_if_at_most ~max:0 (seq []) = Some 0
+TEST = length_if_at_most ~max:1 (seq []) = Some 0
+TEST = length_if_at_most ~max:0 (seq [4]) = None
+TEST = length_if_at_most ~max:1 (seq [4]) = Some 1
+TEST = length_if_at_most ~max:3 (seq [4;5]) = Some 2
+TEST = length_if_at_most ~max:3 (seq [4;5;6]) = Some 3
+TEST = length_if_at_most ~max:3 (seq [4;5;6;7]) = None
 
 (* Test laziness *)
 TEST_UNIT =

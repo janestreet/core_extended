@@ -319,14 +319,14 @@ let create
   }
 
 let rec finish_reading state =
-  match available_fds state ~timeout:0. with
+  match available_fds state ~timeout:`Immediately with
   | []  ,_ -> ()
   | read,_ ->
     process_io state ~read ~write:[];
     finish_reading state
 
 let rec run_loop ~start_time ~timeout state =
-  let read,write = available_fds state ~timeout:0.1 in
+  let read,write = available_fds state ~timeout:(`After 0.1) in
   begin
     try
       process_io state ~read ~write

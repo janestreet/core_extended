@@ -27,7 +27,7 @@ let wait_for_input ~timeout fd =
   let select_fds =
     Unix.select ()
       ~restart:true
-      ~timeout
+      ~timeout:(`After timeout)
       ~read:[fd]
       ~write:[]
       ~except:[]

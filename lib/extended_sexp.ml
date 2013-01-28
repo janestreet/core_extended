@@ -186,41 +186,41 @@ module Summarize = struct
         if my_distance < float depth
         then Sexp.Atom str
         else dot_dot_dot
-    (* performance hack: if a list is going to contain all "..." atoms, then "..." the list
-       itself *)
+    (* performance hack: if a list is going to contain all "..." atoms, then "..." the
+       list itself *)
     | Sexp.List _, (0 | 1) -> dot_dot_dot
     | Sexp.List sexps, max_distance ->
-        if path_depth path >= max_distance then dot_dot_dot
-        else
-          let sexps =
-            List.mapi sexps
-              ~f:(fun i sexp ->
-                let new_path =
-                  match path with
-                  | `Found | `Back _ -> `Back (i, path)
-                  | `Pos (n, path) ->
-                      if n = i
-                      then path
-                      else `Back (i, `Pos (n, path))
-                in
-                neighbors sexp new_path max_distance
-              )
-          in
-          let sexps =
-            (* consolidate consecutive "..." atoms into one "..." atom *)
-            List.fold sexps ~init:[]
-              ~f:(fun accum sexp ->
-                match accum with
-                | [] -> [ sexp ]
-                | hd :: _tl ->
-                    if phys_equal sexp dot_dot_dot && phys_equal hd dot_dot_dot
-                    then accum
-                    else sexp :: accum
-              ) |! List.rev
-          in
-          (* replace "(...)" with just "..." *)
-          if sexps = [ dot_dot_dot ] then dot_dot_dot
-          else Sexp.List sexps
+      if path_depth path >= max_distance
+      then dot_dot_dot
+      else
+        let sexps =
+          List.mapi sexps ~f:(fun i sexp ->
+            let new_path =
+              match path with
+              | `Found | `Back _ ->
+                `Back (i, path)
+              | `Pos (n, path) ->
+                if n = i
+                then path
+                else `Back (i, `Pos (n, path))
+            in
+            neighbors sexp new_path max_distance
+          )
+        in
+        let sexps =
+          (* consolidate consecutive "..." atoms into one "..." atom *)
+          List.fold sexps ~init:[] ~f:(fun accum sexp ->
+            match accum with
+            | [] -> [ sexp ]
+            | hd :: _tl ->
+              if phys_equal sexp dot_dot_dot && phys_equal hd dot_dot_dot
+              then accum
+              else sexp :: accum
+          ) |! List.rev
+        in
+        (* replace "(...)" with just "..." *)
+        if sexps = [ dot_dot_dot ] then dot_dot_dot
+        else Sexp.List sexps
   ;;
 
   (* given an sexp, an "erroneous" sub_sexp, and a maximum distance, returns an sexp of
@@ -254,12 +254,15 @@ module Summarize = struct
 
   (* summarizes sexp to have a maximum string length *)
   let summarize_sexp_length sexp sub_sexp length =
+    let full_length = my_sexp_size sexp in
     let is_too_big max_depth =
       let sexp = summarize_sexp sexp sub_sexp max_depth in
-      my_sexp_size sexp > length
+      length >= full_length
+      || my_sexp_size sexp > length
     in
     let rec binary_search lower_bound upper_bound =
-      if upper_bound = Some (lower_bound + 1) then lower_bound
+      if upper_bound = Some (lower_bound + 1)
+      then lower_bound
       else
         let depth_to_try =
           match upper_bound with

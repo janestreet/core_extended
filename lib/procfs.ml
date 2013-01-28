@@ -725,6 +725,151 @@ module Net = struct
   ;;
 
  end
+
+  (* This doesn't belong here at all but meh *)
+  module Tcp_state = struct
+    type t =
+        TCP_ESTABLISHED
+        | TCP_SYN_SENT
+        | TCP_SYN_RECV
+        | TCP_FIN_WAIT1
+        | TCP_FIN_WAIT2
+        | TCP_TIME_WAIT
+        | TCP_CLOSE
+        | TCP_CLOSE_WAIT
+        | TCP_LAST_ACK
+        | TCP_LISTEN
+        | TCP_CLOSING
+        | TCP_MAX_STATES
+
+    let to_int = function
+        | TCP_ESTABLISHED -> 1
+        | TCP_SYN_SENT -> 2
+        | TCP_SYN_RECV -> 3
+        | TCP_FIN_WAIT1 -> 4
+        | TCP_FIN_WAIT2 -> 5
+        | TCP_TIME_WAIT -> 6
+        | TCP_CLOSE -> 7
+        | TCP_CLOSE_WAIT -> 8
+        | TCP_LAST_ACK -> 9
+        | TCP_LISTEN -> 10
+        | TCP_CLOSING -> 11
+        | TCP_MAX_STATES -> 12
+
+    let of_int = function
+        | 1 -> TCP_ESTABLISHED
+        | 2 -> TCP_SYN_SENT
+        | 3 -> TCP_SYN_RECV
+        | 4 -> TCP_FIN_WAIT1
+        | 5 -> TCP_FIN_WAIT2
+        | 6 -> TCP_TIME_WAIT
+        | 7 -> TCP_CLOSE
+        | 8 -> TCP_CLOSE_WAIT
+        | 9 -> TCP_LAST_ACK
+        | 10 -> TCP_LISTEN
+        | 11 -> TCP_CLOSING
+        | 12 -> TCP_MAX_STATES
+        | _ -> failwith "Invalid tcp status flag"
+
+    let of_hex s = of_int (Int.of_string ("0x"^s))
+    (* to_hex? to_string? *)
+
+  end
+
+  module Tcp = struct
+    type t =
+      {
+        sl : int;
+        local_address : Core.Std.Unix.Inet_addr.t;
+        local_port : Extended_unix.Inet_port.t;
+        remote_address : Core.Std.Unix.Inet_addr.t;
+        remote_port : Extended_unix.Inet_port.t option;
+        state : Tcp_state.t;
+        tx_queue : int;
+        rx_queue : int;
+        tr:int;
+        tm_when : int;
+        retrnsmt: int;
+        uid : int;
+        timeout : int;
+        inode : Process.Inode.t; (* I think this is right *)
+        rest : string;
+      } with fields
+
+    let dehex ~int_of_string s = int_of_string ("0x"^s)
+    let dehex_int   = dehex ~int_of_string:Int.of_string
+    let dehex_int32 = dehex ~int_of_string:Int32.of_string
+
+    let of_line_exn line =
+      match String.tr ~target:':' ~replacement:' ' line
+         |! String.split ~on:' '
+         |! List.filter ~f:(fun x -> x <> "") with
+          | [sl; local_address; local_port; remote_address; remote_port; st;
+            tx_queue; rx_queue; tr;tm_when; retrnsmt; uid; timeout; inode;
+            plus; some; other; state; i; guess; lol] ->
+        {
+          sl = Int.of_string sl;
+          local_address= Extended_unix.Cidr.inet4_addr_of_int_exn
+            (Extended_unix.ntohl
+               (dehex_int32 local_address));
+          local_port= Extended_unix.Inet_port.of_int_exn (dehex_int local_port);
+          remote_address= Extended_unix.Cidr.inet4_addr_of_int_exn
+            (Extended_unix.ntohl
+               (dehex_int32 remote_address));
+
+          (* This can be 0 which is technically invalid but...*)
+          remote_port = Extended_unix.Inet_port.of_int (dehex_int remote_port);
+
+          state= Tcp_state.of_hex st;
+          tx_queue = dehex_int tx_queue;
+          rx_queue = dehex_int rx_queue;
+          tr = dehex_int tr ;
+          tm_when = dehex_int tm_when;
+          retrnsmt = dehex_int retrnsmt;
+          uid = Int.of_string uid;
+          timeout = Int.of_string timeout;
+          inode = Process.Inode.of_string inode;
+          rest = String.concat ~sep:" " [plus; some; other; state; i; guess; lol]
+        }
+      | _ ->
+        failwith "Unable to parse this line!\n%!"
+
+    let of_line line =
+      try
+        Some (of_line_exn line )
+      with _ ->
+        None
+
+    let load_exn () =
+      let lines = In_channel.read_lines "/proc/net/tcp" in
+      List.fold ~init:[] ~f:(fun res line ->
+          match of_line line with
+          | Some data ->
+            data :: res
+          | None ->
+            res
+      )
+      lines
+
+  TEST = of_line "  40: 458719AC:9342 CC1619AC:0016 01 00000000:00000000 02:000296F0 00000000 12021        0      64400541 2 ffff88022c777400 20 3 0 10 -1"
+  <> None
+
+  (* Port 0 on the other side *)
+  TEST = of_line "  31: 0100007F:177E 00000000:0000 0A 00000000:00000000 00:00000000 00000000 12021        0 778748 1 ffff8102edd1ad00 3000 0 0 2 -1"
+  <> None
+
+  TEST = of_line
+  "  40: 458719AC:9342 CC1619AC:0016 01 00000000:00000000 02:000296F0 00000000 12021        0      64400541 2 ffff88022c777400 20 3 0 10 -1"
+  = Some { sl = 40;
+  local_address = (Unix.Inet_addr.of_string "172.25.135.69");
+  local_port = (Extended_unix.Inet_port.of_int_exn 37698);
+  remote_address = (Unix.Inet_addr.of_string "172.25.22.204");
+  remote_port = Some (Extended_unix.Inet_port.of_int_exn 22);
+  state = Tcp_state.TCP_ESTABLISHED;
+  tx_queue = 0; rx_queue = 0; tr = 2; tm_when = 169712; retrnsmt = 0; uid = 12021;
+  timeout = 0; inode = Process.Inode.of_string "64400541"; rest = "2 ffff88022c777400 20 3 0 10 -1" }
+
+  end
 end
 
 module Mount = struct

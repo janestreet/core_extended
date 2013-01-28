@@ -812,7 +812,8 @@ let create ?autocomplete ?readme ~summary ~usage_arg ~init ~flags ~final main =
           let env = init () in
           let env = !flag_env_updates env in
           let argv = final env anons in
-          m argv
+          fun () ->
+            m argv
         )
         +> anon (Command.Deprecated.Spec.ad_hoc ~usage_arg)
       )
