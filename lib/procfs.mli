@@ -269,6 +269,8 @@ module Net : sig
       tx_compressed : bool;
       }
       with fields;;
+
+      val of_string : string -> t option
   end
 
   module Route : sig

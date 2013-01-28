@@ -8,7 +8,7 @@ module Pos_int = Int64
 
 let max_null_retries = 20
 
-type lnum = Known of int | Unknown with sexp_of;;
+type lnum = Known of int | Unknown;;
 
 (** The type of a linebuf. *)
 type t = { mutable file: In_channel.t;      (** The channel we maintain. *)
@@ -36,14 +36,14 @@ type t = { mutable file: In_channel.t;      (** The channel we maintain. *)
                                                 whenever we hit nulls *)
          }
 
-type error_type = Null_retry | Too_many_nulls | Exception of string * Exn.t with sexp_of;;
+type error_type = Null_retry | Too_many_nulls | Exception of string * Exn.t;;
 
 type result =
   | Success of lnum * string
   | Nothing_available
   | Error of error_type
   | Fatal_error of string * Exn.t
-with sexp_of;;
+;;
 
 (** Open a linebuffer from the passed filename. *)
 let create ?(pos = Pos_int.zero) ?(close_on_eof=false)

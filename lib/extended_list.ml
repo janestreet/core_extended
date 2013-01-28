@@ -122,9 +122,6 @@ let min_exn ?(cmp=Pervasives.compare) l =
   List.reduce_exn l
     ~f:(fun x y -> if cmp x y < 0 then x else y)
 
-let sort_and_group ~cmp l =
-  List.group (List.sort l ~cmp) ~break:(fun x y -> cmp x y <> 0)
-
 let equal =
   let rec loop ~equal xs ys =
     match xs with

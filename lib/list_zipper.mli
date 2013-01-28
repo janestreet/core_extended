@@ -1,5 +1,3 @@
-open Core.Std
-
 type 'a t = {
   l : 'a list;
   r : 'a list;

@@ -1,5 +1,3 @@
-open Core.Std
-
 (* stands for a comparison like would be returned by polymorphic compare *)
 type comparison = int
 

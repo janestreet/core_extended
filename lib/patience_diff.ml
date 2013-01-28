@@ -17,15 +17,12 @@ module Patience = struct
   end
 
   module Pile = struct
-    type 'a t = 'a Stack.t
     let create x = let t = Stack.create () in Stack.push t x; t
     let top t = Stack.top t |! Option.value_exn
     let put_on_top t x = Stack.push t x
   end
 
   module Piles = struct
-    type 'a t = 'a Pile.t Dequeue.t
-
     (* If [dummy] is of type [a], [empty ~dummy] returns an empty thing with type
        [a Piles.t].  It doesn't matter what [dummy] actually is, only its type matters. *)
     let empty ~dummy = Dequeue.create ~never_shrink:true ~dummy:(Pile.create dummy) ()
@@ -37,16 +34,6 @@ module Patience = struct
         | `From_right -> Dequeue.back_index t - i
       in
       try Some (Dequeue.get_exn t i) with _ -> None
-
-    exception Exit
-    let findi_from_left t ~f =
-      let found = ref None in
-      begin
-        try Dequeue.iteri t ~f:(fun i pile ->
-          if f pile then (found := Some (i,pile); raise Exit))
-        with Exit -> ()
-      end;
-      !found
 
     let new_rightmost_pile t pile = Dequeue.push_back t pile
     let length t = Dequeue.back_index t

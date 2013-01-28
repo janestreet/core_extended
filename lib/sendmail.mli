@@ -1,6 +1,4 @@
 
-open Core.Std
-
 val send :
   ?sender:string
   -> ?subject:string

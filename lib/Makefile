@@ -106,7 +106,7 @@ SOURCES = \
 
 LIB_PACK_NAME = core_extended
 INCDIRS = +camlp4 .
-OCAMLFLAGS = -for-pack Core_extended -dtypes
+OCAMLFLAGS = -for-pack Core_extended -annot
 CFLAGS = \
   -pipe -g -fPIC -O2 -fomit-frame-pointer \
   -Wall -pedantic -Wextra -Wunused -Wno-long-long

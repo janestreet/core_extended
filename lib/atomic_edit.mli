@@ -3,7 +3,6 @@
 
    See documentation for the function [atomic_edit]
    *)
-open Core.Std
 
 (** the return value of [atomic_edit]
 *)

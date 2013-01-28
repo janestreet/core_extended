@@ -1,5 +1,3 @@
-open Core.Std
-
 (** This is a port of Bram Cohen's patience diff algorithm, as found in the Bazaar 1.14.1
     source code, available at http://bazaar-vcs.org.
 

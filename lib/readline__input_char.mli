@@ -1,5 +1,4 @@
 (* This is an internal module: it shouldn't be used outside of core_extended *)
-open Core.Std
 
 type t = [
   | `Backspace

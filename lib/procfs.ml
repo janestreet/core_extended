@@ -516,14 +516,6 @@ module Loadavg = struct
     | [] -> failwith "no lines read from /proc/loadavg!"
 end
 
-let is_pid s =
-  try
-    let _ = Int.of_string s in
-    true
-  with
-    Failure (_) -> false
-;;
-
 let get_all_procs () =
   Sys.readdir "/proc"
   |! Array.filter_map ~f:(fun pid ->

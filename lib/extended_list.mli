@@ -1,7 +1,5 @@
 (** Extensions to [Core.Core_list].*)
 
-open Core.Std
-
 (** [of_option o] returns a list that is empty if [o] is None, otherwise it is a singleton
     list. Useful to get filter_map-like behavior in the context of something like a
     concat_map. *)

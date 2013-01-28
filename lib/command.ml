@@ -22,7 +22,7 @@ module Columns = struct
 
   type t = (string * string) list
 
-  let align pairs =
+  let align (pairs : t) =
     match pairs with
     | [] -> []
     | (x, _) :: xs ->
@@ -88,11 +88,6 @@ let partial_match (tbl:(string,'a) Hashtbl.t) (subcmd:string) :
     | []  -> `None
     | l   -> `Ambiguous l
 
-let partial_match_opt haystack needle =
-  match partial_match haystack needle with
-  | `Partial v | `Exact v -> Some v
-  | `Ambiguous _ | `None  -> None
-
 let assert_no_underscores s =
   if String.exists s ~f:(fun c -> c = '_')
   then failwithf "%s contains an underscore. Use a dash instead." s ();
@@ -101,8 +96,6 @@ module Flag : sig
   (** type of flags to a command with accumulator type ['a] *)
   type 'a t
   val name : _ t -> string
-
-  val help : _ t -> (string * string) list
 
   (** Template for flag-creation functions *)
   type ('a, 'b) create =
@@ -333,23 +326,6 @@ end = struct
       | `None -> None)
   ;;
 
-  let help { name = name; doc = doc; aliases = aliases; _}  =
-    if String.is_prefix doc ~prefix:" " then
-      (name, String.lstrip doc) ::
-        List.map aliases
-        ~f:(fun x -> x,sprintf "same as \"%s\"" name)
-    else
-      let (arg, doc) =
-        match String.lsplit2 doc ~on:' ' with
-        | None -> (doc, "")
-        | Some pair -> pair
-      in
-      (name ^ " " ^ arg, String.lstrip doc) ::
-        List.map aliases
-        ~f:(fun x -> x ^ " " ^ arg,sprintf "same as \"%s\"" name)
-  ;;
-
-
   (* The creation functions are listed below *)
   type ('a,'b) create =
     string
@@ -482,7 +458,7 @@ module Autocomplete_ = struct
         | `Disabled | `Enabled | `Export | `File | `Function | `Group
         | `Helptopic | `Hostname | `Job | `Keyword | `Running | `Service
         | `Setopt | `Shopt | `Signal | `Stopped | `User | `Variable
-      ] with sexp
+      ] with sexp_of
 
     let to_string action =
       sexp_of_t action |! Sexp.to_string |! String.lowercase
@@ -947,7 +923,7 @@ let run_internal versioned ~allow_unknown_flags:_ ~allow_underscores ~cmd
         post_parse_call ~is_ok:is_help;
         (fun () ->
           if is_help then
-            (printf "%s" (
+            (print_string (
               if is_help_rec then
                 help_recursive ~cmd ~with_flags:is_help_rec_flags
                   ~expand_dots:is_expand_dots t
@@ -978,7 +954,7 @@ let run_internal versioned ~allow_unknown_flags:_ ~allow_underscores ~cmd
           if is_help then begin
             post_parse_call ~is_ok:true;
             (fun () ->
-              printf "%s" (help_help ~cmd (Hashtbl.keys grp.subcommands));
+              print_string (help_help ~cmd (Hashtbl.keys grp.subcommands));
               exit 0)
           end
           else

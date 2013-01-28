@@ -226,7 +226,7 @@ let stabilize_gc () =
 let full_major_cost ~now () =
   let count = 10 in
   let s = now () in
-  for i = 1 to count do
+  for _i = 1 to count do
     Gc.full_major ();
   done;
   let e = now () in
@@ -235,7 +235,7 @@ let full_major_cost ~now () =
 let find_run_size ~now gettime_cost f =
   let rec loop samples =
     let s = now () in
-    for i = 1 to samples do
+    for _i = 1 to samples do
       f ();
     done;
     let e = now () in
@@ -260,7 +260,7 @@ let gc_allocated gc_stat =
 let run_once ~f ~sample_size ~gettime_cost ~full_major_cost ~allocated_cost ~now =
   let stat_s = Gc.quick_stat () in
   let run_s = now () in
-  for i = 1 to sample_size do
+  for _i = 1 to sample_size do
     f ();
   done;
   let run_e = now () in

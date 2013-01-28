@@ -116,15 +116,6 @@ module Make_verified_std (Spec : Verified_std_spec) = struct
   module type S = S with type repr = repr
   module type S0 = S0 with type repr = repr
 
-  module My_verified (Spec : Verified_spec) = struct
-    include Make_verified (Spec)
-
-    let verify t =
-      match Spec.check t with
-      | Ok () -> t
-      | Error msg -> failwith msg
-  end
-
   module Pos_spec = struct
     include Spec
 

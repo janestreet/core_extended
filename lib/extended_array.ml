@@ -37,7 +37,6 @@ module Access_control = struct
   type 'a t = 'a Immutable.t with sexp, bin_io
 
   let of_array = Fn.id
-  let to_array = Fn.id
   let of_array_copy = Array.copy
   let to_array_copy = Array.copy
 
@@ -52,7 +51,6 @@ module Access_control = struct
     val copy : ('a,_) any -> ('a,_) any
     val map : f:('a -> 'b) -> ('a,_) any -> ('b,_) any
     val mapi : f:(int -> 'a -> 'b) -> ('a,_) any -> ('b,_) any
-    val iter : f:('a -> unit) -> ('a,_) any -> unit
     val iteri : f:(int -> 'a -> unit) -> ('a,_) any -> unit
     val filter_opt : ('a option,_) any -> ('a,_) any
     val filter_map : ('a,_) any -> f:('a -> 'b option) -> ('b,_) any

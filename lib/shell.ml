@@ -10,11 +10,6 @@ module Process = struct
 
   exception Early_exit with sexp
 
-  (* Same thing as Signal.t but actually has a somewhat human readable output...
-  *)
-  type signal = Signal.t
-  let sexp_of_signal s = Sexp.Atom (Signal.to_string s)
-
   type status = [ `Timeout of Time.Span.t | Process.Status.t ] with sexp_of
 (*  type status = (unit, error) Result.t with sexp_of *)
 

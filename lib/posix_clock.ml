@@ -30,16 +30,14 @@ external gettime : t -> Int63.t = "caml_clock_gettime"
 
 module Int63_arithmetic : sig
   type t = Int63.t
-  val ( + ) : t -> t -> t
   val ( - ) : t -> t -> t
   val ( / ) : t -> t -> t
-  val ( * ) : t -> t -> t
 end = Int63
 
 let min_interval t =
   let canary_val = Int63.of_int 1_000_000 in
   let current_min = ref canary_val in
-  for i = 1 to 10_000 do
+  for _i = 1 to 10_000 do
     let t1 = gettime t in
     let t2 = gettime t in
     let open Int63.Replace_polymorphic_compare in
@@ -54,7 +52,7 @@ let mean_gettime_cost ~measure ~using =
   assert (getres Process_cpu = Int63.one);
   let count = 10_000_000 in
   let start = gettime using in
-  for i = 1 to count do
+  for _i = 1 to count do
     ignore (gettime measure);
   done;
   let stop = gettime using in

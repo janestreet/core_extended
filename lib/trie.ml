@@ -27,7 +27,7 @@ module type S = sig
     include Hashable with type t := t
   end
 
-  type t = Node of (bool * t) Part.Table.t 
+  type t = Node of (bool * t) Part.Table.t
 
   val create : unit -> t
 
@@ -42,10 +42,10 @@ module type S = sig
   val remove : t -> Key.t -> unit
 
   (* [render_as_regexp t f] renders the trie as an optimized regular expression *)
-  val render_as_regexp : 
-       t 
+  val render_as_regexp :
+       t
     -> capture_parts:bool
-    -> to_quoted_string:(Part.t -> string) 
+    -> to_quoted_string:(Part.t -> string)
     -> string
 end
 
@@ -63,7 +63,7 @@ module Make(T : Key) = struct
     include (Hashable.Make (Z) : Hashable.S with type t := t)
   end
 
-  type t = Node of (bool * t) Part.Table.t 
+  type t = Node of (bool * t) Part.Table.t
 
   let create () = Node (Part.Table.create ())
 
@@ -71,7 +71,7 @@ module Make(T : Key) = struct
     let t              = ref t in
     let set_terminator = ref (fun () -> ()) in
     let last_part      = ref None in
-    T.iter key ~f:(fun part -> 
+    T.iter key ~f:(fun part ->
       last_part := Some part;
       match Part.Table.find !t part with
       | Some (_,Node next) -> t := next
@@ -89,7 +89,7 @@ module Make(T : Key) = struct
     let t          = ref t in
     let terminated = ref false in
     with_return (fun return ->
-      T.iter key ~f:(fun part -> 
+      T.iter key ~f:(fun part ->
         match Part.Table.find !t part with
         | None -> return.return false
         | Some (is_terminator, Node next) ->
@@ -103,7 +103,7 @@ module Make(T : Key) = struct
     let delete           = ref (fun () -> ()) in
     let clear_terminator = ref (fun () -> ()) in
     with_return (fun return ->
-      T.iter key ~f:(fun part -> 
+      T.iter key ~f:(fun part ->
         match Part.Table.find !t part with
         | None -> return.return ()
         | Some (_,Node next) ->
@@ -116,7 +116,7 @@ module Make(T : Key) = struct
             clear_terminator := (fun () ->
               match Part.Table.find reified_t part with
               | None -> assert false
-              | Some (_,Node next) -> 
+              | Some (_,Node next) ->
                 Part.Table.replace !t ~key:part ~data:(false,Node next));
             t := next
           end);
@@ -128,12 +128,11 @@ module Make(T : Key) = struct
       | Alt of t list
       | Seq of t * t
       | Maybe of t
-    with sexp
 
     (* not tail recursive *)
     let rec of_t (Node t) =
-      Alt (List.map (Part.Table.to_alist t) 
-        ~f:(fun (c, (terminates, rest)) -> 
+      Alt (List.map (Part.Table.to_alist t)
+        ~f:(fun (c, (terminates, rest)) ->
           if terminates then
             Seq (Token c, Maybe (of_t rest))
           else
@@ -148,7 +147,7 @@ module Make(T : Key) = struct
         | Token c -> (to_quoted_string c)
         | Alt [] -> ""
         | Alt [t] -> render t
-        | Alt ts -> 
+        | Alt ts ->
             let sub_expressions = List.map ts ~f:render in
             if List.for_all sub_expressions ~f:(fun s -> String.length s = 1) then
               "[" ^ String.concat ~sep:"" sub_expressions ^ "]"
@@ -171,7 +170,6 @@ module String_trie = Make(struct
     include Char
   end
 
-  let equal = String.equal
   let iter = String.iter
 end)
 

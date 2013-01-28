@@ -9,6 +9,7 @@ type uids = {
 } with sexp,bin_io
 
 module Statfs = struct
+IFDEF LINUX_EXT THEN
   module Raw = struct
     type t =
       {
@@ -23,6 +24,8 @@ module Statfs = struct
       }
     ;;
   end
+ENDIF
+
   type f_type =
         ADFS_SUPER_MAGIC | AFFS_SUPER_MAGIC | BEFS_SUPER_MAGIC | BFS_MAGIC
       | CIFS_MAGIC_NUMBER | CODA_SUPER_MAGIC | COH_SUPER_MAGIC | CRAMFS_MAGIC
@@ -45,6 +48,8 @@ module Statfs = struct
       f_namelen : int;
     }
   ;;
+
+IFDEF LINUX_EXT THEN
   let of_rawstatfs raw =
     {
       f_type =
@@ -88,6 +93,7 @@ module Statfs = struct
       f_namelen = raw.Raw.f_namelen
     }
   ;;
+ENDIF
 end ;;
 
 IFDEF LINUX_EXT THEN

@@ -1,5 +1,3 @@
-open Core.Std
-
 (**
    Extensions to [Core.Core_String] .
 *)
@@ -94,7 +92,7 @@ val word_wrap:
     4) for each sublist, find the longest prefix and suffix common for all entries
     5) replace each sublist with:
     "common_prefix-<result_of_the_recursive_call>-common_suffix"
-    6) return { String.concat ~sep:"," <compressed_sublists> }
+    6) return [ String.concat ~sep:"," <compressed_sublists> ]
 
     In the implementation, we only tokenize the strings once, and then recursively work
     with lists of tokens.

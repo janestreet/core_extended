@@ -1,7 +1,6 @@
 open Core.Std
 
 let unwords xs = String.concat ~sep:" " xs
-let unlines xs = String.concat ~sep:"\n" xs
 let unparagraphs xs = String.concat ~sep:"\n\n" xs
 
 exception Failed_to_parse_command_line of string
@@ -252,7 +251,6 @@ module Path : sig
   val to_string : t -> string
   val to_string_dots : t -> string
   val pop_help : t -> t
-  val key : t Env.Key.t
 end = struct
   type t = string list
   let empty = []
@@ -260,7 +258,6 @@ end = struct
   let add t ~subcommand = subcommand :: t
   let commands t = List.rev t
   let to_string t = unwords (commands t)
-  let key = Env.Key.create ()
   let pop_help = function
     | "help" :: t -> t
     | _ -> assert false
@@ -425,11 +422,6 @@ module Anon = struct
     type 'a t = {
       p : 'a Parser.t;
       grammar : Grammar.t;
-    }
-
-    let zero = {
-      p = return ();
-      grammar = Grammar.zero;
     }
 
     let t2 t1 t2 = {
@@ -681,7 +673,6 @@ module Base = struct
       let maybe = maybe
       let maybe_with_default = maybe_with_default
       let sequence = sequence
-      let zero = zero
       let t2 = t2
       let t3 = t3
       let t4 = t4
@@ -998,7 +989,7 @@ let get_args () = Array.to_list Sys.argv |! args_of_list
         if String.is_prefix name ~prefix:part then print_endline name);
       exit 0
 
-let rec run ?version ?build_info ?argv t =
+let run ?version ?build_info ?argv t =
   let t = Version_info.add t ?version ?build_info in
   let t = match t with
   | Base _ -> t

@@ -1,5 +1,4 @@
-open Core.Std
-  (* This is an internal module; it shouldn't be used by anything not in core_extended *)
+(* This is an internal module; it shouldn't be used by anything not in core_extended *)
 (* some of the core functions of the "Shell" go in here because they are
    needed by other modules which are in turn required by the full shell module *)
 

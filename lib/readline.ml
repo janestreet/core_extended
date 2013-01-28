@@ -59,6 +59,7 @@ let with_readline f =
                 T.tcsetattr attr_in ~mode:T.TCSADRAIN Unix.stdin;
              )
 
+(*
 let interactive_readline ~prompt =
   print_string (prompt);
   let res =
@@ -70,6 +71,7 @@ let interactive_readline ~prompt =
   in
   Option.iter res ~f:print_endline;
   res
+*)
 
 let mainloop ?text ~map_out ~completion ~prompt ~hist =
   let module IL = Readline__input_loop in
@@ -144,8 +146,6 @@ module History = struct
   let default = create 50
 end
 
-
-let empty_completer ~left:_ ~right:_ = []
 
 let input_line
     ?(history = History.default)

@@ -5,13 +5,13 @@ module Filesize = struct
 
   module Infix64 = (Int64 :
     sig type t = Int64.t
-        val (+) : t -> t -> t
-        val (-) : t -> t -> t
         val ( * ) : t -> t -> t
         val (/) : t -> t -> t
     end)
 
   open Infix64
+
+  let _ = (+), (-)  (* Avoid unused value warnings *)
 
 
   let byte_dimension_suffix = ['b';'k';'m';'g';'t';'p';'z']

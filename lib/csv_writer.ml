@@ -120,9 +120,6 @@ let rec line_spec_loop ~quote ~sep esc_acc size = function
             ((true,h)::esc_acc) (size + qlen + 3) t
       end
 
-let line_spec ~quote ~sep line =
-  line_spec_loop ~quote ~sep [] 0 line
-
 let field_blit ~quote ~dst ~pos = function
   | true,h ->
       dst.[pos] <- quote;

@@ -86,7 +86,7 @@ module Column = struct
   type constraints = {
     total_width : int;
     min_widths : (string * int) list;
-  } with sexp
+  } with sexp_of
   exception Impossible_table_constraints of constraints with sexp
 
   let create_attr ?(align=Align.left) ?min_width ?(max_width=90)

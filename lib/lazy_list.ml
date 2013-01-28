@@ -115,7 +115,7 @@ let to_rev_list t = fold_left t ~init:[] ~f:(fun xs x -> x :: xs)
 
 let to_list t = List.rev (to_rev_list t)
 
-let rec fold_right ~f t ~init =
+let fold_right ~f t ~init =
   List.fold (to_rev_list t) ~init ~f:(fun a b -> f b a)
 ;;
 

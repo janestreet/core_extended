@@ -13,7 +13,7 @@ end
 module Memoized = struct
   type 'a t = ('a,exn) Result.t
 
-  let return = function
+  let return : 'a t -> 'a = function
     | Result.Ok x -> x
     | Result.Error e -> raise e
 
@@ -195,16 +195,6 @@ module Strategy = struct
       lru.size <- 0;
       Hashtbl.clear lru.table;
       Doubly_linked.clear lru.list
-
-    let size lru = lru.size
-
-    let change_size lru newsize =
-      lru.maxsize <- newsize;
-      kill_extra lru
-
-    let in_cache lru key =
-      Hashtbl.mem lru.table key
-
   end
 
   module Keep_all = struct

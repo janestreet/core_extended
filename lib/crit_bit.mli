@@ -1,5 +1,3 @@
-open Core.Std
-
 type 'data t
 
 val empty   : 'data t

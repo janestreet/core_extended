@@ -48,7 +48,6 @@ type ('a, 'b) t = {
   anons : Anons_grammar.t;
 }
 
-let id x = x
 let cmp f g x = f (g x)
 
 let (++) t1 t2 = {

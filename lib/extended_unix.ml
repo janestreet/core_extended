@@ -16,7 +16,6 @@ external raw_fork_exec :
 
 module Env = struct
   open String.Map
-  type t = string String.Map.t
 
   let empty = empty
 

@@ -109,7 +109,7 @@ let default_width = 80
 let to_string ?(width=default_width) doc = format width 0 [0,Flat,agrp(doc)] sdoc_to_string
 let to_file ?(width=default_width) oc doc = format width 0 [0,Flat,agrp(doc)] (sdoc_to_file oc)
 
-let rec list ~sep ~f xs =
+let list ~sep ~f xs =
     let rec loop acc = function
         | []    -> acc
         | [x]   -> acc $ f x

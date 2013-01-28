@@ -48,13 +48,13 @@ let fold = reduce
 
 let unfold ~init ~f ~stop =
   let state = ref init in
-  let rec loop () =
+  let next () =
     if !state = stop then None
     else (
       let e, i = f !state in
       state := i;
       Some e
-    ) in make loop
+    ) in make next
 
 let rec find t ~f = match t.next () with
   | Some e -> if f e then e else find t ~f

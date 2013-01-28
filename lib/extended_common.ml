@@ -18,7 +18,7 @@ let file_content_ne f1 f2 =
   | Unix.S_REG,Unix.S_REG
       when (Unix.stat f1).Unix.st_size = (Unix.stat f2).Unix.st_size
         ->
-      let rec input_nbchar ic =
+      let input_nbchar ic =
         let rec loop () =
           match input_char ic with
           | ' ' | '\t' | '\n' -> loop ()

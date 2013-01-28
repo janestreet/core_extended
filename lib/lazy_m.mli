@@ -51,6 +51,4 @@ val is_val : 'a t -> bool
     exception.
  *)
 
-val map : 'a t -> f:('a -> 'b) -> 'b t
-
 include Monad with type 'a t := 'a t

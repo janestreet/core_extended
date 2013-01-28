@@ -1,5 +1,3 @@
-open Core.Std
-
 (** Extensions to [Core.Core_array]. *)
 open Core.Std
 
@@ -36,7 +34,6 @@ module Access_control : sig
   val create : int -> 'a -> ('a,_) any
   val init : int -> f:(int -> 'a) -> ('a,_) any
   val of_array : 'a array -> 'a Read_write.t
-  val to_array : 'a Read_write.t -> 'a array
   val of_array_copy : 'a array -> ('a,_) any
   val to_array_copy : ('a,_) any -> 'a array
   val get : ('a,_) any -> int -> 'a
@@ -46,7 +43,6 @@ module Access_control : sig
   val copy : ('a,_) any -> ('a,_) any
   val map : f:('a -> 'b) -> ('a,_) any -> ('b,_) any
   val mapi : f:(int -> 'a -> 'b) -> ('a,_) any -> ('b,_) any
-  val iter : f:('a -> unit) -> ('a,_) any -> unit
   val iteri : f:(int -> 'a -> unit) -> ('a,_) any -> unit
   val filter_opt : ('a option,_) any -> ('a,_) any
   val filter_map : ('a,_) any -> f:('a -> 'b option) -> ('b,_) any

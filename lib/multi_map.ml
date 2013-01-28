@@ -2,7 +2,6 @@ open Core.Std
 
 include Fold_map.Make2_sexpable
 (struct
-   type 'a data = 'a
    type 'a t = 'a list with sexp
    let init = []
    let f list x = x :: list

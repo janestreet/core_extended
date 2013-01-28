@@ -158,7 +158,6 @@ module type S2 = sig
 end
 
 module Make2 (Fold : Foldable2) = struct
-  type 'a in_value = 'a
   type 'a out_value = 'a Fold.t
   type ('a,'b) t = ('a,'b Fold.t) Map.Poly.t
 
@@ -176,7 +175,6 @@ module type S2_sexpable = sig
 end
 
 module Make2_sexpable (Fold : Foldable2_sexpable) = struct
-  type 'a in_value = 'a
   type 'a out_value = 'a Fold.t               (* with sexp *)
   type ('a,'b) t = ('a,'b Fold.t) Map.Poly.t with sexp
 
@@ -188,7 +186,6 @@ end
 module Cons =
   Make2_sexpable
     (struct
-       type 'a data = 'a
        type 'a t = 'a list with sexp
        let init = []
        let f list x = x :: list

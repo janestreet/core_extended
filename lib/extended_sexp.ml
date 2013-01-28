@@ -143,7 +143,7 @@ struct
               List.iter ~f:(loop (indent + 1)) lst;
               print_string ~tag:"" ~indent ")"
           | Record record_fields ->
-              let rec print_record_field = function
+              let print_record_field = function
                 | New_in_first sexp -> print_sexp ~tag:"+" ~indent sexp
                 | Not_in_first sexp -> print_sexp ~tag:"-" ~indent sexp
                 | Bad_match (key, diff) ->
@@ -241,14 +241,10 @@ module Summarize = struct
         in
         neighbors annotated_sexp (new_path path) depth
 
-  (* Could be replaced by a faster estimate of the size *)
-  let sexp_size sexp =
-    let sexp_library_is_buggy = true in
-    if sexp_library_is_buggy
-    then String.length (Sexp.to_string sexp)
-    else snd (Sexp.size sexp)
-  ;;
+  (* Replaced below by a faster estimate of the size *)
+  let _sexp_size sexp = String.length (Sexp.to_string sexp);;
 
+  (* FIXME: does not take into account escaping *)
   let rec my_sexp_size = function
     | Sexp.List l ->
         List.fold l ~init:2
@@ -419,7 +415,7 @@ module Make_sexp_maybe2 (Random_state:sig val state : Random.State.t end) = stru
         ~data:sexps;
       Sexp.Atom replacement_sexp
 
-  let rec final_pass sexp ~use_sexp_maybe =
+  let final_pass sexp ~use_sexp_maybe =
     let rec loop sexp =
       match sexp with
       | Sexp.List l -> [Sexp.List (List.concat_map l ~f:loop)]
@@ -438,7 +434,7 @@ module Make_sexp_maybe2 (Random_state:sig val state : Random.State.t end) = stru
 end
 
 module Records_table = struct
-  type 'a t = 'a list with sexp
+  type 'a t = 'a list
 
   exception Invalid_record_sexp of Sexp.t with sexp
 

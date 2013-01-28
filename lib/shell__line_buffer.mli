@@ -1,5 +1,4 @@
 (** String buffers that automatically get flushed at every line return. *)
-open Core.Std
 
 type t
 

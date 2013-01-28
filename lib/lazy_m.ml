@@ -29,8 +29,6 @@ let force t =
       end
   | Evaluating -> raise Undefined
 
-let map m ~f = of_fun (fun () -> f (force m))
-
 let is_val t =
   match !t with
   | Evaluated_to_val _ -> true
@@ -42,7 +40,6 @@ include (Monad.Make(struct
   type 'a t = 'a lazy_m
   let return x = of_val x
   let bind m f = of_fun (fun () -> force (f (force m)))
-  let failwith str = Pervasives.failwith str
 end):Monad.S with type 'a t := 'a t)
 
 

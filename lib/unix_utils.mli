@@ -1,7 +1,6 @@
 (** Interface to Unix utility functions *)
 
 open Core.Std
-open Unix
 
 (** {2 Handling RAM limits} *)
 

@@ -80,11 +80,14 @@ let collate s1 s2 =
 
 TEST_MODULE "collate" = struct
   let (<!) s s' = collate s s' < 0
-  and (>!) s s' = collate s s' > 0
 
-  (* let basic_tests = (fun (s,s') ->
+(*
+  let (>!) s s' = collate s s' > 0
+
+  let basic_tests = (fun (s,s') ->
     "invertible" @? ((s' <! s) = (s >! s'));
-    "total" @? (definitive_clause [s<!s'; s=s'; s>!s'])) *)
+    "total" @? (definitive_clause [s<!s'; s=s'; s>!s']))
+*)
 
   (* repeat 50 basic_tests (pg sg sg);
   repeat 2 basic_tests (dup sg);
@@ -103,9 +106,6 @@ TEST_MODULE "collate" = struct
   TEST = "a010b" <! "a20b"
 
 end
-
-let concat_map ?sep ~f l =
-  String.concat ?sep (List.map ~f l)
 
 (**
    Inverse operation of [String.escaped]

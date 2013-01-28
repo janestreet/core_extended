@@ -15,7 +15,8 @@ let run_in_fork ~f ~sexp_of v =
           Ok (f v)
         with e -> Error (Exn.sexp_of_t e)
       in
-      Sexp.output oc (sexp_of_forked_computation sexp_of res);
+      Sexp.output oc (sexp_of_forked_computation sexp_of
+        (res : 'a forked_computation));
       exit 0
   | `In_the_parent pid ->
       Unix.close pipe_write;
