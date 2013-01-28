@@ -28,7 +28,7 @@ let fd_dir =
     | Some s -> s)
 
 let rlimit_nofile () =
-  match (Unix.RLimit.get Unix.RLimit.num_file_descriptors).Unix.RLimit.cur with
+  match (Unix.RLimit.get `Num_file_descriptors).Unix.RLimit.cur with
   | Unix.RLimit.Infinity -> Int.max_value
   | Unix.RLimit.Limit v  ->
     Option.value (Int64.to_int v) ~default:Int.max_value
@@ -90,7 +90,7 @@ let critical = ref 0.9
 
 let max_fds () =
   let module R = Unix.RLimit in
-  match (R.get R.num_file_descriptors).R.cur with
+  match (R.get `Num_file_descriptors).R.cur with
   | R.Infinity -> Int.max_value
   | R.Limit n ->
     match Int.of_int64 n with
