@@ -19,17 +19,10 @@
 # define __USE_ISOC99
 #endif
 #include <math.h>
+#include <arpa/inet.h>
 
 #include "config.h"
 #include "ocaml_utils.h"
-
-#ifdef JSC_ARCH_SIXTYFOUR
-#  define caml_alloc_int63(n) Val_long(n)
-#  define Int63_val(v) Long_val(v)
-#else
-#  define caml_alloc_int63(n) caml_copy_int64(n)
-#  define Int63_val(v) Int64_val(v)
-#endif
 
 #define MAX_ERROR_LEN 4096
 
@@ -203,4 +196,12 @@ CAMLprim value quota_modify (value v_user_or_group, value v_id,
     unix_error(errno, "Unix.Quota: unable to set quota", v_path);
 
   CAMLreturn(Val_unit);
+}
+
+CAMLprim value extended_ml_htonl (value v_num) {
+  return caml_copy_int32(htonl(Int32_val(v_num)));
+}
+
+CAMLprim value extended_ml_ntohl (value v_num) {
+  return caml_copy_int32(ntohl(Int32_val(v_num)));
 }

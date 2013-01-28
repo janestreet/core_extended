@@ -232,6 +232,7 @@ module Process : sig
   type 'a reader
 
   val content : string reader
+  val content_and_stderr : (string * string) reader
   val discard : unit reader
 
   val lines   : ?eol:char -> unit -> string list reader

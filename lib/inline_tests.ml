@@ -88,6 +88,7 @@ let tests () = OUnit.TestList [
     Shell__core.ounit_tests ();
     Shell__line_buffer.ounit_tests ();
     Sntp.ounit_tests ();
+    Stats_reporting.ounit_tests ();
     Std.ounit_tests ();
     String_zipper.ounit_tests ();
     Syslog.ounit_tests ();

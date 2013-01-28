@@ -34,7 +34,7 @@ end
 
 let () =
   bench
-    ~fast:false
+    ~trials:100
     ~time_format:`Ns
     [ Test.create ~size:8 ~name:"bind"
         (fun () -> ignore (F.bind_cascade () : unit Or_error.t))

@@ -17,7 +17,7 @@ module Test : sig
   type t
   val create : ?name:string -> ?size:int -> (unit -> unit) -> t
   val name : t -> string option
-  val size : t -> int option
+  val size : t -> int
 end
 
 module Result : sig
@@ -36,7 +36,7 @@ module Result : sig
     val empty : t
   end
 
-  type t = string option * int option * Stat.t array
+  type t = string option * int * Stat.t array
 
   val mean : Stat.t array -> Stat.t
   val min  : Stat.t array -> Stat.t
@@ -56,7 +56,7 @@ end
    no_compactions (default false):  disables compactions during benchmarking, reverted
    when the function returns.  Takes precedence over gc_prefs.
 
-   fast (default false):  run fewer tests and thus get less accurate results in less time.
+   trials (default 100): runs this many trials for each sample
 
    clock (default wall):  controls time measurement method.  Wall includes waiting on I/O
    and when the process is suspended/descheduled; cpu only counts time spent on
@@ -67,7 +67,7 @@ type 'a with_benchmark_flags =
   ?verbosity:[ `High | `Mid | `Low ]
   -> ?gc_prefs:Gc.Control.t
   -> ?no_compactions:bool
-  -> ?fast:bool
+  -> ?trials:int
   -> ?clock:[`Wall | `Cpu ]
   -> 'a
 

@@ -111,7 +111,8 @@ module Process = struct
       (cmd.program :: cmd.arguments)
 
   type 'res acc =
-      { add           : string -> int -> [`Stop | `Continue];
+      { add_stdout    : string -> int -> [`Stop | `Continue];
+        add_stderr    : string -> int -> [`Stop | `Continue];
         flush         : unit -> 'res; }
 
   type 'res reader = unit -> 'res acc
@@ -125,14 +126,13 @@ module Process = struct
       ?input
       ?keep_open
       =
-    k (fun cmd stdoutf ->
+    k (fun cmd stdoutf stderrf ->
       if echo then
         Console.Ansi.printf [`Underscore] "Shell: %s\n%!" (to_string cmd);
       let stderrf =
         if verbose then
           (fun s len -> Console.Ansi.output [`Red] stderr s 0 len)
-        else
-          (fun _s _len -> ())
+        else stderrf
       and stdoutf =
         if verbose then
           (fun s len ->
@@ -152,12 +152,17 @@ module Process = struct
     k (fun cmd reader ->
       let acc = reader () in
       let stdoutf s len =
-        match acc.add s len with
+        match acc.add_stdout s len with
+        | `Continue -> ()
+        | `Stop -> raise Early_exit
+      in
+      let stderrf s len =
+        match acc.add_stderr s len with
         | `Continue -> ()
         | `Stop -> raise Early_exit
       in
      try
-        let r = f cmd stdoutf in
+        let r = f cmd stdoutf stderrf in
         let module Res = Process.Command_result in
         match r.Res.status with
         | `Exited i when List.mem expect i -> acc.flush ()
@@ -175,7 +180,7 @@ module Process = struct
 
   let test_k k ?(true_v = [0]) ?(false_v = [1]) = run_k' (fun f ->
     k (fun cmd ->
-      let r = f cmd (fun _ _ -> ()) in
+      let r = f cmd (fun _ _ -> ()) (fun _ _ -> ()) in
       let module Res = Process.Command_result in
       match r.Res.status with
       | `Exited i when List.mem true_v i -> true
@@ -189,16 +194,36 @@ module Process = struct
 
   let test ?true_v = test_k (fun f cmd -> f cmd) ?true_v
 
-  let discard () = { add   = (fun _ _ -> `Continue); flush = (fun () -> ()) }
+  let discard () = {
+    add_stdout = (fun _ _ -> `Continue);
+    add_stderr = (fun _ _ -> `Continue);
+    flush = (fun () -> ())
+  }
 
-  let callback ~add ~flush () =
-    { add = (fun s len -> add s len;`Continue); flush }
+  let callback ~add ~flush () = {
+    add_stdout = (fun s len -> add s len;`Continue);
+    add_stderr = (fun _ _ -> `Continue);
+    flush
+  }
 
   let content () =
     let buffer = Buffer.create 16 in
     {
-      add   = (fun s len -> Buffer.add_substring buffer s 0 len; `Continue);
+      add_stdout = (fun s len -> Buffer.add_substring buffer s 0 len; `Continue);
+      add_stderr = (fun _ _ -> `Continue);
       flush = (fun () -> Buffer.contents buffer);
+    }
+
+  let content_and_stderr () =
+    let stdout_buffer = Buffer.create 16 in
+    let buffer_stderr = Buffer.create 16 in
+    {
+      add_stdout = (fun s len -> Buffer.add_substring stdout_buffer s 0 len; `Continue);
+      add_stderr = (fun s len -> Buffer.add_substring buffer_stderr s 0 len; `Continue);
+      flush = (fun () ->
+        Buffer.contents stdout_buffer,
+        Buffer.contents buffer_stderr
+      );
     }
 
   let fold_lines (type ret) (type v)
@@ -217,10 +242,11 @@ module Process = struct
         acc := acc_v;
         continue := continue_v)
     in
-    { add =
+    { add_stdout =
         (fun s len ->
           Line_buffer.add_substring lb s ~pos:0 ~len;
           !continue);
+      add_stderr = (fun _ _ -> `Continue);
       flush = (fun () ->
         if !continue = `Continue then
           Line_buffer.flush lb;

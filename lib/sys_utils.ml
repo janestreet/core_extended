@@ -39,7 +39,7 @@ let page_contents ?pager ?(pager_options=[])?(tmp_name="sys_utils.page_contents"
     ignore (Unix.system cmd))
     ~finally:(fun () -> Shell.rm tmp_file)
 
-let pid_alive pid = Shell.test "kill" ["-0"; Int.to_string pid]
+let pid_alive pid = Sys.is_directory_exn ("/proc" ^/ Pid.to_string pid)
 
 let get_groups user =
   match Shell.run_lines "/usr/bin/groups" [user] with

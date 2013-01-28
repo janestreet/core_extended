@@ -901,8 +901,9 @@ module Net = struct
         rest : string;
       } with fields
 
-    let dehex s =
-      Int.of_string ("0x"^s)
+    let dehex ~int_of_string s = int_of_string ("0x"^s)
+    let dehex_int   = dehex ~int_of_string:Int.of_string
+    let dehex_int32 = dehex ~int_of_string:Int32.of_string
 
     let of_line_exn line =
       match String.tr ~target:':' ~replacement:' ' line
@@ -914,22 +915,22 @@ module Net = struct
         {
           sl = Int.of_string sl;
           local_address= Extended_unix.Cidr.inet4_addr_of_int_exn
-              (Extended_unix.ntohl
-                (dehex local_address));
-          local_port= Extended_unix.Inet_port.of_int_exn (dehex local_port);
+            (Extended_unix.ntohl
+               (dehex_int32 local_address));
+          local_port= Extended_unix.Inet_port.of_int_exn (dehex_int local_port);
           remote_address= Extended_unix.Cidr.inet4_addr_of_int_exn
             (Extended_unix.ntohl
-              (dehex remote_address));
+               (dehex_int32 remote_address));
 
           (* This can be 0 which is technically invalid but...*)
-          remote_port = Extended_unix.Inet_port.of_int (dehex remote_port);
+          remote_port = Extended_unix.Inet_port.of_int (dehex_int remote_port);
 
           state= Tcp_state.of_hex st;
-          tx_queue = dehex tx_queue;
-          rx_queue = dehex rx_queue;
-          tr = dehex tr ;
-          tm_when = dehex tm_when;
-          retrnsmt = dehex retrnsmt;
+          tx_queue = dehex_int tx_queue;
+          rx_queue = dehex_int rx_queue;
+          tr = dehex_int tr ;
+          tm_when = dehex_int tm_when;
+          retrnsmt = dehex_int retrnsmt;
           uid = Int.of_string uid;
           timeout = Int.of_string timeout;
           inode = Process.Inode.of_string inode;

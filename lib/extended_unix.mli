@@ -63,13 +63,11 @@ val setreuid : uid:int -> euid:int -> unit
 
 val gettid : unit -> int
 
-(** Network to host order long, like C. Note that this is just a quick Binary_packing
-pack/unpack of 32-bit unsigned ints, it raises for n > 4294967295 (0xFFFFFFFF) and n < 0.
-This may be hilariously slow, bench it if you expect speed. *)
-val ntohl : int -> int
+(** Network to host order long, like C. *)
+external ntohl : Int32.t -> Int32.t = "extended_ml_ntohl"
 
-(** Host to network order long, like C. Same caveats for ntohl above *)
-val htonl : int -> int
+(** Host to network order long, like C. *)
+external htonl : Int32.t -> Int32.t = "extended_ml_htonl"
 
 type statvfs = {
   bsize: int;                           (** file system block size *)
@@ -109,7 +107,6 @@ end
 
 external strptime : fmt:string -> string -> Unix.tm = "unix_strptime"
 
-
 (** A representation of CIDR netmasks and functions to match if a given address is inside
  the range or not. *)
 module Cidr : sig
@@ -131,14 +128,14 @@ module Cidr : sig
   val match_exn : t -> Unix.Inet_addr.t -> bool
 
   (* val inet_addr_to_int : Unix.Inet_addr.t -> int option *)
-  val inet_addr_to_int_exn : Unix.Inet_addr.t -> int
+  val inet_addr_to_int_exn : Unix.Inet_addr.t -> Int32.t
 
   val address : t -> Unix.Inet_addr.t
   val bits : t -> int
 
   (** Some things (like the kernel) report addresses and ports as hex or decimal integers.
   Parse those . *)
-  val inet4_addr_of_int_exn : int -> Unix.Inet_addr.t
+  val inet4_addr_of_int_exn : Int32.t -> Unix.Inet_addr.t
 end
 
 (** Simple int wrapper to be explicit about ports. *)

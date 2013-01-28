@@ -376,7 +376,7 @@ type ('a,'rest) renderer =
   -> 'rest
 
 let output ?(display=Display.short_box) ?(spacing=1) ?(limit_width_to=90)
-    ?(header_attr=[]) ?(bars=`Ascii) cols data ~oc =
+    ?(header_attr=[]) ?(bars=`Unicode) cols data ~oc =
   if cols = [] then
     ()
   else
@@ -388,7 +388,7 @@ let output ?(display=Display.short_box) ?(spacing=1) ?(limit_width_to=90)
 ;;
 
 let to_string_gen ?(display=Display.short_box) ?(spacing=1) ?(limit_width_to=90)
-    ?(header_attr=[]) ?(bars=`Ascii) cols data ~use_attr =
+    ?(header_attr=[]) ?(bars=`Unicode) cols data ~use_attr =
   if cols = [] then
     ""
   else
@@ -412,7 +412,7 @@ TEST =
   let col3 = Column.create "c" (fun (_, _, x) -> x) in
   let stringify display =
     Printf.sprintf "%s\n%!"
-      (to_string ~display [col1; col2; col3] [("a1", "b1", "c1"); ("a2", "b2", "c2")]) in
+      (to_string ~bars:`Ascii ~display [col1; col2; col3] [("a1", "b1", "c1"); ("a2", "b2", "c2")]) in
   let s_box = stringify Display.short_box in
   let s_blank = stringify Display.blank in
   s_box = "\

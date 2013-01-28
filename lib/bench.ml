@@ -11,12 +11,12 @@ end = Int63
 module Test = struct
   type t =
     { name : string option;
-      size : int option;
+      size : int;
       f    : unit -> unit;
     }
   ;;
 
-  let create ?name ?size f = { name; size; f }
+  let create ?name ?(size = 1) f = { name; size; f }
 
   let name t = t.name
   let size t = t.size
@@ -81,7 +81,7 @@ module Result = struct
 
   end
 
-  type t = string option * int option * Stat.t array
+  type t = string option * int * Stat.t array
 
   let mean arr =
     let sum = Array.fold arr ~f:Stat.(+) ~init:Stat.empty in
@@ -136,63 +136,55 @@ let time_string =
     | `S  -> Int63.to_string (n / billion)  ^ " s"
 ;;
 
-let make_name (name_opt, _size_opt, _results) =
+let make_name (name_opt, _size, _results) =
   match name_opt with
   | Some name -> name
   | None -> ""
 ;;
 
-let make_size (_name_opt, size_opt, _results) =
-  match size_opt with
-  | Some size -> Int.to_string size
-  | None -> ""
+let make_size (_name_opt, size, _results) =
+  Int.to_string size
 ;;
 
-let make_time ~time_format (_name_opt, _size_opt, results) =
+let make_time ~time_format (_name_opt, _size, results) =
   time_string ~time_format ((Result.mean results).Result.Stat.run_time)
 ;;
 
-let make_norm_time ~time_format (_name_opt, size_opt, results) =
-  match size_opt with
-  | Some size ->
-    if size > 0 then
-      let mean_time = (Result.mean results).Result.Stat.run_time in
-      let size = Int63.of_int size in
-      time_string ~time_format (Int63_arithmetic.(mean_time / size))
-    else
-      ""
-  | None -> ""
+let make_norm_time ~time_format (_name_opt, size, results) =
+  if size > 0 then
+    let mean_time = (Result.mean results).Result.Stat.run_time in
+    let size = Int63.of_int size in
+    time_string ~time_format (Int63_arithmetic.(mean_time / size))
+  else
+    ""
 ;;
 
-let make_minor_allocated (_name_opt, _size_opt, results) =
+let make_minor_allocated (_name_opt, _size, results) =
   Int.to_string (Result.mean results).Result.Stat.minor_allocated
 ;;
 
-let make_major_allocated (_name_opt, _size_opt, results) =
+let make_major_allocated (_name_opt, _size, results) =
   Int.to_string (Result.mean results).Result.Stat.major_allocated
 ;;
 
-let make_promoted (_name_opt, _size_opt, results) =
+let make_promoted (_name_opt, _size, results) =
   Int.to_string (Result.mean results).Result.Stat.promoted
 ;;
 
-let make_cycles (_name_opt, _size_opt, results) =
+let make_cycles (_name_opt, _size, results) =
   Core.Int_conversions.insert_underscores
     (Int.to_string (Result.mean results).Result.Stat.run_cycles)
 ;;
 
-let make_norm_cycles (_name_opt, size_opt, results) =
-  match size_opt with
-  | Some size ->
-    if size > 0 then
-      let mean_cycles = (Result.mean results).Result.Stat.run_cycles in
-      Core.Int_conversions.insert_underscores (Int.to_string (mean_cycles / size))
-    else
-      ""
-  | None -> ""
+let make_norm_cycles (_name_opt, size, results) =
+  if size > 0 then
+    let mean_cycles = (Result.mean results).Result.Stat.run_cycles in
+    Core.Int_conversions.insert_underscores (Int.to_string (mean_cycles / size))
+  else
+    ""
 ;;
 
-let make_warn (_name_opt, _size_opt, results) =
+let make_warn (_name_opt, _size, results) =
   let open Int63_arithmetic in
   let open Int63.Replace_polymorphic_compare in
   let twenty = Int63.of_int 20 in
@@ -205,17 +197,6 @@ let make_warn (_name_opt, _size_opt, results) =
   ^ maybe_string "c" (Result.compactions_occurred results)
   ^ maybe_string "a" (Result.minor_allocated_varied results)
   ^ maybe_string "A" (Result.major_allocated_varied results)
-;;
-
-let bars =
-  match Sys.getenv "BENCH_BARS_MODE" with
-  | None -> `Unicode
-  | Some "ascii" -> `Ascii
-  | Some "unicode" -> `Unicode
-  | Some _ ->
-    prerr_endline "invalid value of the environment variable BENCH_BARS_MODE.\n\
-                   must be one of 'ascii' or 'unicode'.";
-    exit 1
 ;;
 
 type column = [ `Name
@@ -275,7 +256,7 @@ let print ?(time_format=`Auto) ?(limit_width_to=72) ?(columns=default_columns) d
     col `Allocated           "Promoted"             make_promoted                right;
     col `Warnings            "Warnings"             make_warn                    right;
   ] in
-  Ascii_table.output ~oc:stdout ~limit_width_to ~bars columns data;
+  Ascii_table.output ~oc:stdout ~limit_width_to columns data;
   (* Print the meaning of warnings. *)
   if CMap.mem displayed `Warnings then begin
     (* Collect used warnings. *)
@@ -359,7 +340,7 @@ let run_once ~f ~sample_size ~gettime_cost ~full_major_cost ~now =
     f ();
   done;
   let run_et, run_ec = now () in
-  Gc.full_major ();
+  stabilize_gc ();
   let gc_et, _ = now () in
   let stat_e = Gc.quick_stat () in
   {Result.Stat.
@@ -433,7 +414,7 @@ let bench_basic =
   for i = 0 to run_count - 1 do
     runs.(i) <- run_once ~f:test.Test.f ~sample_size ~gettime_cost ~full_major_cost
       ~now;
-    print_mid ".%!";
+    print_mid "\r(%d / %d)%!" (i + 1) (run_count)
   done;
   print_mid "\n%!";
   (* keep f from being gc'd by calling f () again *)
@@ -446,7 +427,7 @@ type 'a with_benchmark_flags =
   ?verbosity:[ `High | `Mid | `Low ]
   -> ?gc_prefs:Gc.Control.t
   -> ?no_compactions:bool
-  -> ?fast:bool
+  -> ?trials:int
   -> ?clock:[`Wall | `Cpu]
   -> 'a
 
@@ -460,15 +441,14 @@ let default_run_count = 100
 
 let bench_raw
     ?(verbosity=`Low) ?gc_prefs ?(no_compactions=false)
-    ?(fast=false) ?(clock=`Wall) tests =
+    ?(trials=default_run_count) ?(clock=`Wall) tests =
   let bench_basic = Or_error.ok_exn bench_basic in
-  let run_count = if fast then 1 else default_run_count in
   List.map tests ~f:(fun test -> test.Test.name, test.Test.size,
-    bench_basic ~verbosity ~gc_prefs ~no_compactions ?clock ~run_count test)
+    bench_basic ~verbosity ~gc_prefs ~no_compactions ?clock ~run_count:trials test)
 ;;
 
 let bench
-    ?time_format ?limit_width_to ?columns ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests =
+    ?time_format ?limit_width_to ?columns ?verbosity ?gc_prefs ?no_compactions ?trials ?clock tests =
   print ?time_format ?limit_width_to ?columns
-    (bench_raw ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests)
+    (bench_raw ?verbosity ?gc_prefs ?no_compactions ?trials ?clock tests)
 ;;

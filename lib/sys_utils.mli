@@ -23,7 +23,7 @@ val page_contents :
   -> string
   -> unit
 
-val pid_alive : int -> bool
+val pid_alive : Pid.t -> bool
 
 val get_groups : string -> string list
 

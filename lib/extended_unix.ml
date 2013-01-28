@@ -108,30 +108,11 @@ external seteuid : int -> unit = "extended_ml_seteuid"
 external setreuid : uid:int -> euid:int -> unit = "extended_ml_setreuid"
 external gettid : unit -> int = "extended_ml_gettid"
 
-let ntohl some_int =
-  if some_int > 0xFFFFFFFF then
-    failwith "int too big"
-  else if some_int < 0 then
-    failwith "signed ints not supported"
-  else
-    (
-    let buf = String.create 4 in
-    Binary_packing.pack_unsigned_32_int_little_endian ~buf ~pos:0 some_int;
-    Binary_packing.unpack_unsigned_32_int_big_endian ~buf ~pos:0
-    )
+external htonl : Int32.t -> Int32.t = "extended_ml_htonl"
+external ntohl : Int32.t -> Int32.t = "extended_ml_ntohl"
 
-let htonl some_int =
-  if some_int > 0xFFFFFFFF then
-    failwith "int too big"
-  else if some_int < 0 then
-    failwith "signed ints not supported"
-  else
-    (
-  let buf = String.create 4 in
-  Binary_packing.pack_unsigned_32_int_big_endian ~buf ~pos:0 some_int;
-  Binary_packing.unpack_unsigned_32_int_little_endian ~buf ~pos:0
-    )
-
+TEST =
+  htonl (ntohl 0xdeadbeefl) = 0xdeadbeefl
 
 type statvfs = {
   bsize: int;                           (** file system block size *)
@@ -235,24 +216,19 @@ module Cidr = struct
     |! ip4_valid_range
     with
     | [a;b;c;d] ->
-        let address =
-              ( a lsl 24)
-          lor ( b lsl 16)
-          lor ( c lsl 8 )
-          lor  d
-        in
-        address
+      let lower_24 = Int32.of_int_exn ((b lsl 16) lor (c lsl 8) lor d)
+      and upper_8  = Int32.(shift_left (of_int_exn a) 24)
+      in Int32.bit_or upper_8 lower_24
     | _ -> failwith (stringified ^ " is not a valid IPv4 address.")
 
   let inet4_addr_of_int_exn l =
-    assert (l >= 0);
-    assert (l <= 4294967295); (* 0xffffffff *)
-
+    let lower_24 = Int32.(to_int_exn (bit_and l (of_int_exn 0xFF_FFFF))) in
+    let upper_8  = Int32.(to_int_exn (shift_right_logical l 24)) in
     Unix.Inet_addr.of_string (sprintf "%d.%d.%d.%d"
-    (l lsr 24 land 255)
-    (l lsr 16 land 255)
-    (l lsr 8 land 255)
-    (l land 255))
+      (upper_8         land 0xFF)
+      (lower_24 lsr 16 land 0xFF)
+      (lower_24 lsr  8 land 0xFF)
+      (lower_24        land 0xFF))
 
   let inet_addr_to_int_exn addr =
     let stringified = Unix.Inet_addr.to_string addr in
@@ -267,15 +243,10 @@ module Cidr = struct
   let cidr_to_block c =
     let baseip = inet_addr_to_int_exn c.address in
     let shift = 32 - c.bits in
-    let first_ip = (baseip lsr shift) lsl shift in
-    let end_mask = (1 lsl shift) -1 in
-    let last_ip  = first_ip lor end_mask in
-    (first_ip, last_ip)
+    Int32.(shift_left (shift_right_logical baseip shift) shift)
 
-  let match_exn t ip =
-    let range_begin, range_end = cidr_to_block t in
-    let ip_int = inet_addr_to_int_exn ip in
-    ip_int >= range_begin && ip_int <= range_end
+  let match_exn t address =
+    Int32.equal (cidr_to_block t) (cidr_to_block {t with address})
 
   let match_ t ip =
     try
@@ -307,27 +278,41 @@ TEST = Cidr.of_string "sandwich/16" =  None
 TEST = Cidr.of_string "172.52.43/16" =  None
 TEST = Cidr.of_string "172.52.493/16" =  None
 
-(* Can we convert ip addr to an int? *)
-TEST = Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string "0.0.0.1") = 1
-TEST = Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string "1.0.0.0") = 16777216
-TEST = Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string "255.255.255.255") = 4294967295
+TEST_MODULE = struct
 
-TEST = Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string "172.25.42.1") = 2887330305
-TEST = Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string "4.2.2.1") = 67240449
-TEST = Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string "8.8.8.8") = 134744072
-TEST = Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string "173.194.73.103") = 2915191143
-TEST = Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string "98.139.183.24") = 1653323544
+  (* Can we convert ip addr to an int? *)
+  let test_inet_addr_to_int str num =
+    let inet = Unix.Inet_addr.of_string str in
+    Cidr.inet_addr_to_int_exn inet = num
 
-(* And from an int to a string? *)
-TEST = Cidr.inet4_addr_of_int_exn 4294967295 = Unix.Inet_addr.of_string "255.255.255.255"
-TEST = Cidr.inet4_addr_of_int_exn 0 =          Unix.Inet_addr.of_string "0.0.0.0"
-TEST = Cidr.inet4_addr_of_int_exn 1653323544 = Unix.Inet_addr.of_string "98.139.183.24"
-TEST = Cidr.inet4_addr_of_int_exn 2915191143 = Unix.Inet_addr.of_string "173.194.73.103"
+  TEST = test_inet_addr_to_int "0.0.0.1"           1l
+  TEST = test_inet_addr_to_int "1.0.0.0"         0x1000000l
+  TEST = test_inet_addr_to_int "255.255.255.255" 0xffffffffl
+  TEST = test_inet_addr_to_int "172.25.42.1"     0xac192a01l
+  TEST = test_inet_addr_to_int "4.2.2.1"         0x4020201l
+  TEST = test_inet_addr_to_int "8.8.8.8"         0x8080808l
+  TEST = test_inet_addr_to_int "173.194.73.103"  0xadc24967l
+  TEST = test_inet_addr_to_int "98.139.183.24"   0x628bb718l
+
+  (* And from an int to a string? *)
+  let test_inet_addr_of_int num str =
+    let inet = Unix.Inet_addr.of_string str in
+    Cidr.inet4_addr_of_int_exn num = inet
+
+  TEST = test_inet_addr_of_int 0xffffffffl "255.255.255.255"
+  TEST = test_inet_addr_of_int 0l          "0.0.0.0"
+  TEST = test_inet_addr_of_int 0x628bb718l "98.139.183.24"
+  TEST = test_inet_addr_of_int 0xadc24967l "173.194.73.103"
 
 (* And round trip for kicks *)
-TEST = Cidr.inet4_addr_of_int_exn (Cidr.inet_addr_to_int_exn (Unix.Inet_addr.of_string
-"4.2.2.1"
-) ) = Unix.Inet_addr.of_string "4.2.2.1"
+  TEST_UNIT =
+    let inet  = Unix.Inet_addr.of_string "4.2.2.1" in
+    let inet' = Cidr.inet4_addr_of_int_exn (Cidr.inet_addr_to_int_exn inet) in
+    if inet <> inet' then
+      failwithf "round-tripping %s produced %s"
+        (Unix.Inet_addr.to_string inet)
+        (Unix.Inet_addr.to_string inet') ()
+end
 
 (* Basic match tests *)
 TEST = Cidr.match_strings "10.0.0.0/8" "9.255.255.255" = false
