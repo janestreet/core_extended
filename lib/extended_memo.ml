@@ -7,3 +7,10 @@ let general_rec g =
   f
 ;;
 
+let reentrant_unit f =
+  let lock = Nano_mutex.create () in
+  let memo = Memo.unit f in
+  fun () ->
+    Nano_mutex.lock_exn lock;
+    protect ~f:memo ~finally:(fun () -> Nano_mutex.unlock_exn lock)
+

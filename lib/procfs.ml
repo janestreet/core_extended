@@ -104,7 +104,7 @@ module Process = struct
         comm        : string; (** The filename of the executable *)
         state       : char;   (** One  character from the string "RSDZTW" *)
         ppid        : Pid.t option;    (** The PID of the parent. *)
-        pgrp        : Pid.t;    (** The process group ID of the process. *)
+        pgrp        : Pid.t option;    (** The process group ID of the process. *)
         session     : int;    (** The session ID of the process. *)
         tty_nr      : int;    (** The tty the process uses. *)
         tpgid       : int;    (** The process group ID of the process which currently owns
@@ -178,7 +178,10 @@ module Process = struct
           ppid        = (match d a.(1) with
                          | x when x < 1 -> None
                          | x            -> Some (Pid.of_int x));
-          pgrp        = Pid.of_int (d a.(2));
+          (*pgrp        = Pid.of_int (d a.(2)); *)
+          pgrp        =  (match (d a.(2)) with
+                          | x when x < 1 -> None
+                          | x            -> Some (Pid.of_int x));
           session     = d a.(3);
           tty_nr      = d a.(4);
           tpgid       = d a.(5);
@@ -495,6 +498,98 @@ module Meminfo = struct
     }
   ;;
 end ;;
+
+(** Parse /proc/stat because vmstat is dumb *)
+module Kstat = struct
+  type index_t = All | Number of int with sexp
+
+  type cpu_t =
+    {
+      user : bigint;
+      nice  : bigint;
+      sys: bigint;
+      idle: bigint;
+      iowait: bigint option;
+      irq: bigint option;
+      softirq: bigint option;
+      steal: bigint option;
+      guest: bigint option;
+    } with fields, sexp;;
+
+  type t =
+    index_t * cpu_t
+
+  let parse_line l =
+    match l with
+    | [user;nice;sys;idle;iowait;irq;softirq;steal;guest] ->
+      (* > 2.6.24 *)
+      {  user = Big_int.big_int_of_string user;
+         nice  = Big_int.big_int_of_string nice ;
+         sys  = Big_int.big_int_of_string sys;
+         idle  = Big_int.big_int_of_string idle;
+         iowait = Some (Big_int.big_int_of_string iowait);
+         irq = Some (Big_int.big_int_of_string irq);
+         softirq = Some (Big_int.big_int_of_string softirq);
+         steal = Some (Big_int.big_int_of_string steal);
+         guest = Some (Big_int.big_int_of_string guest)}
+    | [user;nice;sys;idle;iowait;irq;softirq;steal] ->
+      (* > 2.6.11 *)
+      {  user = Big_int.big_int_of_string user;
+         nice  = Big_int.big_int_of_string nice ;
+         sys  = Big_int.big_int_of_string sys;
+         idle  = Big_int.big_int_of_string idle;
+         iowait = Some (Big_int.big_int_of_string iowait);
+         irq = Some (Big_int.big_int_of_string irq);
+         softirq = Some (Big_int.big_int_of_string softirq);
+         steal = Some (Big_int.big_int_of_string steal);
+         guest = None}
+    | [user;nice;sys;idle;iowait;irq;softirq] ->
+      (* > 2.6.0  *)
+      {  user = Big_int.big_int_of_string user;
+         nice  = Big_int.big_int_of_string nice ;
+         sys  = Big_int.big_int_of_string sys;
+         idle  = Big_int.big_int_of_string idle;
+         iowait = Some (Big_int.big_int_of_string iowait);
+         irq = Some (Big_int.big_int_of_string irq);
+         softirq = Some (Big_int.big_int_of_string softirq);
+         steal = None;
+         guest = None}
+    | [user; nice; sys; idle] ->
+      (* < 2.5.41 ish *)
+      {  user = Big_int.big_int_of_string user;
+         nice  = Big_int.big_int_of_string nice ;
+         sys  = Big_int.big_int_of_string sys;
+         idle  = Big_int.big_int_of_string idle;
+         iowait = None;
+         irq = None;
+         softirq = None;
+         steal = None;
+         guest = None }
+
+    |_ -> failwith "No idea what this line is"
+
+
+  let load_exn () =
+    In_channel.read_lines "/proc/stat"
+    |! List.fold ~init:[] ~f:(fun accum line ->
+      match String.strip line
+            |! String.split ~on:' '
+            |! List.filter ~f:(fun s -> s <> "")
+      with
+      | "cpu" :: rest ->
+        (All, (parse_line rest)) :: accum
+      | cpuidx :: rest ->
+        if String.is_prefix ~prefix:"cpu" cpuidx then
+          let idx = String.slice cpuidx 3 (String.length cpuidx)  in
+          ((Number (Int.of_string idx)), (parse_line rest)) :: accum
+        else
+          accum
+      | _ -> accum (* ignore weird lines *)
+    )
+
+
+end
+
 
 module Loadavg = struct
   type t = {

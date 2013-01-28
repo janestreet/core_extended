@@ -73,6 +73,17 @@ module Range : sig
       | New of 'a array
       | Replace of 'a array * 'a array
       | Unified of 'a array
+  with sexp
+  (** [ranges_all_same ranges] returns true if all [ranges] are Same *)
+  val all_same: 'a t list -> bool
+
+  (** [old_only hunks] drops all New ranges and converts all Replace
+      ranges to Old ranges. *)
+  val old_only: 'a t list -> 'a t list
+
+  (** [new_only hunks] drops all Old ranges and converts all Replace
+    ranges to New ranges. *)
+  val new_only: 'a t list -> 'a t list
 end
 
 (** In diff terms, a hunk is a unit of consecutive ranges with some [Same]
@@ -125,6 +136,9 @@ val old_only : 'a Hunk.t list -> 'a Hunk.t list
 (** [new_only hunks] drops all Old ranges from hunks and converts all Replace
     ranges to New ranges. *)
 val new_only : 'a Hunk.t list -> 'a Hunk.t list
+
+(** [ranges hunks] concatenates all the ranges of all hunks together **)
+val ranges : 'a Hunk.t list -> 'a Range.t list
 
 
 type 'a segment =

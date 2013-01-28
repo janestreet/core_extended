@@ -45,7 +45,7 @@ module Process : sig
         comm        : string; (** The filename of the executable *)
         state       : char;   (** One  character from the string "RSDZTW" *)
         ppid        : Pid.t option;  (** The PID of the parent. *)
-        pgrp        : Pid.t;  (** The process group ID of the process. *)
+        pgrp        : Pid.t option ;  (** The process group ID of the process. *)
         session     : int;    (** The session ID of the process. *)
         tty_nr      : int;    (** The tty the process uses. *)
         tpgid       : int;    (** The process group ID of the process which currently owns
@@ -200,6 +200,28 @@ module Meminfo : sig
   with fields, sexp ;;
 end ;;
 
+module Kstat : sig
+  type index_t = All | Number of int with sexp
+
+  type cpu_t =
+    {
+      user    : bigint;
+      nice    : bigint;
+      sys     : bigint;
+      idle    : bigint;
+      iowait  : bigint option;
+      irq     : bigint option;
+      softirq : bigint option;
+      steal   : bigint option;
+      guest   : bigint option;
+    } with fields, sexp;;
+
+  type t =
+    index_t * cpu_t
+
+  val load_exn : unit -> t list
+
+end
 module Loadavg : sig
   (** [t] corresponds to the values in /proc/loadavg. *)
   type t = {

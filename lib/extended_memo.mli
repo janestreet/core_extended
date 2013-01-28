@@ -4,3 +4,4 @@
     recursively-defined functions *)
 val general_rec : (('a -> 'b) -> 'a -> 'b) -> ('a -> 'b)
 
+val reentrant_unit : (unit -> 'a) -> (unit -> 'a)

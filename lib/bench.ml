@@ -103,18 +103,6 @@ module Result = struct
 
   let sample_size arr = arr.(0).Stat.sample_size
 
-  let stdev arr =
-    if Array.length arr <= 1 then None else
-    let mean_run = (mean arr).Stat.run_time in
-    let diff_sq x y =
-      let d = (Int63.to_float x) -. (Int63.to_float y) in
-      d *. d
-    in
-    let squares     = Array.map arr ~f:(fun stat -> diff_sq mean_run stat.Stat.run_time) in
-    let squares_sum = Array.fold squares ~init:0. ~f:(+.) in
-    let init_sd = sqrt (squares_sum /. Float.of_int (Array.length arr)) in
-    Some (init_sd /. sqrt (Float.of_int (sample_size arr)))
-
   let compactions_occurred arr = (max arr).Stat.compactions > 0
 
   let minor_allocated_varied arr =
@@ -176,16 +164,6 @@ let make_norm ~time_format (_name_opt, size_opt, results) =
   | None -> ""
 ;;
 
-let make_stdev ~time_format (_name_opt, _size_opt, results) =
-  match Result.stdev results with
-  | None -> "N/A"
-  | Some stdev ->
-    if stdev <. 100. then
-      sprintf "%.3G ns" stdev
-    else
-      time_string ~time_format (Int63.of_float stdev)
-;;
-
 let make_minor_allocated (_name_opt, _size_opt, results) =
   Int.to_string (Result.mean results).Result.Stat.minor_allocated
 ;;
@@ -225,7 +203,6 @@ let print ?(time_format=`Auto) ?limit_width_to data =
   let time_col      = Col.create ~align:right "Run time" (make_time ~time_format) in
   let cycles_col    = Col.create ~align:right "Cycles" make_cycles in
   let norm_col      = Col.create ~align:right "Normalized" (make_norm ~time_format) in
-  let stdev_col     = Col.create ~align:right "Stdev" (make_stdev ~time_format) in
   let minor_allocated_col =
     Col.create ~align:right "Allocated (minor)" make_minor_allocated
   in
@@ -245,7 +222,7 @@ let print ?(time_format=`Auto) ?limit_width_to data =
         [time_col];
         [cycles_col];
         (if exists_size then [norm_col] else []);
-        [stdev_col; minor_allocated_col; major_allocated_col; promoted_col; warn_col]
+        [minor_allocated_col; major_allocated_col; promoted_col; warn_col]
       ]
     end
     data

@@ -42,8 +42,6 @@ module Result : sig
   val min  : Stat.t array -> Stat.t
   val max  : Stat.t array -> Stat.t
 
-  (** [stdev] returns stdev of run_times if array has length > 1 *)
-  val stdev : Stat.t array -> float option
   val compactions_occurred : Stat.t array -> bool
   val sample_size : Stat.t array -> int
 end

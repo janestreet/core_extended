@@ -329,11 +329,35 @@ let get_matching_blocks ~transform ~compare ~mine ~other =
 
 module Range = struct
   type 'a t =
-      | Same of ('a * 'a) array
-      | Old of 'a array
-      | New of 'a array
-      | Replace of 'a array * 'a array
-      | Unified of 'a array
+  | Same of ('a * 'a) array
+  | Old of 'a array
+  | New of 'a array
+  | Replace of 'a array * 'a array
+  | Unified of 'a array
+  with sexp
+  let all_same ranges =
+    List.for_all ranges ~f:(fun range ->
+      match range with
+      | Same _ -> true
+      | _ -> false
+    )
+
+  let old_only ranges =
+    let f = function
+      | Replace (l_range, _) -> [Old l_range]
+      | New _ -> []
+      | range -> [range]
+    in
+    List.concat_map ranges ~f
+
+  let new_only ranges =
+    let f = function
+      | Replace (_, r_range) -> [New r_range]
+      | Old _ -> []
+      | range -> [range]
+    in
+    List.concat_map ranges ~f
+
 end
 
 module Hunk = struct
@@ -355,11 +379,8 @@ module Hunk = struct
     ranges = List.rev ranges;
   }
 
-  let all_same hunk =
-    List.fold hunk.ranges ~init:true ~f:(fun flag range ->
-      match flag, range with
-      | true, Range.Same _ -> true
-      |  _ -> false)
+  let all_same hunk = Range.all_same hunk.ranges
+
 end
 
 let get_ranges_rev ~transform ~compare ~mine ~other =
@@ -551,7 +572,6 @@ let unified hunks =
   in
   concat_map_ranges hunks ~f
 
-
 let old_only hunks =
   let module R = Range in
   let f = function
@@ -569,6 +589,9 @@ let new_only hunks =
     | range -> [range]
   in
   concat_map_ranges hunks ~f
+
+let ranges hunks =
+  List.concat_map hunks ~f:(fun hunk -> hunk.Hunk.ranges)
 
 let ratio a b =
   (matches ~compare a b |! List.length |! ( * ) 2 |! float) /. (Array.length a + Array.length b |! float)

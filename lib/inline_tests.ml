@@ -95,7 +95,6 @@ let tests () = OUnit.TestList [
     Sys_utils.ounit_tests ();
     Tcp.ounit_tests ();
     Timed_function.ounit_tests ();
-    Timing_wheel.ounit_tests ();
     Trie.ounit_tests ();
     Unix_utils.ounit_tests ();
     Update_queue.ounit_tests ();
