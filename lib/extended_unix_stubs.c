@@ -12,12 +12,24 @@
 #include <string.h>
 #include <time.h>
 #include <sys/statvfs.h>
+#include <sys/quota.h>
+#include <sys/mount.h>
+
 #ifndef __USE_ISOC99
 # define __USE_ISOC99
 #endif
 #include <math.h>
 
+#include "config.h"
 #include "ocaml_utils.h"
+
+#ifdef JSC_ARCH_SIXTYFOUR
+#  define caml_alloc_int63(n) Val_long(n)
+#  define Int63_val(v) Long_val(v)
+#else
+#  define caml_alloc_int63(n) caml_copy_int64(n)
+#  define Int63_val(v) Int64_val(v)
+#endif
 
 #define MAX_ERROR_LEN 4096
 
@@ -85,4 +97,110 @@ CAMLprim value getloadavg_stub (value v_unit __unused)
   Store_field(v_ret, 1, caml_copy_double(ret >= 2 ? loadavg[1] : NAN));
   Store_field(v_ret, 0, caml_copy_double(ret >= 1 ? loadavg[0] : NAN));
   CAMLreturn(v_ret);
+}
+
+#if !(defined _LINUX_QUOTA_VERSION) /* BSD, Mac OS */
+
+#  define quota_control(device, cmd, id, parg)  \
+     quotactl((device), (cmd), (id), (parg))
+#  define QUOTA_BYTES_PER_SPACE_UNIT 1
+#  define QUOTA_SPACE_USED(quota) ((quota).dqb_curbytes)
+#  define QUOTA_MODIFY_COMMAND Q_SETQUOTA
+#  define QUOTA_SET_VALID_FIELDS(quota) ((void)quota)
+
+#elif _LINUX_QUOTA_VERSION < 2
+
+#  define quota_control(device, cmd, id, parg)  \
+     quotactl((cmd), (device), (id), (parg))
+#  define QUOTA_BYTES_PER_SPACE_UNIT BLOCK_SIZE
+#  define QUOTA_SPACE_USED(quota) ((quota).dqb_curblocks)
+#  define QUOTA_MODIFY_COMMAND Q_SETQLIM
+#  define QUOTA_SET_VALID_FIELDS(quota) ((void)quota)
+
+#else /* _LINUX_QUOTA_VERSION >= 2 */
+
+#  define quota_control(device, cmd, id, parg)  \
+     quotactl((cmd), (device), (id), (parg))
+#  define QUOTA_BYTES_PER_SPACE_UNIT BLOCK_SIZE
+#  define QUOTA_SPACE_USED(quota) ((quota).dqb_curspace)
+#  define QUOTA_MODIFY_COMMAND Q_SETQUOTA
+#  define QUOTA_SET_VALID_FIELDS(quota) \
+     do { (quota).dqb_valid = QIF_LIMITS | QIF_TIMES; } while (0)
+
+#endif
+
+int quota_command (value v_user_or_group, int command) {
+  if (v_user_or_group == caml_hash_variant("User"))
+    return QCMD(command, USRQUOTA);
+
+  if (v_user_or_group == caml_hash_variant("Group"))
+    return QCMD(command, GRPQUOTA);
+
+  caml_failwith("Unix.Quota: I only know about `User and `Group");
+}
+
+CAMLprim value quota_query (value v_user_or_group, value v_id, value v_path)
+{
+  int id, cmd;
+  struct dqblk quota;
+  int64_t bytes_used, bytes_soft, bytes_hard;
+  CAMLparam3(v_user_or_group, v_id, v_path);
+  CAMLlocal3(v_ret, v_bytes_limit, v_inodes_limit);
+
+  id  = Int_val(v_id);
+  cmd = quota_command(v_user_or_group, Q_GETQUOTA);
+
+  memset(&quota, 0, sizeof(quota));
+  if (quota_control(String_val(v_path), cmd, id, (caddr_t)&quota))
+    unix_error(errno, "Unix.Quota: unable to query quota", v_path);
+
+  bytes_used = QUOTA_BYTES_PER_SPACE_UNIT * (int64_t) QUOTA_SPACE_USED(quota);
+  bytes_soft = QUOTA_BYTES_PER_SPACE_UNIT * (int64_t) quota.dqb_bsoftlimit;
+  bytes_hard = QUOTA_BYTES_PER_SPACE_UNIT * (int64_t) quota.dqb_bhardlimit;
+
+  v_bytes_limit = caml_alloc_small(3, 0);
+  Store_field(v_bytes_limit, 0, caml_alloc_int63(bytes_soft));
+  Store_field(v_bytes_limit, 1, caml_alloc_int63(bytes_hard));
+  Store_field(v_bytes_limit, 2, caml_copy_double((double)quota.dqb_btime));
+
+  v_inodes_limit = caml_alloc_small(3, 0);
+  Store_field(v_inodes_limit, 0, caml_alloc_int63(quota.dqb_isoftlimit));
+  Store_field(v_inodes_limit, 1, caml_alloc_int63(quota.dqb_ihardlimit));
+  Store_field(v_inodes_limit, 2, caml_copy_double((double)quota.dqb_itime));
+
+  v_ret = caml_alloc_small(4, 0);
+  Store_field(v_ret, 0, v_bytes_limit);
+  Store_field(v_ret, 1, caml_alloc_int63(bytes_used));
+  Store_field(v_ret, 2, v_inodes_limit);
+  Store_field(v_ret, 3, caml_alloc_int63(quota.dqb_curinodes));
+
+  CAMLreturn(v_ret);
+}
+
+CAMLprim value quota_modify (value v_user_or_group, value v_id,
+                             value v_path, value v_bytes_limit, value v_inodes_limit)
+{
+  int id, cmd;
+  struct dqblk quota;
+  CAMLparam5(v_user_or_group, v_id, v_path, v_bytes_limit, v_inodes_limit);
+
+  id  = Int_val(v_id);
+  cmd = quota_command(v_user_or_group, QUOTA_MODIFY_COMMAND);
+
+  memset(&quota, 0, sizeof(quota));
+
+  quota.dqb_bsoftlimit = Int63_val(Field(v_bytes_limit, 0)) / QUOTA_BYTES_PER_SPACE_UNIT;
+  quota.dqb_bhardlimit = Int63_val(Field(v_bytes_limit, 1)) / QUOTA_BYTES_PER_SPACE_UNIT;
+  quota.dqb_btime      = (time_t) Double_val(Field(v_bytes_limit, 2));
+
+  quota.dqb_isoftlimit = Int63_val(Field(v_inodes_limit, 0));
+  quota.dqb_ihardlimit = Int63_val(Field(v_inodes_limit, 1));
+  quota.dqb_itime      = (time_t) Double_val(Field(v_inodes_limit, 2));
+
+  QUOTA_SET_VALID_FIELDS(quota);
+
+  if (quota_control(String_val(v_path), cmd, id, (caddr_t)&quota))
+    unix_error(errno, "Unix.Quota: unable to set quota", v_path);
+
+  CAMLreturn(Val_unit);
 }

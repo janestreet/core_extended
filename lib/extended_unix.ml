@@ -397,7 +397,9 @@ TEST = Inet_port.of_int 872342 = None
 module Mac_address = struct
   (* An efficient internal representation would be something like a 6 byte array,
      but let's use a hex string to get this off the ground. *)
-  type t = string with sexp
+  type t = string with sexp, bin_io
+  let ( = ) = String.( = )
+  let equal = ( = )
   let rex = Pcre.regexp "[^a-f0-9]"
   let of_string s =
     let addr = String.lowercase s |! Pcre.qreplace ~rex ~templ:"" in
@@ -432,3 +434,73 @@ TEST = Mac_address.to_string (Mac_address.of_string "00:1d:09:68:82:0f") = "00:1
 TEST = Mac_address.to_string (Mac_address.of_string "00-1d-09-68-82-0f") = "00:1d:09:68:82:0f"
 TEST = Mac_address.to_string (Mac_address.of_string "001d.0968.820f") = "00:1d:09:68:82:0f"
 TEST = Mac_address.to_string_cisco (Mac_address.of_string "00-1d-09-68-82-0f") = "001d.0968.820f"
+
+
+module Quota = struct
+
+  type bytes  = Int63.t with sexp
+  type inodes = Int63.t with sexp
+
+  let bytes  x = x
+  let inodes x = x
+
+  type 'units limit = {
+    soft  : 'units sexp_option;
+    hard  : 'units sexp_option;
+    grace : Time.t sexp_option;
+  } with sexp
+
+  type 'units usage = private 'units
+
+  (* None is encoded as zero *)
+  type 'units c_limit = {
+    c_soft  : 'units;
+    c_hard  : 'units;
+    c_grace : Time.t;
+  }
+
+  let zero_bytes  = bytes  Int63.zero
+  let zero_inodes = inodes Int63.zero
+
+  let ml_limit_of_c_limit ~zero { c_soft; c_hard; c_grace } =
+    { soft  = (if c_soft = zero then None else Some c_soft);
+      hard  = (if c_hard = zero then None else Some c_hard);
+      grace = (if c_grace = Time.epoch then None else Some c_grace); }
+
+  let c_limit_of_ml_limit ~zero { soft; hard; grace } =
+    { c_soft  = (match soft  with None -> zero | Some x -> x);
+      c_hard  = (match hard  with None -> zero | Some x -> x);
+      c_grace = (match grace with None -> Time.epoch | Some x -> x); }
+
+  external quota_query
+    : [ `User | `Group ]
+    -> id:int
+    -> path:string
+    -> ( bytes c_limit * bytes usage * inodes c_limit * inodes usage)
+    = "quota_query"
+
+  external quota_modify
+    : [ `User | `Group ]
+    -> id:int
+    -> path:string
+    -> bytes  c_limit
+    -> inodes c_limit
+    -> unit
+    = "quota_modify"
+
+  let query user_or_group ~id ~path =
+    try
+      let blimit, busage, ilimit, iusage = quota_query user_or_group ~id ~path in
+      Ok (ml_limit_of_c_limit ~zero:zero_bytes blimit, busage,
+          ml_limit_of_c_limit ~zero:zero_inodes ilimit, iusage)
+    with Unix.Unix_error _ as exn ->
+      Or_error.of_exn exn
+
+  let set user_or_group ~id ~path byte_limit inode_limit =
+    try
+      Ok (quota_modify user_or_group ~id ~path
+            (c_limit_of_ml_limit ~zero:zero_bytes byte_limit)
+            (c_limit_of_ml_limit ~zero:zero_inodes inode_limit))
+    with Unix.Unix_error _ as exn ->
+      Or_error.of_exn exn
+end

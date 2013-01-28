@@ -36,6 +36,8 @@ module Process : sig
         realtime_priority : Rlimit.t;
      }
     with fields, sexp ;;
+
+    val of_string : string -> t
   end ;;
   module Stat : sig
     type t =
@@ -95,6 +97,8 @@ module Process : sig
         policy      : bigint; (** Scheduling policy *)
       }
     with fields, sexp ;;
+
+    val of_string : string -> t
   end ;;
 
   module Statm : sig
@@ -109,6 +113,8 @@ module Process : sig
         dt       : bigint; (** dirty pages (unused) *)
       }
     with fields, sexp ;;
+
+    val of_string : string -> t
   end ;;
 
   module Status : sig
@@ -124,6 +130,8 @@ module Process : sig
         fsgid : int; (** FS group ID *)
       }
     with fields, sexp ;;
+
+    val of_string : string -> t
   end ;;
 
   module Fd : sig
@@ -367,3 +375,5 @@ val mounts_of_fstab : unit -> Mount.t list
 val supported_filesystems : unit -> string list
 
 val uptime : unit -> Time.Span.t
+
+val process_age : Process.t -> Time.Span.t option

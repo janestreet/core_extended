@@ -870,6 +870,7 @@ TEST_UNIT =
   Iterator.close iter4;
   assert ((!opens,!closes) = (10,9));
   assert (Iterator.get iter4 = None);
+  assert ((!opens,!closes) = (10,9));
   assert (Iterator.get iter6 = Some 4);
   assert (Iterator.get iter6 = None);
   assert ((!opens,!closes) = (10,10));

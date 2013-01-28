@@ -573,6 +573,16 @@ let jiffies_per_second_exn () =
 
 let jiffies_per_second () = Option.try_with jiffies_per_second_exn ;;
 
+let process_age p =
+  match jiffies_per_second () with
+  | Some jps ->
+    let start_time =
+      (Big_int.float_of_big_int p.Process.stat.Process.Stat.starttime) /. jps
+    in
+    Some (Time.Span.of_sec ((get_uptime ()) -. start_time))
+  | None -> None
+;;
+
 let meminfo_exn = Meminfo.load_exn
 let meminfo () = Option.try_with meminfo_exn
 

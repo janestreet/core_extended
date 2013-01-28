@@ -231,7 +231,7 @@ module Lsb_release = struct
   type t =
     {
       distributor_id : string; (* e.g. "Red Hat", "CentOS" *)
-      release        : float;  (* e.g. "5.7", "6.3" *)
+      release        : string; (* e.g. "5.7", "6.3" on CentOs, 'testing' on debian*)
       codename       : string; (* e.g. "Final", "Lucid", etc. *)
     }
   with sexp, fields
@@ -244,7 +244,7 @@ module Lsb_release = struct
     in
     {
       distributor_id = q "-i";
-      release        = q "-r" |! Float.of_string;
+      release        = q "-r";
       codename       = q "-c"
     }
 end

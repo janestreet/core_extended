@@ -95,4 +95,3 @@ val colorprintf: color:color                   -> ('a, out_channel, unit) format
  *
  * (\* ansi on standard out *\)
  * module S : T *)
-

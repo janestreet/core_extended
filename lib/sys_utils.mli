@@ -96,11 +96,13 @@ module Cpu_use : sig
 end
 
 (* The Linux Standard Base (LSB) standardizes a few OS properties. *)
+(* Phahn 2012-11-29 I changed this from a float to a string to handle debian. It should be
+a proper type but there were only 2 uses both in selket checks so I just bodged. *)
 module Lsb_release : sig
   type t =
     {
       distributor_id : string; (* e.g. "Red Hat", "CentOS" *)
-      release        : float;  (* e.g. "5.7", "6.3" *)
+      release        : string;  (* e.g. "5.7", "6.3" or 'testing' on debian *)
       codename       : string; (* e.g. "Final", "Lucid", etc. *)
     }
   with sexp, fields

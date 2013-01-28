@@ -158,7 +158,8 @@ end
 
 (* MAC-48 (Ethernet) adddresses *)
 module Mac_address : sig
-  type t with sexp
+  type t with sexp, bin_io
+  val equal : t -> t -> bool
   (* Supports standard "xx:xx:xx:xx:xx:xx", "xx-xx-xx-xx-xx-xx", and cisco
      "xxxx.xxxx.xxxx" representations. *)
   val of_string : string -> t
@@ -167,4 +168,36 @@ module Mac_address : sig
   val to_string : t -> string
   (* To cisco representation "xxxx.xxxx.xxxx" *)
   val to_string_cisco : t -> string
+end
+
+module Quota : sig
+
+  type bytes  = private Int63.t with sexp
+  type inodes = private Int63.t with sexp
+
+  val bytes  : Int63.t -> bytes
+  val inodes : Int63.t -> inodes
+
+  type 'units limit = {
+    soft  : 'units option;
+    hard  : 'units option;
+    grace : Time.t option;
+  } with sexp
+
+  type 'units usage = private 'units
+
+  val query
+    :  [ `User | `Group ]
+    -> id:int
+    -> path:string
+    -> ( bytes  limit * bytes usage
+       * inodes limit * inodes usage) Or_error.t
+
+  val set
+    : [ `User | `Group ]
+    -> id:int
+    -> path:string
+    -> bytes  limit
+    -> inodes limit
+    -> unit Or_error.t
 end

@@ -364,7 +364,13 @@ let bench_basic =
   print_high "%s ns\n%!" (Int63.to_string gettime_min_interval);
   (* find the number of samples of f needed before gettime cost is < 1% of the total *)
   print_high "determining number of runs per sample: %!";
-  let sample_size, run_time = find_run_size ~now gettime_min_interval test.Test.f in
+  let sample_size, run_time =
+    (* If we're going to have a single run it makes no sense to determine sample size *)
+    if run_count > 1 then
+      find_run_size ~now gettime_min_interval test.Test.f
+    else
+      1, Int63.of_int 0
+  in
   print_high "%i\n%!" sample_size;
   let runs = Array.create ~len:run_count Result.Stat.empty in
   print_high "stabilizing GC: %!";
@@ -383,7 +389,8 @@ let bench_basic =
   done;
   print_mid "\n%!";
   (* keep f from being gc'd by calling f () again *)
-  test.Test.f ();
+  if run_count > 1 then (* It makes no sense to run multiple times slow functions *)
+    test.Test.f ();
   Gc.set old_gc;
   runs
 

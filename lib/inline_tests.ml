@@ -72,6 +72,7 @@ let tests () = OUnit.TestList [
     Printc.ounit_tests ();
     Process.ounit_tests ();
     Procfs.ounit_tests ();
+    Prod_or_test.ounit_tests ();
     Random_selection.ounit_tests ();
     Readline.ounit_tests ();
     Readline__input_char.ounit_tests ();
