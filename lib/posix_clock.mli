@@ -32,5 +32,6 @@ module Time_stamp_counter : sig
 
   (* [rdtsc ()] returns the cpu cycle count *)
   val rdtsc : unit -> t
+  val rdtscp : unit -> t
   val diff : t -> t -> int
 end

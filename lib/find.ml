@@ -106,12 +106,16 @@ let rec next t =
             None
   in
   let is_new (fn,stats) =
-    let uid = (stats.Unix.st_dev, stats.Unix.st_ino) in
-    match Hashtbl.find t.already_seen uid with
-    | Some () -> None
-    | None ->
+    if stats.Unix.st_kind <> Unix.S_DIR then
+      Some (fn,stats)
+    else begin
+      let uid = (stats.Unix.st_dev, stats.Unix.st_ino) in
+      match Hashtbl.find t.already_seen uid with
+      | Some () -> None
+      | None ->
         Hashtbl.replace t.already_seen ~key:uid ~data:();
         Some (fn,stats)
+    end
   in
   let handle_dirs ((fn,stats) as info) =
     if Option.apply ~f:t.options.O.skip_dir info = Some true then

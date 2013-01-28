@@ -34,8 +34,7 @@ end
 
 let () =
   bench
-    ~trials:100
-    ~time_format:`Ns
+    ~trials:(`Num 100)
     [ Test.create ~size:8 ~name:"bind"
         (fun () -> ignore (F.bind_cascade () : unit Or_error.t))
     ; Test.create ~size:8 ~name:"match"

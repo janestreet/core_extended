@@ -89,4 +89,14 @@ module Time_stamp_counter = struct
                 is not implemented for this architecture."
   ENDIF ENDIF
 
+  IFDEF ARCH_x86_64 THEN
+    external rdtscp : unit -> int = "caml_rdtscp" "noalloc"
+  ELSE IFDEF ARCH_i386 THEN
+    external rdtscp : unit -> int = "caml_rdtscp" "noalloc"
+  ELSE
+    let rdtscp () =
+      failwith "Posix_clock.Time_stamp_counter.rdtscp \
+                is not implemented for this architecture."
+  ENDIF ENDIF
+
 end

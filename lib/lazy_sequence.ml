@@ -7,7 +7,7 @@ type 'a t =
 | Cons of 'a * (unit -> 'a t)
 | Protect of (unit -> unit) * 'a t
 
-let stop = Nil
+let empty = Nil
 let (==>) x tail = Cons (x, tail)
 let (==>>) lst tail =
   match lst with
@@ -52,7 +52,7 @@ let read_lines filename =
     protect ~finally:(fun () -> In_channel.close ic) (fun () ->
       let rec loop () =
         match In_channel.input_line ic with
-        | None -> stop
+        | None -> empty
         | Some line -> line ==> loop
       in
       loop ()
@@ -880,5 +880,9 @@ TEST_UNIT =
   assert ((!opens,!closes) = (10,10));
   assert (Iterator.get iter5 = None);
   assert ((!opens,!closes) = (10,10));
+
+  (* Some more functions to test *)
+  assert (length_if_at_most ~max:2 s = None);
+  assert ((!opens,!closes) = (11,11)); (* Length if at most should open and close *)
   ()
 

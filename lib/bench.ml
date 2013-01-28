@@ -2,10 +2,8 @@ open Core.Std
 
 module Int63_arithmetic : sig
   type t = Int63.t
-  val ( + ) : t -> t -> t
   val ( - ) : t -> t -> t
   val ( / ) : t -> t -> t
-  val ( * ) : t -> t -> t
 end = Int63
 
 module Test = struct
@@ -25,10 +23,7 @@ end
 module Result = struct
   module Stat = struct
     type t = {
-      run_time        : Int63.t;
       run_cycles      : int;
-      gc_time         : Int63.t;
-      sample_size     : int;
       compactions     : int;
       minor_allocated : int;
       major_allocated : int;
@@ -36,10 +31,7 @@ module Result = struct
     }
 
     let empty = {
-      run_time        = Int63.zero;
       run_cycles      = 0;
-      gc_time         = Int63.zero;
-      sample_size     = 0;
       compactions     = 0;
       minor_allocated = 0;
       major_allocated = 0;
@@ -47,10 +39,7 @@ module Result = struct
     }
 
     let (+) a b = {
-      run_time = Int63_arithmetic.(a.run_time + b.run_time);
       run_cycles  = a.run_cycles  + b.run_cycles;
-      gc_time  = Int63_arithmetic.(a.gc_time  + b.gc_time);
-      sample_size = a.sample_size + b.sample_size;
       compactions = a.compactions + b.compactions;
       minor_allocated = a.minor_allocated + b.minor_allocated;
       major_allocated = a.major_allocated + b.major_allocated;
@@ -58,10 +47,7 @@ module Result = struct
     }
 
     let min a b = {
-      run_time  = Int63.min a.run_time    b.run_time;
       run_cycles  = Int.min a.run_cycles  b.run_cycles;
-      gc_time   = Int63.min a.gc_time     b.gc_time;
-      sample_size = Int.min a.sample_size b.sample_size;
       compactions = Int.min a.compactions b.compactions;
       minor_allocated = Int.min a.minor_allocated b.minor_allocated;
       major_allocated = Int.min a.major_allocated b.major_allocated;
@@ -69,10 +55,7 @@ module Result = struct
     }
 
     let max a b = {
-      run_time  = Int63.max a.run_time    b.run_time;
       run_cycles  = Int.max a.run_cycles  b.run_cycles;
-      gc_time   = Int63.max a.gc_time     b.gc_time;
-      sample_size = Int.max a.sample_size b.sample_size;
       compactions = Int.max a.compactions b.compactions;
       minor_allocated = Int.max a.minor_allocated b.minor_allocated;
       major_allocated = Int.max a.major_allocated b.major_allocated;
@@ -86,12 +69,8 @@ module Result = struct
   let mean arr =
     let sum = Array.fold arr ~f:Stat.(+) ~init:Stat.empty in
     let n  = Array.length arr in
-    let nl = Int63.of_int n   in
     { Stat.
-      run_time = Int63_arithmetic.(sum.Stat.run_time / nl);
       run_cycles = sum.Stat.run_cycles / n;
-      gc_time  = Int63_arithmetic.(sum.Stat.gc_time / nl);
-      sample_size = sum.Stat.sample_size / n;
       compactions = sum.Stat.compactions / n;
       minor_allocated = sum.Stat.minor_allocated / n;
       major_allocated = sum.Stat.major_allocated / n;
@@ -100,8 +79,6 @@ module Result = struct
 
   let min arr = Array.fold arr ~f:Stat.min ~init:arr.(0)
   let max arr = Array.fold arr ~f:Stat.max ~init:arr.(0)
-
-  let sample_size arr = arr.(0).Stat.sample_size
 
   let compactions_occurred arr = (max arr).Stat.compactions > 0
 
@@ -113,29 +90,6 @@ end
 
 (* printing functions *)
 
-let thousand = Int63.of_int 1_000
-let million  = Int63.of_int 1_000_000
-let billion  = Int63.of_int 1_000_000_000
-let trillion = Int63.of_int64_exn 1_000_000_000_000L
-let time_string =
-  let open Int63_arithmetic in
-  let open Int63.Replace_polymorphic_compare in
-  fun ~time_format n ->
-    let time_format =
-      match time_format with
-      | `Auto when n < million  -> `Ns
-      | `Auto when n < billion  -> `Us
-      | `Auto when n < trillion -> `Ms
-      | `Auto                   -> `S
-      | (`Ns | `Us | `Ms | `S) as fmt -> fmt
-    in
-    match time_format with
-    | `Ns -> Int63.to_string n ^ " ns"
-    | `Us -> Int63.to_string (n / thousand) ^ " us"
-    | `Ms -> Int63.to_string (n / million)  ^ " ms"
-    | `S  -> Int63.to_string (n / billion)  ^ " s"
-;;
-
 let make_name (name_opt, _size, _results) =
   match name_opt with
   | Some name -> name
@@ -144,19 +98,6 @@ let make_name (name_opt, _size, _results) =
 
 let make_size (_name_opt, size, _results) =
   Int.to_string size
-;;
-
-let make_time ~time_format (_name_opt, _size, results) =
-  time_string ~time_format ((Result.mean results).Result.Stat.run_time)
-;;
-
-let make_norm_time ~time_format (_name_opt, size, results) =
-  if size > 0 then
-    let mean_time = (Result.mean results).Result.Stat.run_time in
-    let size = Int63.of_int size in
-    time_string ~time_format (Int63_arithmetic.(mean_time / size))
-  else
-    ""
 ;;
 
 let make_minor_allocated (_name_opt, _size, results) =
@@ -185,13 +126,11 @@ let make_norm_cycles (_name_opt, size, results) =
 ;;
 
 let make_warn (_name_opt, _size, results) =
-  let open Int63_arithmetic in
-  let open Int63.Replace_polymorphic_compare in
-  let twenty = Int63.of_int 20 in
+  let twenty = 20 in
   let maybe_string s predicate = if predicate then s else "" in
-  let mean_run = (Result.mean results).Result.Stat.run_time in
-  let min_run  = (Result.min  results).Result.Stat.run_time in
-  let max_run  = (Result.max  results).Result.Stat.run_time in
+  let mean_run = (Result.mean results).Result.Stat.run_cycles in
+  let min_run  = (Result.min  results).Result.Stat.run_cycles in
+  let max_run  = (Result.max  results).Result.Stat.run_cycles in
   maybe_string   "m" ((mean_run - min_run) > mean_run / twenty)
   ^ maybe_string "M" ((max_run - mean_run) > mean_run / twenty)
   ^ maybe_string "c" (Result.compactions_occurred results)
@@ -201,8 +140,6 @@ let make_warn (_name_opt, _size, results) =
 
 type column = [ `Name
               | `Input_size
-              | `Run_time
-              | `Normalized_run_time
               | `Cycles
               | `Normalized_cycles
               | `Allocated
@@ -231,7 +168,7 @@ module Warning_set = Set.Make (struct
       Char.compare a b
 end)
 
-let print ?(time_format=`Auto) ?(limit_width_to=72) ?(columns=default_columns) data =
+let print ?(limit_width_to=72) ?(columns=default_columns) data =
   let left, right = Ascii_table.Align.(left, right) in
   (* Map displayed columns to `If_not_empty or `Yes. *)
   let displayed =
@@ -247,8 +184,6 @@ let print ?(time_format=`Auto) ?(limit_width_to=72) ?(columns=default_columns) d
   let columns = [
     col `Name                "Name"                 make_name                    left ;
     col `Input_size          "Input size"           make_size                    right;
-    col `Run_time            "Run time"            (make_time ~time_format)      right;
-    col `Normalized_run_time "Normalized run time" (make_norm_time ~time_format) right;
     col `Cycles              "Cycles"               make_cycles                  right;
     col `Normalized_cycles   "Normalized cycles"    make_norm_cycles             right;
     col `Allocated           "Allocated (minor)"    make_minor_allocated         right;
@@ -296,27 +231,28 @@ let stabilize_gc () =
 
 let full_major_cost ~now () =
   let count = 10 in
-  let s,_ = now () in
+  let s = now () in
   for _i = 1 to count do
     Gc.full_major ();
   done;
-  let e,_ = now () in
+  let e = now () in
   Int63_arithmetic.((e - s) / Int63.of_int count)
 
-let find_run_size ~now gettime_cost f =
+let find_run_size ~now ~rdtscp ~mean_cycles f =
   let rec loop samples =
-    let s,_ = now () in
+    let s = now () in
+    let sc = rdtscp () in
     for _i = 1 to samples do
       f ();
     done;
-    let e,_ = now () in
-    (* we need enough samples so that the gettime_cost is < 1% of the cost of the run
-       and we also demand that the total run take at least .5 seconds *)
-    let open Int63_arithmetic in
-    let open Int63.Replace_polymorphic_compare in
-    if gettime_cost > (e - s) / Int63.of_int 100 || (e - s) < Int63.of_int 50_000_000
+    let ec = rdtscp () in
+    let e = now () in
+    (* we need enough samples so that the mean_cycles is < 1% of the cost of the run
+       and we also demand that the total run take at least .01 seconds *)
+    if mean_cycles * 100 > (Posix_clock.Time_stamp_counter.diff ec sc)
+      || Int63.Replace_polymorphic_compare.(Int63_arithmetic.(e - s) < Int63.of_int 1_000_000)
     then loop (Int.( * ) samples 2)
-    else (samples, e - s)
+    else samples
   in
   loop 1
 ;;
@@ -333,34 +269,40 @@ let gc_promoted gc_stat_s gc_stat_e =
   Int.of_float (gc_stat_e.Gc.Stat.promoted_words -. gc_stat_s.Gc.Stat.promoted_words)
 ;;
 
-let run_once ~f ~sample_size ~gettime_cost ~full_major_cost ~now =
-  let stat_s         = Gc.quick_stat () in
-  let run_st, run_sc = now () in
-  for _i = 1 to sample_size do
-    f ();
-  done;
-  let run_et, run_ec = now () in
-  stabilize_gc ();
-  let gc_et, _ = now () in
+let run_once ~f ~mean_cycles ~rdtscp =
+  let stat_s = Gc.quick_stat () in
+  f (); (* call f once to warm up the cache *)
+  let cycles_now = rdtscp () in
+  f ();
+  let cycles_after = rdtscp () in
   let stat_e = Gc.quick_stat () in
   {Result.Stat.
-    run_time = Int63_arithmetic.((run_et - run_st - gettime_cost) / Int63.of_int sample_size);
-    run_cycles   = (Posix_clock.Time_stamp_counter.diff run_ec run_sc) / sample_size;
-    gc_time  = Int63_arithmetic.((gc_et - run_et - full_major_cost) / Int63.of_int sample_size);
-    sample_size;
+    run_cycles = ((Posix_clock.Time_stamp_counter.diff cycles_after cycles_now) - mean_cycles);
     compactions     = stat_e.Gc.Stat.compactions - stat_s.Gc.Stat.compactions;
-    minor_allocated = gc_minor_allocated stat_s stat_e / sample_size;
-    major_allocated = gc_major_allocated stat_s stat_e / sample_size;
-    promoted        = gc_promoted stat_s stat_e / sample_size;
+    minor_allocated = gc_minor_allocated stat_s stat_e;
+    major_allocated = gc_major_allocated stat_s stat_e;
+    promoted        = gc_promoted stat_s stat_e;
   }
+
+let time_cycles ~rdtscp =
+  let rec loop n lst =
+    match n with
+    | 0 -> lst
+    | n ->
+      let start = rdtscp () in
+      let after = rdtscp () in
+      loop (n-1) ((Posix_clock.Time_stamp_counter.diff after start)::lst)
+  in
+  let times = loop 10000 [] in
+  (List.fold_left ~f:(+) ~init:0 times) / (List.length times)
 
 let bench_basic =
   let open Core.Std.Result.Monad_infix in
-  (Ok Posix_clock.Time_stamp_counter.rdtsc) >>= fun rdtsc ->
+  (Ok Posix_clock.Time_stamp_counter.rdtscp) >>= fun rdtscp ->
   Posix_clock.gettime           >>= fun gettime ->
   Posix_clock.mean_gettime_cost >>= fun mean_gettime_cost ->
   Posix_clock.min_interval      >>| fun min_interval ->
-  fun ~verbosity ~gc_prefs ~no_compactions ~clock ~run_count test ->
+  fun ~verbosity ~gc_prefs ~no_compactions ~clock ~trials test ->
   let print_high s = match verbosity with
     | `High -> printf s
     | `Low | `Mid -> ifprintf stdout s
@@ -369,6 +311,7 @@ let bench_basic =
     | `High | `Mid -> printf s
     | `Low -> ifprintf stdout s
   in
+  print_mid "\n===== running test: %s ======\n%!" (Option.value ~default:"(NO NAME)" test.Test.name);
   let old_gc = Gc.get () in
   Option.iter gc_prefs ~f:Gc.set;
   let measurement_clock =
@@ -376,44 +319,34 @@ let bench_basic =
     | `Wall -> Posix_clock.Monotonic
     | `Cpu  -> Posix_clock.Process_cpu
   in
-  let now () =
-    let time = gettime measurement_clock in
-    let tsc  = rdtsc () in
-    time, tsc
-  in
+  let now () = gettime measurement_clock in
+  let mean_cycles = time_cycles ~rdtscp in
+  print_high "cost of running rdtscp: %d cycles\n%!" mean_cycles;
   if no_compactions then Gc.set { (Gc.get ()) with Gc.Control.max_overhead = 1_000_000 };
   (* calculate how long it takes us to get a time measurement for the current thread *)
-  print_high "calculating cost of timing measurement: %!";
   let gettime_cost =
     mean_gettime_cost ~measure:measurement_clock ~using:Posix_clock.Monotonic
   in
-  print_high "%s ns\n%!" (Int63.to_string gettime_cost);
-  print_high "calculating minimal measurable interval: %!";
+  print_high "calculating cost of timing measurement: %s ns\n%!"
+    (Int63.to_string gettime_cost);
   let gettime_min_interval = min_interval measurement_clock in
-  print_high "%s ns\n%!" (Int63.to_string gettime_min_interval);
+  print_high "calculating minimal measurable interval: %s ns\n%!"
+    (Int63.to_string gettime_min_interval);
   (* find the number of samples of f needed before gettime cost is < 1% of the total *)
-  print_high "determining number of runs per sample: %!";
-  let sample_size, run_time =
-    (* If we're going to have a single run it makes no sense to determine sample size *)
-    if run_count > 1 then
-      find_run_size ~now gettime_min_interval test.Test.f
-    else
-      1, Int63.of_int 0
+  let run_count = match trials with
+    | `Auto -> find_run_size ~now ~mean_cycles ~rdtscp test.Test.f
+    | `Num n -> n
   in
-  print_high "%i\n%!" sample_size;
+  print_high "determining number of trials: %d\n%!" run_count;
   let runs = Array.create ~len:run_count Result.Stat.empty in
   print_high "stabilizing GC: %!";
   stabilize_gc ();
   print_high "done\n%!";
-  print_high "calculating the cost of a full major sweep: %!";
   let full_major_cost = full_major_cost ~now () in
-  print_high "%s ns\n%!" (Int63.to_string full_major_cost);
-  print_mid "running samples for %s (estimated time %s sec)\n%!"
-    (Option.value ~default:"(NO NAME)" test.Test.name)
-    (Int63.to_string (Int63_arithmetic.((run_time * Int63.of_int run_count) / billion)));
+  print_high "calculating the cost of a full major sweep: %s ns\n%!"
+    (Int63.to_string full_major_cost);
   for i = 0 to run_count - 1 do
-    runs.(i) <- run_once ~f:test.Test.f ~sample_size ~gettime_cost ~full_major_cost
-      ~now;
+    runs.(i) <- run_once ~f:test.Test.f ~mean_cycles ~rdtscp;
     print_mid "\r(%d / %d)%!" (i + 1) (run_count)
   done;
   print_mid "\n%!";
@@ -427,28 +360,25 @@ type 'a with_benchmark_flags =
   ?verbosity:[ `High | `Mid | `Low ]
   -> ?gc_prefs:Gc.Control.t
   -> ?no_compactions:bool
-  -> ?trials:int
+  -> ?trials:[ `Auto | `Num of int ]
   -> ?clock:[`Wall | `Cpu]
   -> 'a
 
 type 'a with_print_flags =
-  ?time_format:[`Ns | `Ms | `Us | `S | `Auto]
-  -> ?limit_width_to:int
+  ?limit_width_to:int
   -> ?columns:[ column | `If_not_empty of column ] list
   -> 'a
 
-let default_run_count = 100
-
 let bench_raw
     ?(verbosity=`Low) ?gc_prefs ?(no_compactions=false)
-    ?(trials=default_run_count) ?(clock=`Wall) tests =
+    ?(trials=`Auto) ?(clock=`Wall) tests =
   let bench_basic = Or_error.ok_exn bench_basic in
   List.map tests ~f:(fun test -> test.Test.name, test.Test.size,
-    bench_basic ~verbosity ~gc_prefs ~no_compactions ?clock ~run_count:trials test)
+    bench_basic ~verbosity ~gc_prefs ~no_compactions ?clock ~trials test)
 ;;
 
 let bench
-    ?time_format ?limit_width_to ?columns ?verbosity ?gc_prefs ?no_compactions ?trials ?clock tests =
-  print ?time_format ?limit_width_to ?columns
+    ?limit_width_to ?columns ?verbosity ?gc_prefs ?no_compactions ?trials ?clock tests =
+  print ?limit_width_to ?columns
     (bench_raw ?verbosity ?gc_prefs ?no_compactions ?trials ?clock tests)
 ;;

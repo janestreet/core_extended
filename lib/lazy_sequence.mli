@@ -144,14 +144,14 @@ end
        let (==>) = Lazy_sequence.(==>) in
        let rec loop () =
          match In_channel.input_line ic with
-         | None -> Lazy_sequence.stop
+         | None -> Lazy_sequence.empty
          | Some line -> line ==> fun () -> loop ()
        in
        loop ()
      ))
 *)
 
-val stop: _ t (* Nil *)
+val empty: _ t (* Empty lazy sequence *)
 val (==>): 'a -> (unit -> 'a t) -> 'a t (* Cons *)
 val (==>>): 'a list -> (unit -> 'a t) -> 'a t (* Multi-cons, lazy even if list is empty *)
 

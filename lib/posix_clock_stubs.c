@@ -57,4 +57,11 @@ CAMLprim value caml_rdtsc( )
       return Val_int( ((unsigned long long)lo)|( ((unsigned long long)hi)<<32 ));
 }
 
+CAMLprim value caml_rdtscp( )
+{
+    unsigned hi, lo;
+    __asm__ __volatile__ ("rdtscp" : "=a"(lo), "=d"(hi));
+      return Val_int( ((unsigned long long)lo)|( ((unsigned long long)hi)<<32 ));
+}
+
 #endif /* JSC_ARCH_i386 || JSC_ARCH_x86_64 */

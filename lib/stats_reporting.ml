@@ -2,9 +2,10 @@ open Core.Std
 
 type field = int with sexp, bin_io
 type type_desc = string with sexp, bin_io
+type name = string with sexp, bin_io
 
 type t =
-| New_field of field * string * type_desc
+| New_field of field * string * type_desc * name
 | Int_datum of field * int * Time.t
 | Float_datum of field * float * Time.t
 with sexp, bin_io
@@ -44,10 +45,10 @@ let report_t t =
  *   then (Obj.magic label)
  *   else failwithf "Non-int label supplied to log library" () *)
 
-let create_field  ~desc ~type_desc =
+let create_field  ~desc ~type_desc ~name =
   let field = !field_counter_ref in
   field_counter_ref := !field_counter_ref + 1;
-  report_t (New_field (field, desc, type_desc));
+  report_t (New_field (field, desc, type_desc, name));
   field
 
 let add_datum field num =
