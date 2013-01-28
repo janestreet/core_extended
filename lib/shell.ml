@@ -87,23 +87,28 @@ module Process = struct
   ]
 
   (* Passes the remote command to ssh *)
-  (* quote_args quotes all arguments to the shell.  We need to escape all the
-     arguments because ssh is passing this to the remote shell which will
-     unescape all of that before passing it over to our program.*)
-  let remote ?(ssh_options = noninteractive_ssh_options) ?(quote_args=true)
-      ?user ~host cmd   =
+
+  let make_ssh_command
+      ?(ssh_options = noninteractive_ssh_options) ?(quote_args=true)
+      ?user ~host args =
+    (* quote_args quotes all arguments to the shell.  We need to escape all the
+       arguments because ssh is passing this to the remote shell which will
+       unescape all of that before passing it over to our program.*)
     let url = match user with
       | None      -> host
       | Some user -> user ^"@"^host
     in
-    let args = cmd.program :: cmd.arguments in
     let args =
       if quote_args then List.map ~f:Filename.quote args
       else args
     in
     { program   = "/usr/bin/ssh";
-      arguments = ssh_options @ [url] @ args;
+      arguments = ssh_options @ [url; "--"] @ args;
     }
+
+  let remote ?ssh_options ?quote_args ?user ~host cmd =
+    make_ssh_command ?ssh_options ?quote_args ?user ~host
+      (cmd.program :: cmd.arguments)
 
   type 'res acc =
       { add           : string -> int -> [`Stop | `Continue];
@@ -312,19 +317,22 @@ let sh_test ?true_v =
   Process.test_k (k_shell_command (fun f cmd -> f cmd)) ?true_v
 
 type 'a with_ssh_flags =
-  ?ssh_options:string list -> ?user:string -> host:string -> 'a
+  ?ssh_options:string list
+  -> ?user:string -> host:string -> 'a
 
 let noninteractive_ssh_options = Process.noninteractive_ssh_options
 let noninteractive_no_hostkey_checking_options =
   Process.noninteractive_no_hostkey_checking_options
 
-let k_remote_command k ?ssh_options ?quote_args ?user ~host =
-  k_shell_command (fun f cmd ->
-    k f (Process.remote ?ssh_options ?quote_args ?user ~host cmd))
+let k_remote_command k f ?ssh_options ?user ~host fmt =
+  ksprintf (fun command ->
+    k f (Process.make_ssh_command ~quote_args:false
+           ?ssh_options ?user ~host [command]))
+    fmt
 
 let ssh_gen reader ?ssh_options ?user ~host =
   Process.run_k (k_remote_command (fun f cmd -> f cmd reader)
-                   ?ssh_options ~quote_args:true ?user ~host)
+                   ?ssh_options ?user ~host)
 
 let ssh       ?ssh_options = ssh_gen Process.discard ?ssh_options
 let ssh_lines ?ssh_options = ssh_gen (Process.lines ()) ?ssh_options
@@ -334,7 +342,7 @@ let ssh_one_exn ?ssh_options = ssh_gen (Process.head_exn ()) ?ssh_options
 
 let ssh_test ?ssh_options ?user ~host =
   Process.test_k (k_remote_command (fun f cmd -> f cmd)
-                    ?ssh_options ~quote_args:true ?user ~host)
+                    ?ssh_options ?user ~host)
 
 let whoami = Shell__core.whoami
 let which = Shell__core.which

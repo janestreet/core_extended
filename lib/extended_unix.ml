@@ -188,7 +188,7 @@ module Cidr = struct
   type t = {
     address : Unix.Inet_addr.t;
     bits : int;
-  }
+  } with sexp, fields
 
   let of_string_exn s =
     match String.split ~on:'/' s with
@@ -205,6 +205,10 @@ module Cidr = struct
     try
       Some (of_string_exn s)
     with _ -> None
+
+  let to_string t =
+    sprintf "%s/%d" (Unix.Inet_addr.to_string t.address) t.bits
+
 
   (** IPv6 addresses are not supported.
     The RFC regarding how to properly format an IPv6 string is...painful.
@@ -283,6 +287,8 @@ module Cidr = struct
     let c = of_string_exn c in
     let a = Unix.Inet_addr.of_string a in
     match_exn c a
+
+  let _flag = Command.Spec.Arg_type.create of_string_exn
 end
 
 (* Can we parse some random correct netmasks? *)
@@ -348,7 +354,7 @@ TEST = Cidr.match_strings "172.25.42.0/24" "172.26.42.47" = false
 TEST = Cidr.match_strings "172.25.42.0/24" "172.26.42.208" = false
 
 module Inet_port = struct
-  type t = int
+  type t = int with sexp
 
   let of_int_exn x =
     if x > 0 && x < 65536 then
@@ -376,6 +382,11 @@ module Inet_port = struct
 
   let to_int x =
     x
+
+  let t_of_sexp sexp = String.t_of_sexp sexp |! of_string_exn
+  let sexp_of_t t = to_string t |! String.sexp_of_t
+
+  let _flag = Command.Spec.Arg_type.create of_string_exn
 end
 
 TEST = Inet_port.of_string "88" = Some 88
@@ -413,6 +424,8 @@ module Mac_address = struct
     String.concat ~sep:"." [a; b; c]
   let t_of_sexp sexp = String.t_of_sexp sexp |! of_string
   let sexp_of_t t = to_string t |! String.sexp_of_t
+
+  let _flag = Command.Spec.Arg_type.create of_string
 end
 
 TEST = Mac_address.to_string (Mac_address.of_string "00:1d:09:68:82:0f") = "00:1d:09:68:82:0f"

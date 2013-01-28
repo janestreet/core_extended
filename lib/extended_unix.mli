@@ -113,15 +113,17 @@ external strptime : fmt:string -> string -> Unix.tm = "unix_strptime"
 (** A representation of CIDR netmasks and functions to match if a given address is inside
  the range or not. *)
 module Cidr : sig
-  type t = {
-    address: Unix.Inet_addr.t;
-    bits: int;
-  }
+  type t with sexp
+
+  val address : t -> Unix.Inet_addr.t
+  val bits : t -> int
 
   (** Generate a Cidr.t based on a string like "10.0.0.0/8". Addresses are not expanded
   (i.e. "10/8" is invalid. *)
   val of_string     : string -> t option
   val of_string_exn : string -> t
+
+  val to_string : t -> string
 
   (** Is the given address inside the given Cidr.t? Note that the broadcast and network
   addresses are considered valid so match_ 10.0.0.0/8 10.0.0.0  is true. *)
@@ -131,6 +133,9 @@ module Cidr : sig
   (* val inet_addr_to_int : Unix.Inet_addr.t -> int option *)
   val inet_addr_to_int_exn : Unix.Inet_addr.t -> int
 
+  val address : t -> Unix.Inet_addr.t
+  val bits : t -> int
+
   (** Some things (like the kernel) report addresses and ports as hex or decimal integers.
   Parse those . *)
   val inet4_addr_of_int_exn : int -> Unix.Inet_addr.t
@@ -138,7 +143,7 @@ end
 
 (** Simple int wrapper to be explicit about ports. *)
 module Inet_port : sig
-  type t
+  type t with sexp
 
   val of_int : int -> t option
   val of_int_exn : int -> t
@@ -148,6 +153,7 @@ module Inet_port : sig
 
   val to_int : t -> int
   val to_string: t -> string
+
 end
 
 (* MAC-48 (Ethernet) adddresses *)

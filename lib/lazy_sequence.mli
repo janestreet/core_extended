@@ -2,7 +2,7 @@ open Core.Std
 
 (* A lazy list, but without memoization.
 
-   The lack of memozation prevents any problems with space leaks. It's memory-safe to
+   The lack of memoization prevents any problems with space leaks. It's memory-safe to
    hold on to even a very long lazy sequence and perform operations or iterate through
    it multiple times.
 
@@ -10,32 +10,51 @@ open Core.Std
    multiple times, the data will be reloaded/regenerated every time. For example,
    iterating twice through a sequence produced by reading a file will open, read, and
    close the file twice.
+
+   Generally speaking, functions below that return something of type [t] are lazy,
+   whereas functions that return an actual value will force the sequence.
 *)
 
 type +'a t
 
+(* This includes functions like [iter], [fold], [length], [to_list]... *)
 include Container.S1 with type 'a t := 'a t
 
+val iteri: 'a t -> f:(int -> 'a -> unit) -> unit
+val foldi: 'a t -> init:'state -> f:(int -> 'state -> 'a -> 'state) -> 'state
 val map: 'a t -> f:('a -> 'b) -> 'b t
+val mapi: 'a t -> f:(int -> 'a -> 'b) -> 'b t
 val filter: 'a t -> f:('a -> bool) -> 'a t
 val filter_map: 'a t -> f:('a -> 'b option) -> 'b t
+val filter_mapi: 'a t -> f:(int -> 'a -> 'b option) -> 'b t
 val fold_map: 'a t -> init:'state -> f:('state -> 'a -> ('state * 'b)) -> 'b t
-val filter_fold_map:
-  'a t -> init:'state -> f:('state -> 'a -> ('state * 'b option)) -> 'b t
+val filter_fold_map: 'a t -> init:'state -> f:('state -> 'a -> ('state * 'b option)) -> 'b t
+val concat: 'a t t -> 'a t
+val concat_seq_list: 'a t list -> 'a t
+val concat_list_seq: 'a list t -> 'a t
+val concat_map: 'a t -> f:('a -> 'b list) -> 'b t
+
+(* Will only force as much of the sequence as necessary, but may still be expensive to
+   call repeatedly, particularly if forcing it requires some initialization time. *)
+val hd: 'a t -> 'a option
+val last: 'a t -> 'a option
+val nth: 'a t -> int -> 'a option (* n=0 means first element *)
+
+(* If elements are dropped from the front of the sequence, it's still the case that every
+   time the sequence is forced, the cost of computing those elements will be present. *)
+val tl: 'a t -> 'a t (* tl of the empty sequence is the empty sequence *)
+val take: 'a t -> int -> 'a t
+val drop: 'a t -> int -> 'a t
+val append: 'a t -> 'a t -> 'a t
+val sub: 'a t -> pos:int -> len:int -> 'a t
 
 (* Will not filter through the rest of the sequence after stopping, so can be
-   slightly more efficient than filter_map *)
+   slightly more efficient than filter_map and can be used on infinite sequences *)
 val filter_map_partial: 'a t -> f:('a -> [ `Continue of 'b option | `Stop ]) -> 'b t
 
 (* Pairs up all the a's and b's. If one list ends before the other, then will return
    None for the elements of the list that ended *)
 val zip_full: 'a t -> 'b t -> ('a option * 'b option) t
-
-val concat: 'a t t -> 'a t
-val concat_seq_list: 'a t list -> 'a t
-val concat_list_seq: 'a list t -> 'a t
-
-val concat_map: 'a t -> f:('a -> 'b list) -> 'b t
 
 (* [length_if_at_most ~max t] returns Some len if [len = length t <= max], and otherwise
    returns None. Non-lazy, but walks through only as much of the sequence as necessary. *)
@@ -45,6 +64,21 @@ val length_if_at_most: max:int -> _ t -> int option
    When [min] or [max] are not provided, the check for that bound is omitted.
    Non-lazy, but walks through only as much of the sequence as necessary. *)
 val length_bounded_by: ?min:int -> ?max:int -> _ t -> bool
+
+val of_list: 'a list -> 'a t
+
+(* [init f] Creates a sequence by lazily evaluating [f] on the infinite sequence
+   [0; 1; 2; 3; ...], stopping if/when [f] returns None. *)
+val init: (int -> 'a option) -> 'a t
+
+(* [read_lines filename] Returns a lazy sequence of all the lines in the given file *)
+val read_lines: string -> string t
+
+
+(* NOT LAZY! Will immediately force the entire sequence into memory and return the
+   forced version of the sequence. Equivalent to [of_list (to_list t)] *)
+val force: 'a t -> 'a t
+
 
 (* For walking through a lazy sequence, element by element *)
 module Iterator : sig
@@ -65,20 +99,29 @@ module Iterator : sig
   val get_exn: 'a t -> 'a
 
   (* Walk through the iterator, consuming elements. Upon exception, the iterator will
-     automatically be closed *)
+     automatically be closed.
+     It's also okay to call other functions on the iterator in the middle of the iter or
+     fold. For example, calling [ignore (get t)] in the middle of an iter or fold will
+     cause it to skip the next element. Calling [close] will cause the iter or fold to
+     terminate after f returns. *)
   val iter: 'a t -> f:('a -> unit) -> unit
   val fold: 'a t -> init:'accum -> f:('accum -> 'a -> 'accum) -> 'accum
+
+  (* Copied iterators share the same underlying instance of the sequence. So all copies of
+     an iterator can be advanced independently while still only loading the sequence once
+     (such as from a file).
+
+     Note that the portion of the sequence between the leftmost non-closed iterator and
+     the rightmost point in the sequence reached by any iterator (even if later closed)
+     will be kept in memory, which could be a concern for very long sequences.
+
+     [close] will close only the existing iterator but not affect copies.
+     [with_sequence] will close the shared underlying instance of the sequence upon return
+     for *all* copies of the iterator that it creates. However, the parts of the sequence
+     loaded into in memory might still be accessible from the iterators or their copies
+     even after it returns. *)
+  val copy: 'a t -> 'a t
 end
-
-val of_list: 'a list -> 'a t
-
-(* [init f] Creates a sequence by lazily evaluating [f] on the infinite sequence
-   [0; 1; 2; 3; ...], stopping if/when [f] returns None. *)
-val init: (int -> 'a option) -> 'a t
-
-(* [read_lines filename] Returns a lazy sequence of all the lines in the given file *)
-val read_lines: string -> string t
-
 
 (* Producing a lazy sequence manually ------------------------------------------------ *)
 
@@ -122,15 +165,6 @@ val initialize: (unit -> 'a t) -> 'a t
    or when an iterator is closed that has forced at least one element of the sequence.
 
    If additional elements are cons-ed on the head of returned sequence, only the
-   original subsequence will be protected by the [finally].
-*)
+   original subsequence will be protected by the [finally]. *)
 val protect: finally:(unit -> unit) -> (unit -> 'a t) -> 'a t
 
-(* type 'a referentially_transparent = private 'a t *)
-(* val empty : _ referentially_transparent *)
-(* val put : 'a t -> ... *)
-(* val put_rt : 'a rt -> ... *)
-(* val is_transparent__unsafe : 'a t -> 'a referentially_transparent *)
-(* val is_empty: _ referentially_transparent -> bool
- * val get: 'a referentially_transparent -> [`Next of 'a * 'a referentially_transparent | `Done]
- * val get_exn: 'a referentially_transparent -> 'a * 'a referentially_transparent *)

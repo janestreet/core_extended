@@ -132,8 +132,7 @@ val sh_one_exn   : ('a,string) sh_cmd with_run_flags
 val noninteractive_ssh_options : string list
 val noninteractive_no_hostkey_checking_options : string list
 
-type 'a with_ssh_flags =
-  ?ssh_options:string list -> ?user:string -> host:string -> 'a
+type 'a with_ssh_flags = ?ssh_options:string list -> ?user:string -> host:string -> 'a
 
 val ssh       : ('a,unit)          sh_cmd with_run_flags with_ssh_flags
 val ssh_lines : ('a,string list)   sh_cmd with_run_flags with_ssh_flags
@@ -213,6 +212,15 @@ module Process : sig
 
   val cmd    : string -> string list -> t
   val shell  : string -> t
+
+  val make_ssh_command :
+    ?ssh_options:string list
+    -> ?quote_args:bool
+    -> ?user:string
+    -> host:string
+    -> string list
+    -> t
+
   val remote :
     ?ssh_options:string list
     -> ?quote_args:bool

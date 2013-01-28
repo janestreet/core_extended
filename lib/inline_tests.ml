@@ -51,6 +51,7 @@ let tests () = OUnit.TestList [
     Find.ounit_tests ();
     Fold_map.ounit_tests ();
     Generic.ounit_tests ();
+    Invariant.ounit_tests ();
     Iter.ounit_tests ();
     Lazy_list.ounit_tests ();
     Lazy_m.ounit_tests ();
@@ -93,6 +94,7 @@ let tests () = OUnit.TestList [
     Sys_utils.ounit_tests ();
     Tcp.ounit_tests ();
     Timed_function.ounit_tests ();
+    Timing_wheel.ounit_tests ();
     Trie.ounit_tests ();
     Unix_utils.ounit_tests ();
     Update_queue.ounit_tests ();
