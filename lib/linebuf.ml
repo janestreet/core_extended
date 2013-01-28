@@ -105,7 +105,7 @@ let possibly_reopen lbuf =
 
 let reopen_if_deleted lbuf =
   try
-    let {Unix.st_ino=inode; _} = Unix.stat lbuf.name in
+    let {Unix.st_ino=inode; _ } = Unix.stat lbuf.name in
     if lbuf.inode <> inode then begin
       try
         close lbuf;

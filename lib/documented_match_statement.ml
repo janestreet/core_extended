@@ -51,7 +51,7 @@ let prepend ~specific_cases t =
 
 let match_ t x =
   match List.filter t.specific_cases
-    ~f:(fun { pattern = x'; _ } -> List.exists x' ~f:(fun y -> x = y)) with
+    ~f:(fun { pattern = x'; documentation=_; value=_ } -> List.exists x' ~f:(fun y -> x = y)) with
   | case1::case2::_ -> failwithf "pattern appears twice in documented_match (%s,%s)"
     case1.documentation case2.documentation ()
   | [case] -> case.value ()

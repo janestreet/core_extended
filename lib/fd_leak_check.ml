@@ -102,7 +102,7 @@ let check_fd_leak () =
   if !run_check_at_exit then
     try
       let max_fds = max_fds () in
-      let thresh = Float.iround_towards_zero_exn (!critical *. float max_fds) in
+      let thresh = Float.iround_exn ~dir:`Zero (!critical *. float max_fds) in
       let num_open_fds = get_num_open_fds () in
       if num_open_fds > thresh then begin
         eprintf

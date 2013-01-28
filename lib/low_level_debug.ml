@@ -22,7 +22,7 @@ let start_canary_thread =
     Mutex.unlock lock;
     let check_interval = Time.Span.to_sec check_interval in
     if check_interval >= 1. then invalid_arg "check_interval must be < 1s";
-    let check_interval = Float.iround_towards_zero_exn (check_interval *. 1_000_000.) in
+    let check_interval = Float.iround_exn ~dir:`Zero (check_interval *. 1_000_000.) in
     let (_ : Thread.t) =
       Thread.create (fun () ->
         start_canary_thread_internal

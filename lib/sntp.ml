@@ -19,7 +19,7 @@ module Internal = struct
   let float_to_ntpfp f =
     let f = f +. delta in
     let ipart = Int64.of_float f in
-    let fpart = Int64.of_float ((f -. Float.round_down f) *. ntp_conv_const) in
+    let fpart = Int64.of_float ((f -. Float.round ~dir:`Down f) *. ntp_conv_const) in
     (ipart,fpart)
 
 

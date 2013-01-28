@@ -29,7 +29,7 @@ let to_string_hum f =
 (** pretty prints positive floating point numbers with no more than
     four characters.*)
 let pretty_pos f =
-  let round f = Float.to_int (Float.round_down (f +. 0.5)) in
+  let round f = Float.to_int (Float.round ~dir:`Down (f +. 0.5)) in
   let drop_redundant_suffix s =
     let rec loop i =
       if i = 0 then 1

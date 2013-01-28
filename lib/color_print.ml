@@ -21,7 +21,7 @@ let inverse_code   = ansi_code ~code:"7"
 let float_to_int x ~max =
     if x <= 0. then 0
     else if x >= 1. then max
-    else Float.iround_nearest_exn (x *. Float.of_int max)
+    else Float.iround_exn ~dir:`Nearest (x *. Float.of_int max)
 
 let gray_code ~brightness =
   let brightness = float_to_int brightness ~max:23 in

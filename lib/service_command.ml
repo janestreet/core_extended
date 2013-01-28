@@ -46,7 +46,7 @@ let start_daemon slot main ~foreground =
     exit 1
   end
 
-let check_lock_file {lock_file; _} =
+let check_lock_file {lock_file; name=_; redirect_stdout=_; redirect_stderr=_ } =
   if Lock_file.is_locked lock_file then begin
     let pid = Pid.t_of_sexp (Sexp.load_sexp lock_file) in
     `Running_with_pid pid

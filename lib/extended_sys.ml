@@ -1,13 +1,10 @@
 open Core.Std;;
 
-external running_byte_code :
-  unit -> unit -> unit -> unit -> unit -> unit -> bool
-  = "caml_running_byte_code_bc" "caml_running_byte_code_nc" "noalloc"
-
-let running_byte_code () = running_byte_code () () () () () ()
-
 let home () =
-  (Unix.Passwd.getbyuid_exn (Unix.geteuid ())).Unix.Passwd.dir
+  match Sys.getenv "HOME" with
+  | None ->
+    (Unix.Passwd.getbyuid_exn (Unix.geteuid ())).Unix.Passwd.dir
+  | Some home -> home
 
 let groups = Memo.unit
   (fun () ->

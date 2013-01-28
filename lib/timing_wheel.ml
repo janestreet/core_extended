@@ -758,7 +758,7 @@ let time_key t time =
     error "time before clock start" (time, t.start) (<:sexp_of< Time.t * Time.t >>)
   else begin
     let float = Time.Span.(//) (Time.diff time t.start) t.alarm_precision in
-    match Float.iround_down float with
+    match Float.iround ~dir:`Down float with
     | Some key -> Ok key
     | None ->
       error "time too far in the future" (time, float, t)

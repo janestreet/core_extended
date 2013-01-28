@@ -4,10 +4,6 @@
 
 open Core.Std;;
 
-(** [running_byte_code ()] @return [true] when the program is being run
-    in byte code, [false] when it is being executed as native code. *)
-val running_byte_code : unit -> bool
-
 val ls : string -> string list
 
 val file_kind : string -> Unix.file_kind

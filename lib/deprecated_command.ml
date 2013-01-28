@@ -320,8 +320,8 @@ end = struct
     | `Ok tbl -> (fun flag ->
       match partial_match tbl flag with
       | `Exact (_, v)
-      | `Partial (_, ({full_flag_required = false; _} as v)) -> Some v.spec
-      | `Partial (_, ({full_flag_required = true; _} as v)) ->
+      | `Partial (_, ({full_flag_required = false; name=_; spec=_; doc=_; aliases=_ } as v)) -> Some v.spec
+      | `Partial (_, ({full_flag_required = true; name=_; spec=_; doc=_; aliases=_ } as v)) ->
         eprintf "Note: cannot abbreviate flag \"%s\".\n%!" v.name; None
       | `Ambiguous l ->
         eprintf "Note: flag \"%s\" is an ambiguous prefix: %s\n%!"
@@ -422,7 +422,7 @@ end = struct
 
   module Deprecated_spec = Command.Deprecated.Spec
 
-  let to_spec flag_env_updates {name; aliases; doc; spec; _ } =
+  let to_spec flag_env_updates {name; aliases; doc; spec; full_flag_required=_ } =
     let add_env_update new_env_update =
       let old_env_update = !flag_env_updates in
       flag_env_updates := (fun env -> new_env_update (old_env_update env))
@@ -445,7 +445,7 @@ end = struct
                add_env_update (fun env -> update env ss)))
     )
 
-  let to_spec_unit {name; aliases; doc; spec; _ } =
+  let to_spec_unit {name; aliases; doc; spec; full_flag_required=_ } =
     Command.Spec.(
       let drop () = step (fun m _ -> m) in
       match spec with

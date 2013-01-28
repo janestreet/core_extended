@@ -205,7 +205,7 @@ module Cpu_use = struct
 
   let sample_exn pid =
     let module P = Procfs.Process in
-    let {P.Stat.utime; stime; _} = (Procfs.with_pid_exn pid).P.stat in
+    let {P.Stat.utime; stime; _ } = (Procfs.with_pid_exn pid).P.stat in
     { jiffies = Big_int.add_big_int utime stime;
       time = Time.now () }
 
@@ -219,7 +219,7 @@ module Cpu_use = struct
     t.s0 <- t.s1;
     t.s1 <- sample_exn t.pid
 
-  let cpu_use {jps; s0={jiffies=j0;time=t0}; s1={jiffies=j1;time=t1}; _} =
+  let cpu_use {jps; s0={jiffies=j0;time=t0}; s1={jiffies=j1;time=t1}; pid=_ } =
     let my_jps =
       Big_int.float_of_big_int (Big_int.sub_big_int j1 j0)
       /. Time.Span.to_sec (Time.diff t1 t0)
