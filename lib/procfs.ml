@@ -657,8 +657,14 @@ module Net = struct
     | _ -> failwithf "Net.Dev.of_string: unsupported format: %s" str ()
 
     (* add interfaces () to get a list of all interfaces on box *)
+  let interfaces () =
+      In_channel.with_file "/proc/net/dev" ~f:In_channel.input_lines
+      |! List.tl_exn
+      |! List.tl_exn
+      |! List.map ~f:(fun x -> ((Pcre.extract ~pat:"(\\w+):" (String.lstrip x))).(1))
 
   end
+
   module Route = struct
 
   type t =

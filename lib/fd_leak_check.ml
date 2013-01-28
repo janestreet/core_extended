@@ -91,11 +91,11 @@ let critical = ref 0.9
 let max_fds () =
   let module R = Unix.RLimit in
   match (R.get `Num_file_descriptors).R.cur with
-  | R.Infinity -> max_int
+  | R.Infinity -> Int.max_value
   | R.Limit n ->
     match Int.of_int64 n with
     | Some n -> n
-    | None -> max_int
+    | None -> Int.max_value
 ;;
 
 let check_fd_leak () =

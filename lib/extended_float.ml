@@ -17,7 +17,7 @@ let s_rev s =
 let rpretty s =  s_rev (Core.Int_conversions.insert_underscores (s_rev s))
 
 let to_string_hum f =
-  let s = string_of_float f in
+  let s = Float.to_string f in
   match String.lsplit2 s ~on:'.' with
   | None -> s (*nan,infinity...*)
   | Some (ip,fpe) ->
@@ -29,7 +29,7 @@ let to_string_hum f =
 (** pretty prints positive floating point numbers with no more than
     four characters.*)
 let pretty_pos f =
-  let round f = int_of_float (Float.round_down (f +. 0.5)) in
+  let round f = Float.to_int (Float.round_down (f +. 0.5)) in
   let drop_redundant_suffix s =
     let rec loop i =
       if i = 0 then 1
@@ -74,15 +74,16 @@ let pretty_pos f =
   else "HUGE"
 
 let pretty ?(on_negative=`Normal) f =
-  match classify_float f with
-  | FP_infinite when f < 0. && on_negative <> `Blow_up -> "-inf"
-  | FP_infinite -> "inf"
-  | FP_nan -> "nan"
-  | FP_subnormal | FP_normal | FP_zero when (abs_float f) < 0.005  ->
+  let module C = Float.Class in
+  match Float.classify f with
+  | C.Infinite when f < 0. && on_negative <> `Blow_up -> "-inf"
+  | C.Infinite -> "inf"
+  | C.Nan -> "nan"
+  | C.Subnormal | C.Normal | C.Zero when (Float.abs f) < 0.005  ->
       "0"
-  | FP_subnormal | FP_normal | FP_zero when f > 0. ->
+  | C.Subnormal | C.Normal | C.Zero when f > 0. ->
       pretty_pos f
-  | FP_subnormal | FP_normal | FP_zero ->
+  | C.Subnormal | C.Normal | C.Zero ->
       match on_negative with
       | `Print_dir -> "<0"
       | `Blow_up    ->

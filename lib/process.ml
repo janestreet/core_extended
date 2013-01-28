@@ -1,5 +1,4 @@
 open Core.Std
-module Unix = Caml.UnixLabels
 module Sys  = Caml.Sys
 
 let rec temp_failure_retry f =
@@ -22,9 +21,9 @@ let cloexec_pipe () =
 module Process_info = struct
   type t = {
     pid:int;
-    stdin : Unix.file_descr;
-    stdout : Unix.file_descr;
-    stderr : Unix.file_descr;
+    stdin : Unix.File_descr.t;
+    stdout : Unix.File_descr.t;
+    stderr : Unix.File_descr.t;
   }
 end
 (* We use a slightly more powerful version of create process than the one in
@@ -216,14 +215,14 @@ let kill
 
 
 type t = {
-  mutable open_fds : Unix.file_descr list;
-  mutable in_fds   : Unix.file_descr list;
-  mutable out_fds  : Unix.file_descr list;
+  mutable open_fds : Unix.File_descr.t list;
+  mutable in_fds   : Unix.File_descr.t list;
+  mutable out_fds  : Unix.File_descr.t list;
   keep_open        : bool;
   buf              : String.t;
   in_cnt           : String.t;
   in_len           : int;
-  out_callbacks    : (Unix.file_descr*(string -> int -> unit)) list;
+  out_callbacks    : (Unix.File_descr.t*(string -> int -> unit)) list;
   pid              : int;
   mutable in_pos   : int;
 }
@@ -271,13 +270,13 @@ let process_io ~read ~write state =
         callback state.buf len)
 
 let available_fds state ~timeout =
-  let read,write,_conds =
+  let { Unix.Select_fds. read; write; _; } =
     temp_failure_retry (fun () ->
       Unix.select
         ~read:state.out_fds
         ~write:state.in_fds
         ~except:[]
-        ~timeout)
+        ~timeout ())
   in
   read,write
 

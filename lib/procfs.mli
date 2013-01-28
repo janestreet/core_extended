@@ -270,7 +270,9 @@ module Net : sig
       }
       with fields;;
 
-      val of_string : string -> t option
+    val interfaces : unit -> string list
+
+    val of_string : string -> t option
   end
 
   module Route : sig

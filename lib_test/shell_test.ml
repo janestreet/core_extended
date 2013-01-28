@@ -1,5 +1,4 @@
 open Core.Std
-open Core_extended.Std
 open OUnit
 module Sh = Core_extended.Shell
 let test =

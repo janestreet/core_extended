@@ -16,7 +16,7 @@ module Date_selector = struct
     | LT of Date.t
     | Between of Date.t * Date.t
     | On of Date.t
-    with of_sexp
+    with sexp
   type selector = t
   type value = Date.t
 

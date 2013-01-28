@@ -2,16 +2,16 @@ open Core.Std
 
 module Align : sig
   type t
-  val left : t
-  val right : t
+  val left   : t
+  val right  : t
   val center : t
 end
 
 module Display : sig
   type t
   val short_box : t (* Default--cells can be multi-line. *)
-  val tall_box : t (* Puts --- between entries. *)
-  val line : t (* Trails off with ... if necessary. *)
+  val tall_box  : t (* Puts --- between entries.         *)
+  val line      : t (* Trails off with ... if necessary. *)
 end
 
 module Column : sig

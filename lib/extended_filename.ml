@@ -201,7 +201,7 @@ let with_open_temp_file ?in_dir ?(write=ignore) ~f prefix suffix =
     ~f:(fun (fname,oc) ->
       protectx oc
         ~f:write
-        ~finally:close_out;
+        ~finally:Out_channel.close;
       f fname)
     ~finally:(fun (fname,_) -> Unix.unlink fname)
 

@@ -78,7 +78,7 @@ let roll log =
   let max_archives =
     match log.max_archives with
     | `Max m -> m
-    | `Unlimited -> max_int;
+    | `Unlimited -> Int.max_value
   in
   let rec roll files =
     match files with

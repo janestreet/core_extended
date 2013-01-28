@@ -1,10 +1,11 @@
 #include "config.h"
-#ifdef JSC_POSIX_TIMERS
 
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <caml/mlvalues.h>
+
+#ifdef JSC_POSIX_TIMERS
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/custom.h>
@@ -13,6 +14,7 @@
 #include <caml/unixsupport.h>
 
 #include <time.h>
+#include <stdint.h>
 
 #ifdef JSC_ARCH_SIXTYFOUR
 #  define caml_alloc_int63(v) Val_long(v)
@@ -43,32 +45,16 @@ value caml_clock_gettime (value clock_type) {
   return (caml_alloc_int63 (((__int64_t)tp.tv_sec * 1000 * 1000 * 1000) + (__int64_t)tp.tv_nsec));
 }
 
-/*
-value caml_clock_nanosleep (value clock_type, value nanoseconds_v) {
-  CAMLparam2 (clock_type, nanoseconds_v);
-  caml_enter_blocking_section ();
-
-  struct timespec tp, remaining;
-  clockid_t clockid = caml_clockid_t_of_caml (clock_type);
-
-  clock_getres (clockid, &tp);
-  tp.tv_sec = 0;
-  tp.tv_nsec = Int_val(nanoseconds_v);
-  tp.tv_nsec = tp.tv_nsec + Int_val(nanoseconds_v);
-
-  while (1 == 1) {
-    if (clock_nanosleep (clockid, 0, &tp, &remaining) == 0) {
-      if (remaining.tv_sec == 0 && remaining.tv_nsec == 0) {
-        caml_leave_blocking_section ();
-        CAMLreturn (Val_unit);
-      }
-      else {
-        printf ("%i, %i\n", remaining.tv_sec, remaining.tv_nsec);
-      };
-    }
-    else caml_failwith ("call to clock_nanosleep failed");
-  };
-}
-*/
-
 #endif /* JSC_POSIX_TIMERS */
+
+#if defined (JSC_ARCH_i386) || defined (JSC_ARCH_x86_64)
+
+/* http://en.wikipedia.org/wiki/Time_Stamp_Counter */
+CAMLprim value caml_rdtsc( )
+{
+    unsigned hi, lo;
+    __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+      return Val_int( ((unsigned long long)lo)|( ((unsigned long long)hi)<<32 ));
+}
+
+#endif /* JSC_ARCH_i386 || JSC_ARCH_x86_64 */

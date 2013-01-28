@@ -83,7 +83,8 @@ val run_lines : ?eol:char -> string list cmd with_run_flags
     (This function might terminate the program early the same way that
     piping through grep would)
 *)
-val run_one   : ?eol:char -> string cmd with_run_flags
+val run_one      : ?eol:char -> string option cmd with_run_flags
+val run_one_exn  : ?eol:char -> string cmd with_run_flags
 
 (** Return the full command's output in one string. See the note in
     [run_lines].
@@ -119,10 +120,11 @@ val run_fold  :
 
 type ('a,'ret) sh_cmd = ('a, unit, string,'ret) format4 -> 'a
 
-val sh       : ('a,unit)        sh_cmd with_run_flags
-val sh_lines : ('a,string list) sh_cmd with_run_flags
-val sh_one   : ('a,string)      sh_cmd with_run_flags
-val sh_full  : ('a,string)      sh_cmd with_run_flags
+val sh       : ('a,unit)          sh_cmd with_run_flags
+val sh_lines : ('a,string list)   sh_cmd with_run_flags
+val sh_full  : ('a,string)        sh_cmd with_run_flags
+val sh_one       : ('a,string option) sh_cmd with_run_flags
+val sh_one_exn   : ('a,string) sh_cmd with_run_flags
 
 (* Magic invocation to avoid asking for password if we can.  These arguments are
    passed to ssh in the [ssh_*] functions below.  They're exposed in case you
@@ -133,10 +135,11 @@ val noninteractive_no_hostkey_checking_options : string list
 type 'a with_ssh_flags =
   ?ssh_options:string list -> ?user:string -> host:string -> 'a
 
-val ssh       : ('a,unit)        sh_cmd with_run_flags with_ssh_flags
-val ssh_lines : ('a,string list) sh_cmd with_run_flags with_ssh_flags
-val ssh_one   : ('a,string)      sh_cmd with_run_flags with_ssh_flags
-val ssh_full  : ('a,string)      sh_cmd with_run_flags with_ssh_flags
+val ssh       : ('a,unit)          sh_cmd with_run_flags with_ssh_flags
+val ssh_lines : ('a,string list)   sh_cmd with_run_flags with_ssh_flags
+val ssh_full  : ('a,string)        sh_cmd with_run_flags with_ssh_flags
+val ssh_one     : ('a,string option) sh_cmd with_run_flags with_ssh_flags
+val ssh_one_exn : ('a,string) sh_cmd with_run_flags with_ssh_flags
 
 (** {9 Test dispatches}
 
@@ -224,7 +227,12 @@ module Process : sig
   val discard : unit reader
 
   val lines   : ?eol:char -> unit -> string list reader
-  val head    : ?eol:char -> unit -> string reader
+  val head     : ?eol:char -> unit -> string option reader
+
+  exception Empty_head
+
+  val head_exn : ?eol:char -> unit -> string reader
+
   val callback : add:(string -> int -> unit) -> flush:(unit -> unit) -> unit reader
 
   val run   :  (t -> 'a reader -> 'a)              with_run_flags

@@ -64,12 +64,15 @@ module Make_fun (Fold : Foldable_gen) : Fold_map_funs
   and  type ('a,'b) _t = ('a,'b Fold.t) Map.Poly.t
   =
 struct
-  include (Map : Map_intf.Accessors with type ('a, 'b, 'c) t := ('a, 'b, 'c) Map.t with type 'a key = 'a)
+  include (Map : Map_intf.Accessors
+                   with type ('a, 'b, 'c) t := ('a, 'b, 'c) Map.t
+                   with type ('a, 'b, 'c) options := ('a, 'b, 'c) Map_intf.without_comparator
+                   with type 'a key = 'a)
   include (Map.Poly : Map_intf.Creators
-                        with type ('a, 'b, 'c) t := ('a, 'b, 'c) Map.Poly.t_
+                        with type ('a, 'b, 'c) t    := ('a, 'b, 'c) Map.Poly.t_
                         with type ('a, 'b, 'c) tree := ('a, 'b, 'c) Map.tree
                         with type 'a key := 'a key
-                        with type ('a, 'b, 'c) create_options := ('a, 'b, 'c) Map_intf.create_options_without_comparator)
+                        with type ('a, 'b, 'c) options := ('a, 'b, 'c) Map_intf.without_comparator)
   type 'a _in_value = 'a Fold.data
   type 'a _out_value = 'a Fold.t
   type ('a,'b) _t = ('a,'b Fold.t) Map.Poly.t

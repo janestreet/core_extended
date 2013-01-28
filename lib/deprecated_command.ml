@@ -1,3 +1,4 @@
+(** DEPRECATED: use Core.Std.Command instead *)
 open Core.Std
 open Printf
 
@@ -224,7 +225,10 @@ module Flag : sig
   val to_spec :
     ('accum -> 'accum) ref
     -> 'accum t
-    -> ('c, 'c) Core_command.Spec.t
+    -> ('c, 'c) Command.Spec.t
+
+  val to_spec_unit : unit t -> ('c, 'c) Command.Spec.t
+  val to_spec_units : unit t list -> ('c, 'c) Command.Spec.t
 
 end = struct
 
@@ -416,29 +420,49 @@ end = struct
     let instantiate t = t.flag ()
   end
 
-  module Deprecated_spec = Core_command.Deprecated.Spec
+  module Deprecated_spec = Command.Deprecated.Spec
 
   let to_spec flag_env_updates {name; aliases; doc; spec; _ } =
     let add_env_update new_env_update =
       let old_env_update = !flag_env_updates in
       flag_env_updates := (fun env -> new_env_update (old_env_update env))
     in
-    Core_command.Spec.(
+    Command.Spec.(
       let drop () = step (fun m _ -> m) in
       match spec with
       | Action.Noarg update ->
         drop ()
-        ++ flag name ~aliases ~doc
+        +> flag name ~aliases ~doc
              (Deprecated_spec.no_arg ~hook:(fun () -> add_env_update update))
       | Action.Arg update ->
         drop ()
-        ++ flag name ~aliases ~doc
-             (listed (arg_type (fun s -> add_env_update (fun env -> update env s); s)))
+        +> flag name ~aliases ~doc
+             (listed (Arg_type.create (fun s -> add_env_update (fun env -> update env s); s)))
       | Action.Rest update ->
         drop ()
-        ++ flag name ~aliases ~doc
+        +> flag name ~aliases ~doc
              (Deprecated_spec.escape ~hook:(fun ss ->
                add_env_update (fun env -> update env ss)))
+    )
+
+  let to_spec_unit {name; aliases; doc; spec; _ } =
+    Command.Spec.(
+      let drop () = step (fun m _ -> m) in
+      match spec with
+      | Action.Noarg update ->
+        drop ()
+        +> flag name ~aliases ~doc (Deprecated_spec.no_arg ~hook:update)
+      | Action.Arg update ->
+        drop ()
+        +> flag name ~aliases ~doc (listed (Arg_type.create (update ())))
+      | Action.Rest update ->
+        drop ()
+        +> flag name ~aliases ~doc (Deprecated_spec.escape ~hook:(update ()))
+    )
+
+  let to_spec_units flags =
+    Command.Spec.(
+      List.fold ~f:(fun acc flag -> acc ++ to_spec_unit flag) ~init:(step ident) flags
     )
 end
 
@@ -458,7 +482,7 @@ module Autocomplete_ = struct
         | `Disabled | `Enabled | `Export | `File | `Function | `Group
         | `Helptopic | `Hostname | `Job | `Keyword | `Running | `Service
         | `Setopt | `Shopt | `Signal | `Stopped | `User | `Variable
-      ] with sexp_of
+      ] with sexp
 
     let to_string action =
       sexp_of_t action |! Sexp.to_string |! String.lowercase
@@ -535,7 +559,7 @@ type group = {
 }
 
 and t =
-  | Core of Core_command.t * (string list -> string list) option (* autocomplete *)
+  | Core of Command.t * (string list -> string list) option (* autocomplete *)
   | Group of group
 
 let group ~summary ?readme alist =
@@ -545,18 +569,18 @@ let group ~summary ?readme alist =
   | `Duplicate_key name -> failwith ("multiple subcommands named " ^ name)
 
 let summary = function
-  | Core (base, _) -> Core_command.Deprecated.summary base
+  | Core (base, _) -> Command.Deprecated.summary base
   | Group grp -> grp.summary
 
 let help ~cmd t =
   match t with
   | Core _ ->
-    (* This will be dealt with by the Core_command internally
+    (* This will be dealt with by the Core.Std.Command internally
        this function is only called from within dispatch.
        during a call to dispatch, if we get to a point where our command is a Core
        (and would thus get into this branch),
-       we call Core_command.Deprecated.run, which punts the entire functionality
-       over to Core_command
+       we call Core.Std.Command.Deprecated.run, which punts the entire functionality
+       over to Core.Std.Command
     *)
     assert false
   | Group grp ->
@@ -593,7 +617,7 @@ let help_recursive ~cmd ~with_flags ~expand_dots t =
     let new_s = s ^ (if expand_dots then cmd else ".") ^ " " in
     match t with
     | Core (t, _) ->
-      Core_command.Deprecated.help_recursive ~cmd ~with_flags ~expand_dots t s
+      Command.Deprecated.help_recursive ~cmd ~with_flags ~expand_dots t s
     | Group grp ->
       (s ^ cmd, grp.summary) ::
         List.concat_map
@@ -607,7 +631,7 @@ let help_recursive ~cmd ~with_flags ~expand_dots t =
     (*  help_recursive is only called from within dispatch
         if we ever get to a Core variant (which would cause us to be in this branch),
         we would have gone into the | Core branch of dispatch,
-        which would punt responibility over to Core_command
+        which would punt responsibility over to Core.Std.Command
     *)
     assert false
   | Group grp ->
@@ -699,7 +723,7 @@ complete -F %s %s" fname fname Sys.argv.(0)
   let rec autocomplete t command_line =
     match t with
     | Core (base, autocomplete) ->
-      let flags = Core_command.Deprecated.get_flag_names base in
+      let flags = Command.Deprecated.get_flag_names base in
       (match List.rev command_line with
       | [] -> print_list flags
       | key :: _ ->
@@ -775,8 +799,8 @@ let of_core_command t = Core (t, None)
 
 let create ?autocomplete ?readme ~summary ~usage_arg ~init ~flags ~final main =
   let c =
-    Core_command.basic ~summary ?readme
-      Core_command.Spec.(
+    Command.basic ~summary ?readme
+      Command.Spec.(
         let flag_env_updates = ref Fn.id in
         let flags =
           List.fold flags ~init:(step Fn.id) ~f:(fun flags t ->
@@ -790,7 +814,7 @@ let create ?autocomplete ?readme ~summary ~usage_arg ~init ~flags ~final main =
           let argv = final env anons in
           m argv
         )
-        ++ anon (ad_hoc ~usage_arg)
+        +> anon (Command.Deprecated.Spec.ad_hoc ~usage_arg)
       )
       main
   in
@@ -816,7 +840,6 @@ let create_no_accum0 ?autocomplete ?readme ~summary ~usage_arg ~flags main =
   let final _ = () in
   create0 ?autocomplete ?readme ~summary ~usage_arg ~init ~flags ~final main
 
-INCLUDE "version_defaults.mlh"
 module Version = struct
   type command = t
 
@@ -825,10 +848,10 @@ module Version = struct
     flags : unit Flag.t list;
   }
 
-  let print_version ?(version = DEFAULT_VERSION) () =
+  let print_version ?(version = Command.Deprecated.version) () =
     print_endline version
 
-  let print_build_info ?(build_info = DEFAULT_BUILDINFO) () =
+  let print_build_info ?(build_info = Command.Deprecated.build_info) () =
     print_endline build_info
 
   let poly_flags ?version ?build_info () = [
@@ -861,8 +884,8 @@ module Version = struct
   let add ?version ?build_info unversioned =
     let command =
         match unversioned with
-        | Core _ -> failwith "You have used a Core_command in a Command basic stub. \
-                              Please convert fully to Core_command"
+        | Core _ -> failwith "You have used a Core.Std.Command in a Command basic stub. \
+                              Please convert fully to Core.Std.Command"
         | Group grp ->
           group ~summary:grp.summary
             (("version", command ?version ?build_info ())
@@ -895,7 +918,7 @@ let run_internal versioned ~allow_unknown_flags:_ ~allow_underscores ~cmd
     in
     match t with
     | Core (t, _) -> fun () ->
-        Core_command.Deprecated.run
+        Command.Deprecated.run
           t ~cmd ~args:argv ~is_help ~is_help_rec ~is_help_rec_flags ~is_expand_dots
     | Group grp ->
       let execute_group (subcmd, rest) =
@@ -923,7 +946,7 @@ let run_internal versioned ~allow_unknown_flags:_ ~allow_underscores ~cmd
         post_parse_call ~is_ok:is_help;
         (fun () ->
           if is_help then
-            (print_string (
+            (printf "%s" (
               if is_help_rec then
                 help_recursive ~cmd ~with_flags:is_help_rec_flags
                   ~expand_dots:is_expand_dots t
@@ -954,7 +977,7 @@ let run_internal versioned ~allow_unknown_flags:_ ~allow_underscores ~cmd
           if is_help then begin
             post_parse_call ~is_ok:true;
             (fun () ->
-              print_string (help_help ~cmd (Hashtbl.keys grp.subcommands));
+              printf "%s" (help_help ~cmd (Hashtbl.keys grp.subcommands));
               exit 0)
           end
           else
@@ -1027,7 +1050,7 @@ let (run : unit with_run_flags)
     ?post_parse
     t =
   match t with
-  | Core (c, _) -> Core_command.run ?version ?build_info ?argv c
+  | Core (c, _) -> Command.run ?version ?build_info ?argv c
   | Group _ as t ->
     let t = Version.add ?version ?build_info t in
     match Autocomplete.execution_mode () with
@@ -1260,8 +1283,8 @@ module Flags_ext = struct
       match default with
       | Some default ->  Option.value !acc ~default
       | None ->
-        Option.value_exn_message
-          (sprintf "Required argument %s was not specified" name)
+        Option.value_exn
+          ~message:(sprintf "Required argument %s was not specified" name)
           (!acc)
     in
     { flag = flag;

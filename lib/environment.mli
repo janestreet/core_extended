@@ -25,7 +25,7 @@ val import_from_sys : ?default:string -> key:string -> t -> t
 val append_to_path : ?where:[`Front|`Back] -> key:string -> data:string -> t -> t
 
 (* Converts the Env.t into a value suitable for passing to Unix.exec and friends *)
-val to_exec_env : t -> string array
+val to_exec_env : t -> string list
 
 (* Converts the a Unix.environment style environment into a Env.t *)
 val of_exec_env : string array -> t

@@ -21,5 +21,7 @@ val report_open_files : unit -> unit
     descriptor leak (Unix error with code EMFILE or ENFILE). *)
 val report_on_exn : exn -> unit
 
+val get_num_open_fds : unit -> int
+
 (** [percent_fds_in_use ()] reports the percentage of fds that are in use. *)
 val percent_fds_in_use : unit -> float

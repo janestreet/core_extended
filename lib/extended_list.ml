@@ -48,9 +48,17 @@ let split_while xs p =
 let intersperse t sep =
   match t with
   | [] -> []
-  | x :: xs ->
-      x :: List.rev (List.fold_left xs ~init:[] ~f:(fun acc x -> x :: sep :: acc))
+  | x :: xs -> x :: List.fold_right xs ~init:[] ~f:(fun y acc -> sep :: y :: acc )
 ;;
+
+TEST_MODULE "intersperse" = struct
+  let sep = 0
+  TEST = intersperse  []           sep = []
+  TEST = intersperse  [1]          sep = [1]
+  TEST = intersperse  [1; 2]       sep = [1; sep; 2]
+  TEST = intersperse  [1; 2; 3]    sep = [1; sep; 2; sep; 3]
+  TEST = intersperse  [1; 2; 3; 4] sep = [1; sep; 2; sep; 3; sep; 4]
+end
 
 let lcs = Extended_list__LCS.lcs
 let number = Extended_list__multimerge.number

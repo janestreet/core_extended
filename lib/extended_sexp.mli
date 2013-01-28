@@ -33,6 +33,11 @@ val pp_hum' : Format.formatter -> Sexp.t -> unit
 val comment : string -> string
 
 (** {3 Various} *)
+module Diff : sig
+  type t
+  val print : ?oc:out_channel -> t -> unit
+  val of_sexps : Sexp.t -> Sexp.t -> t option
+end
 
 val print_diff : ?oc:out_channel -> Sexp.t -> Sexp.t -> unit
 
@@ -84,55 +89,6 @@ module Records_table : sig
   type 'a t = 'a list
 
   include Sexpable.S1 with type 'a t := 'a t
-end
-
-(* This module solves the following problem:
-
-   With the [Sexp_maybe.t] type you can define a type like
-
-   type t =
-   | Foo of (...some type...) Sexp_maybe.t
-   ...
-
-   and if you try to parse a sexp as a type that contains [t] somewhere, if it parses all
-   the way up to [Foo <sexp>] but the <sexp> doesn't parse, the function will return an
-   Error instead of raising an exception.
-
-   This is good for managing version skew, except in one case: If a type
-
-   type t_old =
-   | Foo of a * b
-   ...
-
-   is upgraded to use Sexp_maybe:
-
-   type t_new =
-   | Foo of (a * b) Sexp_maybe.t
-   ...
-
-   then sexps made from [t_new] will not parse as [t_old], since the old sexp will be
-   (Foo a b) while the new one will be (Foo (a b)).
-
-   You use this module in the following way. Instantiate the functor:
-
-   module Sexp_maybe2 = Make_sexp_maybe2 (struct let state = Random.State.make_self_init () end)
-
-   Then define type t_new as:
-
-   type t_new =
-   | Foo of (a, b) Sexp_maybe2.t
-   ...
-
-   Then, when you've got a sexp [sexp] which should be parsed as either [t_new] or
-   [t_old], use [Sexp_maybe2.final_pass] on it to convert it to either the new or old
-   format.
-*)
-module Make_sexp_maybe2 (Random_state:sig val state:Random.State.t end) : sig
-  type ('a,'b) t = ('a * 'b) Sexp_maybe.t
-  include Sexpable.S2 with type ('a,'b) t := ('a,'b) t
-  include Binable.S2 with type ('a,'b) t := ('a,'b) t
-
-  val final_pass : Sexp.t -> use_sexp_maybe:bool -> Sexp.t
 end
 
 (* This module is intended to be used when [T.t] is a record type and

@@ -47,7 +47,7 @@ let run ~timeout ~f ~sexp_of ~of_sexp v =
               Process.kill ~is_child:true pid;
               raise Timeout
           | Some s ->
-              let status = snd (Unix.wait (`Pid pid) ~restart:true) in
+              let status = Unix.waitpid pid in
               if Result.is_error status then begin
                 failwithf "Timed forked-out process exited with status %s"
                   (Unix.Exit_or_signal.to_string_hum status)

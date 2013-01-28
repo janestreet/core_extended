@@ -7,7 +7,7 @@ let test =
     [ "to_string_hum" >::
         (fun () ->
           let t secs str =
-            (string_of_float secs) @?
+            (Float.to_string secs) @?
             (Time.Extended_span.to_string_hum (sec secs) = str)
           in
           t 0. "0:00:00.000";

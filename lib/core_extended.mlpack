@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 4ee6d7c1f6bc8cb31c8d69b3ac2aea74)
+# DO NOT EDIT (digest: 797e702a3fd2a68703140284692964c1)
 Alternating_primary_backup_assignment
 Ascii_table
 Atomic_edit
@@ -8,12 +8,13 @@ Bin_io_utils
 Bitarray
 Cache
 Cbuffer
-Command
+Color_print
 Console
-Core_command
-Core_service_command
 Crit_bit
 Csv_writer
+Deprecated_command
+Deprecated_fcommand
+Deprecated_service_command
 Documented_match_statement
 English
 Environment
@@ -45,11 +46,11 @@ Extended_thread
 Extended_time
 Extended_unix
 Extra_fields
-Fcommand
 Fd_leak_check
 Find
 Fold_map
-Hmap
+Generic
+Inline_tests
 Iter
 Lazy_list
 Lazy_m
@@ -63,12 +64,14 @@ Malloc
 Multi_map
 Net_utils
 Number
+Or_exn
 Patience_diff
 Posix_clock
 Pp
 Printc
 Process
 Procfs
+Random_selection
 Readline
 Readline__input_char
 Readline__input_loop

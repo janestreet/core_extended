@@ -195,6 +195,7 @@ module Strategy = struct
       lru.size <- 0;
       Hashtbl.clear lru.table;
       Doubly_linked.clear lru.list
+
   end
 
   module Keep_all = struct

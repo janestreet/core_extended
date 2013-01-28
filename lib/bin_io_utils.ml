@@ -45,7 +45,7 @@ let save ?header ?perm file bin_writer_t v =
   in
   try
     Bigstring.really_output oc bstr;
-    close_out oc;
+    Out_channel.close oc;
     let perm =
       match perm with
       | Some perm -> perm

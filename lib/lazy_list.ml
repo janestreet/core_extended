@@ -204,7 +204,7 @@ let to_array t =
   match Lazy_m.force t with
   | Empty -> Array.empty ()
   | Cons(x, xs) ->
-      let ary = Array.create (length t) x in
+      let ary = Array.create ~len:(length t) x in
       let i = ref 1 in
       iter xs ~f:(fun x -> ary.(!i) <- x; incr i);
       ary
@@ -280,14 +280,14 @@ let lazy_sort ~cmp zlst =
 
 let sort ~cmp zlst =
   (* We inline to_array here, so we can control where we catch the
-   * invalid_argument exception Array.create throws when we try to
+   * invalid_argument exception Array.create ~len:throws when we try to
    * make too large of an array.
    *)
   match Lazy_m.force zlst with
   | Empty -> zlst
   | Cons(x, xs) ->
       (* Note, a little convolution is necessary here, as I want to trap
-       * Invalid_argument exceptions *only* around the Array.create call.
+       * Invalid_argument exceptions *only* around the Array.create ~len:call.
        * Remember that iterating through the lazy list is potientially
        * executing code that could potientially throw Invalid_argument
        * for entirely other reasons, and I don't want to catch those
@@ -295,7 +295,7 @@ let sort ~cmp zlst =
        *)
       let ary_opt =
         try
-          Some (Array.create (length zlst) x)
+          Some (Array.create ~len:(length zlst) x)
         with
         | Invalid_argument _ -> None
       in

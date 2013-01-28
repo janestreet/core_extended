@@ -19,8 +19,8 @@ let get_editor () = get_gen ["EDITOR"; "VISUAL"] ["vim"; "emacs"; "nano"] ;;
 
 let get_editor_exn () =
   get_editor ()
-  |! Option.value_exn_message
-    "No valid editors found! Try setting EDITOR environment variable."
+  |! Option.value_exn
+    ~message:"No valid editors found! Try setting EDITOR environment variable."
 ;;
 
 let get_pager () = get_gen ["PAGER"] ["less"; "more"] ;;
@@ -29,8 +29,8 @@ let page_contents ?pager ?(pager_options=[])?(tmp_name="sys_utils.page_contents"
   let tmp_file = Filename.temp_file tmp_name ".txt" in
   let pager = match pager with
     | Some p -> p
-    | None -> get_pager () |! Option.value_exn_message
-        "Couldn't find pager - very weird. Try setting PAGER variable?"
+    | None -> get_pager () |! Option.value_exn
+      ~message:"Couldn't find pager - very weird. Try setting PAGER variable?"
   in
   Exn.protect ~f:(fun () ->
     Out_channel.with_file tmp_file ~f:(fun f -> Out_channel.output_string f contents);
@@ -57,17 +57,17 @@ let with_tmp ~pre ~suf f =
     ~finally:(fun () -> Sys.remove tmp_file)
 
 (* -d is supposed to make it find a smaller set of changes. *)
-let diff ?(options=["-d"]) s1 s2 =
+let diff ?(options=["-d";"-u"]) s1 s2 =
   with_tmp ~pre:"sysutils" ~suf:"diff1" (fun f1 ->
     with_tmp ~pre:"sysutils" ~suf:"diff2" (fun f2 ->
       Out_channel.write_all f1 ~data:s1;
       Out_channel.write_all f2 ~data:s2;
       Shell.run_full ~expect:[0;1] "/usr/bin/diff" (options @ ["--"; f1; f2])))
 
-let getbyname_ip () =
-  Unix.gethostname ()
-  |! Unix.Inet_addr.of_string_or_getbyname
-  |! Unix.Inet_addr.to_string
+let ip_of_name name =
+  Unix.Inet_addr.of_string_or_getbyname name |! Unix.Inet_addr.to_string
+
+let getbyname_ip () = ip_of_name (Unix.gethostname ())
 
 let ifconfig_ip_rex = Pcre.regexp "inet addr:([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})"
 let ifconfig_ips () =
@@ -100,7 +100,7 @@ let edit_one file =
       editor
       [file]
   in
-  let _,ret = Unix.wait (`Pid pid) in
+  let ret = Unix.waitpid pid in
   match ret with
     (** We have to discard the return value because different editors have
         different conventions... *)

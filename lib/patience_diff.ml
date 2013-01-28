@@ -1,4 +1,4 @@
- open Core.Std
+open Core.Std
 
 let ( <|> ) ar ij = if snd ij <= fst ij  then [||] else ar <|> ij
 
@@ -17,15 +17,18 @@ module Patience = struct
   end
 
   module Pile = struct
+    type 'a t = 'a Stack.t
     let create x = let t = Stack.create () in Stack.push t x; t
     let top t = Stack.top t |! Option.value_exn
     let put_on_top t x = Stack.push t x
   end
 
   module Piles = struct
+    type 'a t = 'a Pile.t Dequeue.t
+
     (* If [dummy] is of type [a], [empty ~dummy] returns an empty thing with type
        [a Piles.t].  It doesn't matter what [dummy] actually is, only its type matters. *)
-    let empty ~dummy = Dequeue.create ~never_shrink:true ~dummy:(Pile.create dummy) ()
+    let empty ~dummy : 'a t = Dequeue.create ~never_shrink:true ~dummy:(Pile.create dummy) ()
 
     let get_ith_pile t i dir =
       let i =
@@ -63,8 +66,8 @@ module Patience = struct
               Search_foo.bsearch_opt ~f:(fun i ->
                 let pile = Piles.get_ith_pile piles i `From_left |! Option.value_exn in
                 if f pile then 1 else -1) ~low:0 ~high:(Piles.length piles)
-              |! Option.map ~f:(fun i -> (i,Piles.get_ith_pile piles i `From_left |!
-                     Option.value_exn))
+              |! Option.map ~f:(fun i ->
+                (i,Option.value_exn (Piles.get_ith_pile piles i `From_left)))
             with _ -> None
           end
     ;;
@@ -132,8 +135,8 @@ let longest_increasing_subsequence ar =
     Array.to_list ar
   else begin
     let maxlen = ref 0 in
-    let m = Array.create (len + 1) (-1) in
-    let pred = Array.create (len + 1) (-1) in
+    let m = Array.create ~len:(len + 1) (-1) in
+    let pred = Array.create ~len:(len + 1) (-1) in
     for i = 0 to len - 1 do
       let p =
         match Search_foo.bsearch ~low:1 ~high:!maxlen ~f:(fun p -> snd(ar.(i)) - snd(ar.(p))) with
@@ -396,7 +399,7 @@ let get_ranges_rev ~transform ~compare ~mine ~other =
             else
               let mine_range = mine <|> (mine_index, mine_stop) in
               let other_range = other <|> (other_index, other_stop) in
-              let range = Array.map2 mine_range other_range
+              let range = Array.map2_exn mine_range other_range
                 ~f:(fun x y -> (x, y)) in
               R.Same range :: l
           in
@@ -572,24 +575,25 @@ let ratio a b =
 
 let collapse_multi_sequences matches =
   let collapsed = ref [] in
+  let value_exn x = Option.value_exn x in
   if matches = [] then [] else
-    let start = Array.create (List.length (List.hd_exn matches)) None in
+    let start = Array.create ~len:(List.length (List.hd_exn matches)) None in
     let length = ref 0 in
     List.iter matches ~f:(fun il ->
       begin
         if Array.for_all start ~f:Option.is_some && (
-          List.mapi il ~f:(fun i x -> x = Option.value_exn start.(i) + !length)
+          List.mapi il ~f:(fun i x -> x = value_exn start.(i) + !length)
         |! List.for_all ~f:(fun x -> x))
         then incr length
         else begin if Array.for_all start ~f:Option.is_some then
-          collapsed := ((Array.map start ~f:Option.value_exn |! Array.to_list),
+          collapsed := ((Array.map start ~f:value_exn |! Array.to_list),
                        !length)::!collapsed;
         List.iteri il ~f:(fun i x -> start.(i) <- Some x);
         length := 1;
       end
     end);
     if Array.for_all start ~f:Option.is_some && !length <> 0 then
-      collapsed := ((Array.map start ~f:Option.value_exn |! Array.to_list),!length) ::
+      collapsed := ((Array.map start ~f:value_exn |! Array.to_list),!length) ::
         !collapsed;
     List.rev !collapsed
 
@@ -623,7 +627,7 @@ let merge ar =
         |! List.sort ~cmp:compare
       in
       let matching_blocks = collapse_multi_sequences list in
-      let last_pos = Array.create (Array.length ar) 0 in
+      let last_pos = Array.create ~len:(Array.length ar) 0 in
       let merged_array = ref [] in
       List.iter matching_blocks ~f:(fun (l,len) ->
         let ar' = Array.of_list l in

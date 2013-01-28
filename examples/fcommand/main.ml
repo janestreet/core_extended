@@ -6,14 +6,14 @@ open Core_extended.Std
 include struct
   open Async.Std
   let uses_async =
-    Fcommand.step (fun finished ->
+    Deprecated_fcommand.step (fun finished ->
       printf "uses_async\n%!";
       upon finished Shutdown.shutdown;
       never_returns (Scheduler.go ()))
 end
 
 let flag_prompt_if_missing name of_string ~doc =
-  let open Fcommand in
+  let open Deprecated_fcommand in
   flag ("-" ^ name) ~doc
     (Flag.map (optional of_string) ~f:(function
       | Some v -> v
@@ -25,7 +25,7 @@ let flag_prompt_if_missing name of_string ~doc =
     ))
 
 let fields_flag spec ~doc s field =
-  let open Fcommand in
+  let open Deprecated_fcommand in
   s ++ flag ("-" ^ Fieldslib.Field.name field) spec ~doc
 
 (* END -- useful utilities *)
@@ -36,8 +36,8 @@ module Sing = struct
     let of_string x = t_of_sexp (Sexp.Atom x)
   end
   let command =
-    Fcommand.cmd ~summary:"sing a song"
-      Fcommand.(
+    Deprecated_fcommand.cmd ~summary:"sing a song"
+      Deprecated_fcommand.(
         (* flags *)
         step (fun k slow -> k ~slow)
         ++ flag "-slow" ~doc:" sing slow"
@@ -69,13 +69,13 @@ module Sing = struct
 end
 
 let revision_flag () =
-  let open Fcommand in
+  let open Deprecated_fcommand in
   flag "-revision" ~doc:"REV revision number" (required string)
 
 module Hg_log = struct
   let command =
-    Fcommand.cmd ~summary:"show a point in hg history"
-      Fcommand.(
+    Deprecated_fcommand.cmd ~summary:"show a point in hg history"
+      Deprecated_fcommand.(
         revision_flag () ++
         flag "-print" no_arg ~doc:" display all changes (not just a summary)")
       (fun revision print ->
@@ -86,8 +86,8 @@ end
 
 module Hg_cat = struct
   let command =
-    Fcommand.cmd ~summary:"cat a file from hg history"
-      Fcommand.(revision_flag () ++ anon ("FILE" %: string))
+    Deprecated_fcommand.cmd ~summary:"cat a file from hg history"
+      Deprecated_fcommand.(revision_flag () ++ anon ("FILE" %: string))
       (fun revision file ->
         (* ... your code here ... *)
         ignore (revision, file)
@@ -97,8 +97,8 @@ end
 module Cat = struct
   open Async.Std
   let command =
-    Fcommand.cmd ~summary:"example async command: cat a file to stdout"
-      Fcommand.(anon ("FILE" %: string) ++ uses_async)
+    Deprecated_fcommand.cmd ~summary:"example async command: cat a file to stdout"
+      Deprecated_fcommand.(anon ("FILE" %: string) ++ uses_async)
       (fun path ->
         Reader.with_file path ~f:(fun r ->
           Pipe.iter_without_pushback (Reader.pipe r) ~f:(fun chunk ->
@@ -114,7 +114,7 @@ module Logger = struct
       (Daemon_command.create
         ~lock_file:"/var/tmp/logger.lock"
         ~name:"loggerd"
-        Fcommand.(anon ("LOGFILE" %: string) ++ uses_async)
+        Deprecated_fcommand.(anon ("LOGFILE" %: string) ++ uses_async)
         (fun path ->
           Writer.with_file path ~f:(fun w ->
             every (sec 1.) (fun () ->
@@ -126,8 +126,8 @@ end
 
 module Prompting = struct
   let command =
-    Fcommand.cmd ~summary:"command demonstrting prompt-if-missing flags"
-      Fcommand.(
+    Deprecated_fcommand.cmd ~summary:"command demonstrting prompt-if-missing flags"
+      Deprecated_fcommand.(
         (* flags *)
         flag "-rev" (required string) ~doc:" print stuff"
         ++ flag_prompt_if_missing "id" string ~doc:" whatever"
@@ -153,8 +153,8 @@ module Fields = struct
     print_endline (Sexp.to_string_hum (sexp_of_t t))
 
   let command =
-    Fcommand.cmd ~summary:"example using fieldslib"
-      Fcommand.(
+    Deprecated_fcommand.cmd ~summary:"example using fieldslib"
+      Deprecated_fcommand.(
         Fields.fold
           ~init:(step Fn.id)
           ~foo:(fields_flag (required int)    ~doc:"N foo factor")
@@ -167,8 +167,8 @@ end
 
 module Complex_anons = struct
   let command =
-    Fcommand.cmd ~summary:"command with complex anonymous argument structure"
-      Fcommand.(
+    Deprecated_fcommand.cmd ~summary:"command with complex anonymous argument structure"
+      Deprecated_fcommand.(
         anon ("A" %: string)
         ++ anon ("B" %: string)
         ++ anon (maybe (t3
@@ -198,11 +198,11 @@ module Complex_anons = struct
 end
 
 let command =
-  Core_extended.Std.Command.group ~summary:"fcommand examples"
+  Core_extended.Std.Deprecated_command.group ~summary:"fcommand examples"
   [
     ("sing", Sing.command);
     ("hg",
-      Command.group ~summary:"commands sharing a flag specification" [
+      Deprecated_command.group ~summary:"commands sharing a flag specification" [
         ("log", Hg_log.command);
         ("cat", Hg_cat.command);
       ]);
@@ -213,5 +213,5 @@ let command =
     ("complex-anons", Complex_anons.command);
   ]
 
-let () = Version_util_extended.Command.run command
+let () = Deprecated_command.run command
 

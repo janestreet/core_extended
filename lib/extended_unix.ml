@@ -16,8 +16,9 @@ external raw_fork_exec :
 
 module Env = struct
   open String.Map
+  type t = string String.Map.t
 
-  let empty = empty
+  let empty : t = empty
 
   let get ()  =
     Array.fold  (Unix.environment ())

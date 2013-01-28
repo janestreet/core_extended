@@ -228,11 +228,19 @@ module Process = struct
       ~init:[]
       ~f:(fun acc line -> (line::acc) , `Continue)
 
-  let head ?eol () = fold_lines
+  let aux_head ~flush ?eol () =
+    fold_lines
     ?eol
-    ~flush:(function Some v -> v | None -> assert false)
+    ~flush
     ~init:None
     ~f:(fun _acc line -> Some line,`Stop)
+
+  let head ?eol ()     = aux_head ~flush:(fun x -> x) ?eol ()
+
+  exception Empty_head
+
+  let head_exn ?eol () =
+    aux_head ~flush:(function Some x -> x | None -> raise Empty_head) ?eol ()
 
 end
 
@@ -267,6 +275,7 @@ let run_gen reader =
 let run = run_gen Process.discard
 let run_lines ?eol = run_gen (Process.lines ?eol ())
 let run_one ?eol = run_gen (Process.head ?eol ())
+let run_one_exn ?eol = run_gen (Process.head_exn ?eol ())
 let run_full = run_gen Process.content
 let run_fold ?eol ~init ~f = run_gen
   (Process.fold_lines ?eol ~init ~f ~flush:(fun x -> x))
@@ -290,9 +299,10 @@ let sh_gen reader=
   Process.run_k (k_shell_command (fun f cmd -> f cmd reader))
 
 let sh       ?expect = sh_gen Process.discard ?expect
-let sh_one   ?expect = sh_gen (Process.head ())   ?expect
 let sh_lines ?expect = sh_gen (Process.lines ())  ?expect
 let sh_full  ?expect = sh_gen Process.content ?expect
+let sh_one     ?expect = sh_gen (Process.head ()) ?expect
+let sh_one_exn ?expect = sh_gen (Process.head_exn ()) ?expect
 
 TEST =
   sh_lines "yes yes | head -n 200000" =
@@ -317,9 +327,10 @@ let ssh_gen reader ?ssh_options ?user ~host =
                    ?ssh_options ~quote_args:true ?user ~host)
 
 let ssh       ?ssh_options = ssh_gen Process.discard ?ssh_options
-let ssh_one   ?ssh_options = ssh_gen (Process.head ()) ?ssh_options
 let ssh_lines ?ssh_options = ssh_gen (Process.lines ()) ?ssh_options
 let ssh_full  ?ssh_options = ssh_gen Process.content ?ssh_options
+let ssh_one     ?ssh_options = ssh_gen (Process.head ()) ?ssh_options
+let ssh_one_exn ?ssh_options = ssh_gen (Process.head_exn ()) ?ssh_options
 
 let ssh_test ?ssh_options ?user ~host =
   Process.test_k (k_remote_command (fun f cmd -> f cmd)

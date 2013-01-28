@@ -415,7 +415,7 @@ let word_wrap
 (* Knuth-Morris-Pratt string matching. *)
 let is_substring  ~substring t =
   let kmp_prefix len ~substring =
-    let prefix = Array.create len 0 in
+    let prefix = Array.create ~len:len 0 in
     let rec f ~k ~q =
       if q > len then prefix
       else (

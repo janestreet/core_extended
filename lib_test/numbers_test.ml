@@ -20,9 +20,15 @@ module type Spec = sig
   include Number.Verified_std with type repr = t
 end
 
+let find_file ~dirs fname =
+  List.find dirs ~f:(fun d -> Sys.file_exists_exn (d ^/ fname))
+  |! Option.map ~f:(fun d -> d ^/ fname)
+
 let tests =
   Memo.unit (fun () ->
-    Sexp.load_sexp_conv_exn "numbers_test.sexp" tests_of_sexp)
+    match find_file ~dirs:["."; "lib_test"] "numbers_test.sexp" with
+    | None       -> failwith "I can't find numbers_test.sexp"
+    | Some fname -> Sexp.load_sexp_conv_exn fname tests_of_sexp)
 
 module Make_test (Spec : Spec) = struct
   open Spec

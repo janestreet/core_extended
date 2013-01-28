@@ -25,43 +25,58 @@ end
 module Result = struct
   module Stat = struct
     type t = {
-      run_time : Int63.t;
-      gc_time  : Int63.t;
-      sample_size : int;
-      compactions : int;
-      allocated : int;
+      run_time        : Int63.t;
+      run_cycles      : int;
+      gc_time         : Int63.t;
+      sample_size     : int;
+      compactions     : int;
+      minor_allocated : int;
+      major_allocated : int;
+      promoted        : int;
     }
 
     let empty = {
-      run_time = Int63.zero;
-      gc_time  = Int63.zero;
-      sample_size = 0;
-      compactions = 0;
-      allocated = 0;
+      run_time        = Int63.zero;
+      run_cycles      = 0;
+      gc_time         = Int63.zero;
+      sample_size     = 0;
+      compactions     = 0;
+      minor_allocated = 0;
+      major_allocated = 0;
+      promoted        = 0;
     }
 
     let (+) a b = {
       run_time = Int63_arithmetic.(a.run_time + b.run_time);
+      run_cycles  = a.run_cycles  + b.run_cycles;
       gc_time  = Int63_arithmetic.(a.gc_time  + b.gc_time);
       sample_size = a.sample_size + b.sample_size;
       compactions = a.compactions + b.compactions;
-      allocated   = a.allocated   + b.allocated;
+      minor_allocated = a.minor_allocated + b.minor_allocated;
+      major_allocated = a.major_allocated + b.major_allocated;
+      promoted    = a.promoted    + b.promoted;
     }
 
     let min a b = {
       run_time  = Int63.min a.run_time    b.run_time;
+      run_cycles  = Int.min a.run_cycles  b.run_cycles;
       gc_time   = Int63.min a.gc_time     b.gc_time;
       sample_size = Int.min a.sample_size b.sample_size;
       compactions = Int.min a.compactions b.compactions;
-      allocated   = Int.min a.allocated   b.allocated;
+      minor_allocated = Int.min a.minor_allocated b.minor_allocated;
+      major_allocated = Int.min a.major_allocated b.major_allocated;
+      promoted    = Int.min a.promoted    b.promoted;
     }
 
     let max a b = {
       run_time  = Int63.max a.run_time    b.run_time;
+      run_cycles  = Int.max a.run_cycles  b.run_cycles;
       gc_time   = Int63.max a.gc_time     b.gc_time;
       sample_size = Int.max a.sample_size b.sample_size;
       compactions = Int.max a.compactions b.compactions;
-      allocated   = Int.max a.allocated   b.allocated;
+      minor_allocated = Int.max a.minor_allocated b.minor_allocated;
+      major_allocated = Int.max a.major_allocated b.major_allocated;
+      promoted    = Int.max a.promoted    b.promoted;
     }
 
   end
@@ -74,10 +89,13 @@ module Result = struct
     let nl = Int63.of_int n   in
     { Stat.
       run_time = Int63_arithmetic.(sum.Stat.run_time / nl);
+      run_cycles = sum.Stat.run_cycles / n;
       gc_time  = Int63_arithmetic.(sum.Stat.gc_time / nl);
       sample_size = sum.Stat.sample_size / n;
       compactions = sum.Stat.compactions / n;
-      allocated = sum.Stat.allocated / n;
+      minor_allocated = sum.Stat.minor_allocated / n;
+      major_allocated = sum.Stat.major_allocated / n;
+      promoted = sum.Stat.promoted / n;
     }
 
   let min arr = Array.fold arr ~f:Stat.min ~init:arr.(0)
@@ -92,15 +110,17 @@ module Result = struct
       let d = (Int63.to_float x) -. (Int63.to_float y) in
       d *. d
     in
-    let squares = Array.map arr ~f:(fun stat -> diff_sq mean_run stat.Stat.run_time) in
+    let squares     = Array.map arr ~f:(fun stat -> diff_sq mean_run stat.Stat.run_time) in
     let squares_sum = Array.fold squares ~init:0. ~f:(+.) in
     let init_sd = sqrt (squares_sum /. Float.of_int (Array.length arr)) in
     Some (init_sd /. sqrt (Float.of_int (sample_size arr)))
 
   let compactions_occurred arr = (max arr).Stat.compactions > 0
 
-  let allocated_varied arr =
-    (max arr).Stat.allocated <> (min arr).Stat.allocated
+  let minor_allocated_varied arr =
+    (max arr).Stat.minor_allocated <> (min arr).Stat.minor_allocated
+  let major_allocated_varied arr =
+    (max arr).Stat.major_allocated <> (min arr).Stat.major_allocated
 end
 
 (* printing functions *)
@@ -166,8 +186,20 @@ let make_stdev ~time_format (_name_opt, _size_opt, results) =
       time_string ~time_format (Int63.of_float stdev)
 ;;
 
-let make_allocated (_name_opt, _size_opt, results) =
-  Int.to_string (Result.mean results).Result.Stat.allocated
+let make_minor_allocated (_name_opt, _size_opt, results) =
+  Int.to_string (Result.mean results).Result.Stat.minor_allocated
+;;
+
+let make_major_allocated (_name_opt, _size_opt, results) =
+  Int.to_string (Result.mean results).Result.Stat.major_allocated
+;;
+
+let make_promoted (_name_opt, _size_opt, results) =
+  Int.to_string (Result.mean results).Result.Stat.promoted
+;;
+
+let make_cycles (_name_opt, _size_opt, results) =
+  Int.to_string (Result.mean results).Result.Stat.run_cycles
 ;;
 
 let make_warn (_name_opt, _size_opt, results) =
@@ -181,30 +213,39 @@ let make_warn (_name_opt, _size_opt, results) =
   maybe_string   "m" ((mean_run - min_run) > mean_run / twenty)
   ^ maybe_string "M" ((max_run - mean_run) > mean_run / twenty)
   ^ maybe_string "c" (Result.compactions_occurred results)
-  ^ maybe_string "a" (Result.allocated_varied results)
+  ^ maybe_string "a" (Result.minor_allocated_varied results)
+  ^ maybe_string "A" (Result.major_allocated_varied results)
 ;;
 
-let print ?(time_format=`Auto) data =
+let print ?(time_format=`Auto) ?limit_width_to data =
   let module Col = Ascii_table.Column in
   let right = Ascii_table.Align.right in
-  let name_col = Col.create "Name" make_name in
-  let size_col = Col.create ~align:right "Input size" make_size in
-  let time_col = Col.create ~align:right "Run time" (make_time ~time_format) in
-  let norm_col = Col.create ~align:right "Normalized" (make_norm ~time_format) in
-  let stdev_col = Col.create ~align:right "Stdev" (make_stdev ~time_format) in
-  let allocated_col = Col.create ~align:right "Allocated" make_allocated in
-  let warn_col = Col.create ~align:right "Warnings" make_warn in
+  let name_col      = Col.create "Name" make_name in
+  let size_col      = Col.create ~align:right "Input size" make_size in
+  let time_col      = Col.create ~align:right "Run time" (make_time ~time_format) in
+  let cycles_col    = Col.create ~align:right "Cycles" make_cycles in
+  let norm_col      = Col.create ~align:right "Normalized" (make_norm ~time_format) in
+  let stdev_col     = Col.create ~align:right "Stdev" (make_stdev ~time_format) in
+  let minor_allocated_col =
+    Col.create ~align:right "Allocated (minor)" make_minor_allocated
+  in
+  let major_allocated_col =
+    Col.create ~align:right "Allocated (major)" make_major_allocated
+  in
+  let promoted_col  = Col.create ~align:right "Promoted" make_promoted in
+  let warn_col      = Col.create ~align:right "Warnings" make_warn in
 
   let exists_name = List.exists data ~f:(fun (name_opt, _, _) -> is_some name_opt) in
   let exists_size = List.exists data ~f:(fun (_, size_opt, _) -> is_some size_opt) in
-  Ascii_table.output ~oc:stdout
+  Ascii_table.output ~oc:stdout ?limit_width_to
     begin
       List.concat [
         (if exists_name then [name_col] else []);
         (if exists_size then [size_col] else []);
         [time_col];
+        [cycles_col];
         (if exists_size then [norm_col] else []);
-        [stdev_col; allocated_col; warn_col]
+        [stdev_col; minor_allocated_col; major_allocated_col; promoted_col; warn_col]
       ]
     end
     data
@@ -222,23 +263,24 @@ let stabilize_gc () =
     then loop (failsafe - 1) stat.Gc.Stat.live_words
   in
   loop 10 0
+;;
 
 let full_major_cost ~now () =
   let count = 10 in
-  let s = now () in
+  let s,_ = now () in
   for _i = 1 to count do
     Gc.full_major ();
   done;
-  let e = now () in
+  let e,_ = now () in
   Int63_arithmetic.((e - s) / Int63.of_int count)
 
 let find_run_size ~now gettime_cost f =
   let rec loop samples =
-    let s = now () in
+    let s,_ = now () in
     for _i = 1 to samples do
       f ();
     done;
-    let e = now () in
+    let e,_ = now () in
     (* we need enough samples so that the gettime_cost is < 1% of the cost of the run
        and we also demand that the total run take at least .5 seconds *)
     let open Int63_arithmetic in
@@ -248,51 +290,44 @@ let find_run_size ~now gettime_cost f =
     else (samples, e - s)
   in
   loop 1
+;;
 
-let gc_allocated gc_stat =
-  let v =
-    gc_stat.Gc.Stat.major_words
-    +. gc_stat.Gc.Stat.minor_words
-    -. gc_stat.Gc.Stat.promoted_words
-  in
-  Int.of_float v
+let gc_minor_allocated gc_stat_s gc_stat_e =
+  Int.of_float (gc_stat_e.Gc.Stat.minor_words -. gc_stat_s.Gc.Stat.minor_words)
+;;
 
-let run_once ~f ~sample_size ~gettime_cost ~full_major_cost ~allocated_cost ~now =
-  let stat_s = Gc.quick_stat () in
-  let run_s = now () in
+let gc_major_allocated gc_stat_s gc_stat_e =
+  Int.of_float (gc_stat_e.Gc.Stat.major_words -. gc_stat_s.Gc.Stat.major_words)
+;;
+
+let gc_promoted gc_stat_s gc_stat_e =
+  Int.of_float (gc_stat_e.Gc.Stat.promoted_words -. gc_stat_s.Gc.Stat.promoted_words)
+;;
+
+let run_once ~f ~sample_size ~gettime_cost ~full_major_cost ~now =
+  let stat_s         = Gc.quick_stat () in
+  let run_st, run_sc = now () in
   for _i = 1 to sample_size do
     f ();
   done;
-  let run_e = now () in
-  let stat_m = Gc.quick_stat () in
+  let run_et, run_ec = now () in
   Gc.full_major ();
-  let gc_e = now () in
+  let gc_et, _ = now () in
   let stat_e = Gc.quick_stat () in
   {Result.Stat.
-    run_time = Int63_arithmetic.((run_e - run_s - gettime_cost) / Int63.of_int sample_size);
-    gc_time  = Int63_arithmetic.((gc_e - run_e - full_major_cost) / Int63.of_int sample_size);
+    run_time = Int63_arithmetic.((run_et - run_st - gettime_cost) / Int63.of_int sample_size);
+    run_cycles   = (Posix_clock.Time_stamp_counter.diff run_ec run_sc) / sample_size;
+    gc_time  = Int63_arithmetic.((gc_et - run_et - full_major_cost) / Int63.of_int sample_size);
     sample_size;
-    compactions = stat_e.Gc.Stat.compactions - stat_s.Gc.Stat.compactions;
-    allocated = ((gc_allocated stat_m) - (gc_allocated stat_s) - allocated_cost)
-                / sample_size;
+    compactions     = stat_e.Gc.Stat.compactions - stat_s.Gc.Stat.compactions;
+    minor_allocated = gc_minor_allocated stat_s stat_e / sample_size;
+    major_allocated = gc_major_allocated stat_s stat_e / sample_size;
+    promoted        = gc_promoted stat_s stat_e / sample_size;
   }
-
-let allocated_cost ~now () =
-  let f () = () in
-  let compute ?(allocated_cost=0) sample_size=
-    let result =
-      run_once ~f ~sample_size ~gettime_cost:Int63.zero ~full_major_cost:Int63.zero
-        ~allocated_cost ~now
-    in
-    result.Result.Stat.allocated
-  in
-  let allocated_cost = compute 1 in
-  assert (0 = compute ~allocated_cost 1);
-  assert (0 = compute ~allocated_cost 100);
-  allocated_cost
 
 let bench_basic =
   let open Core.Std.Result.Monad_infix in
+  (Ok Posix_clock.Time_stamp_counter.rdtsc) >>= fun rdtsc ->
   Posix_clock.gettime           >>= fun gettime ->
   Posix_clock.mean_gettime_cost >>= fun mean_gettime_cost ->
   Posix_clock.min_interval      >>| fun min_interval ->
@@ -307,11 +342,16 @@ let bench_basic =
   in
   let old_gc = Gc.get () in
   Option.iter gc_prefs ~f:Gc.set;
-  let measurement_clock = match clock with
+  let measurement_clock =
+    match clock with
     | `Wall -> Posix_clock.Monotonic
     | `Cpu  -> Posix_clock.Process_cpu
   in
-  let now () = gettime measurement_clock in
+  let now () =
+    let time = gettime measurement_clock in
+    let tsc  = rdtsc () in
+    time, tsc
+  in
   if no_compactions then Gc.set { (Gc.get ()) with Gc.Control.max_overhead = 1_000_000 };
   (* calculate how long it takes us to get a time measurement for the current thread *)
   print_high "calculating cost of timing measurement: %!";
@@ -326,21 +366,18 @@ let bench_basic =
   print_high "determining number of runs per sample: %!";
   let sample_size, run_time = find_run_size ~now gettime_min_interval test.Test.f in
   print_high "%i\n%!" sample_size;
-  let runs = Array.create run_count Result.Stat.empty in
+  let runs = Array.create ~len:run_count Result.Stat.empty in
   print_high "stabilizing GC: %!";
   stabilize_gc ();
   print_high "done\n%!";
   print_high "calculating the cost of a full major sweep: %!";
   let full_major_cost = full_major_cost ~now () in
   print_high "%s ns\n%!" (Int63.to_string full_major_cost);
-  print_high "calculating memory allocated by tester: %!";
-  let allocated_cost = allocated_cost ~now () in
-  print_high "%i words\n%!" allocated_cost;
   print_mid "running samples for %s (estimated time %s sec)\n%!"
     (Option.value ~default:"(NO NAME)" test.Test.name)
     (Int63.to_string (Int63_arithmetic.((run_time * Int63.of_int run_count) / billion)));
   for i = 0 to run_count - 1 do
-    runs.(i) <- run_once ~f:test.Test.f ~sample_size ~gettime_cost ~full_major_cost ~allocated_cost
+    runs.(i) <- run_once ~f:test.Test.f ~sample_size ~gettime_cost ~full_major_cost
       ~now;
     print_mid ".%!";
   done;
@@ -351,28 +388,31 @@ let bench_basic =
   runs
 
 type 'a with_benchmark_flags =
-  ?verbosity:[ `High | `Mid | `Low ] -> ?gc_prefs:Gc.Control.t -> ?no_compactions:bool
-  -> ?fast:bool -> ?clock:[`Wall | `Cpu] -> 'a
+  ?verbosity:[ `High | `Mid | `Low ]
+  -> ?gc_prefs:Gc.Control.t
+  -> ?no_compactions:bool
+  -> ?fast:bool
+  -> ?clock:[`Wall | `Cpu]
+  -> 'a
 
 type 'a with_print_flags =
   ?time_format:[`Ns | `Ms | `Us | `S | `Auto]
+  -> ?limit_width_to:int
   -> 'a
 
 let default_run_count = 100
 
-let bench_raw =
-  let open Core.Std.Result.Monad_infix in
-  bench_basic >>| fun bench_basic ->
-  fun ?(verbosity=`Low) ?gc_prefs ?(no_compactions=false)
-      ?(fast=false) ?(clock=`Wall) tests ->
-    let run_count = if fast then 1 else default_run_count in
-    List.map tests ~f:(fun test -> test.Test.name, test.Test.size,
-      bench_basic ~verbosity ~gc_prefs ~no_compactions ?clock ~run_count test)
+let bench_raw
+    ?(verbosity=`Low) ?gc_prefs ?(no_compactions=false)
+    ?(fast=false) ?(clock=`Wall) tests =
+  let bench_basic = Or_error.ok_exn bench_basic in
+  let run_count = if fast then 1 else default_run_count in
+  List.map tests ~f:(fun test -> test.Test.name, test.Test.size,
+    bench_basic ~verbosity ~gc_prefs ~no_compactions ?clock ~run_count test)
 ;;
 
-let bench =
-  let open Core.Std.Result.Monad_infix in
-  bench_raw >>| fun bench_raw ->
-  fun ?time_format ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests ->
-    print ?time_format (bench_raw ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests)
+let bench
+    ?time_format ?limit_width_to ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests =
+  print ?time_format ?limit_width_to
+    (bench_raw ?verbosity ?gc_prefs ?no_compactions ?fast ?clock tests)
 ;;

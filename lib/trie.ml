@@ -128,6 +128,7 @@ module Make(T : Key) = struct
       | Alt of t list
       | Seq of t * t
       | Maybe of t
+    with sexp
 
     (* not tail recursive *)
     let rec of_t (Node t) =
@@ -159,7 +160,7 @@ module Make(T : Key) = struct
       in
       render t
   end
-  let render_as_regexp t ~capture_parts ~to_quoted_string = 
+  let render_as_regexp t ~capture_parts ~to_quoted_string =
     Regexp.render (Regexp.of_t t) ~capture_parts ~to_quoted_string
 end
 

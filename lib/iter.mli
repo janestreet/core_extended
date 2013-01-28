@@ -39,7 +39,6 @@ val unfold : init:'i -> f:('i -> ('a * 'i)) -> stop:'i -> 'a t
 (** find an element that satisfies the predicate *)
 val find : 'a t -> f:('a -> bool) -> 'a
 
-  
 (** iterate over elements that satisfy the predicate *)
 val filter : 'a t -> f:('a -> bool) -> 'a t
 

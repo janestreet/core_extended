@@ -15,8 +15,9 @@ let main () =
     match
       try
         Some (
-          Splice.tee ~assume_fd_is_nonblocking:true
-            ~fd_in:stdin ~fd_out:stdout max_int tee_flags)
+          let tee = Or_error.ok_exn Splice.tee in
+          tee ~assume_fd_is_nonblocking:true
+            ~fd_in:stdin ~fd_out:stdout Int.max_value tee_flags)
       with Unix_error (EAGAIN, _, _) -> None
     with
     | None -> loop ()
@@ -25,7 +26,8 @@ let main () =
         let rec splice_loop len =
           if len > 0 then
             let slen, _, _ =
-              Splice.splice ~fd_in:stdin ~fd_out:ofd ~len splice_flags
+              let splice = Or_error.ok_exn Splice.splice in
+              splice ~fd_in:stdin ~fd_out:ofd ~len splice_flags
             in
             splice_loop (len - slen)
           else loop ()

@@ -49,19 +49,21 @@ let to_string_hum' sexp = Pp.to_string (format sexp)
 
 module Diff :
 sig
-  val print : ?oc:out_channel -> Sexp.t -> Sexp.t -> unit
+  type t
+  val print : ?oc:out_channel -> t -> unit
+  val of_sexps : Sexp.t -> Sexp.t -> t option
 end
 =
 struct
-  type diff =
+  type t =
       | Different of Sexp.t * Sexp.t
-      | List of diff list
+      | List of t list
       | Record of record_field list
 
   and record_field =
       | New_in_first of Sexp.t
       | Not_in_first of Sexp.t
-      | Bad_match of string * diff
+      | Bad_match of string * t
 
   let rec rev_map_append f lst1 lst2 =
     match lst1 with
@@ -125,39 +127,36 @@ struct
         else Some (Different (sexp1, sexp2))
     | _ -> Some (Different (sexp1, sexp2))
 
-  let print_t ?(oc = stdout) = function
-    | None -> ()
-    | Some diff ->
-        let print_string ~tag ~indent str =
-          Printf.fprintf oc "%-*s %s\n%!" indent tag str
+  let print ?(oc = stdout) diff =
+    let print_string ~tag ~indent str =
+      Printf.fprintf oc "%-*s %s\n%!" indent tag str
+    in
+    let print_sexp ~tag ~indent sexp =
+      print_string ~tag ~indent (Sexp.to_string sexp)
+    in
+    let rec loop indent = function
+      | Different (sexp1, sexp2) ->
+        print_sexp ~tag:"+" ~indent sexp1;
+        print_sexp ~tag:"-" ~indent sexp2
+      | List lst ->
+        print_string ~tag:"" ~indent "(";
+        List.iter ~f:(loop (indent + 1)) lst;
+        print_string ~tag:"" ~indent ")"
+      | Record record_fields ->
+        let print_record_field = function
+          | New_in_first sexp -> print_sexp ~tag:"+" ~indent sexp
+          | Not_in_first sexp -> print_sexp ~tag:"-" ~indent sexp
+          | Bad_match (key, diff) ->
+            print_string ~tag:"" ~indent key;
+            loop (indent + 1) diff
         in
-        let print_sexp ~tag ~indent sexp =
-          print_string ~tag ~indent (Sexp.to_string sexp)
-        in
-        let rec loop indent = function
-          | Different (sexp1, sexp2) ->
-              print_sexp ~tag:"+" ~indent sexp1;
-              print_sexp ~tag:"-" ~indent sexp2
-          | List lst ->
-              print_string ~tag:"" ~indent "(";
-              List.iter ~f:(loop (indent + 1)) lst;
-              print_string ~tag:"" ~indent ")"
-          | Record record_fields ->
-              let print_record_field = function
-                | New_in_first sexp -> print_sexp ~tag:"+" ~indent sexp
-                | Not_in_first sexp -> print_sexp ~tag:"-" ~indent sexp
-                | Bad_match (key, diff) ->
-                    print_string ~tag:"" ~indent key;
-                    loop (indent + 1) diff
-              in
-              List.iter ~f:print_record_field record_fields;
-        in
-        loop 0 diff
-
-  let print ?oc sexp1 sexp2 = print_t ?oc (of_sexps sexp1 sexp2)
+        List.iter ~f:print_record_field record_fields;
+    in
+    loop 0 diff
 end
 
-let print_diff ?oc sexp1 sexp2 = Diff.print ?oc sexp1 sexp2
+let print_diff ?oc sexp1 sexp2 =
+  Option.iter (Diff.of_sexps sexp1 sexp2) ~f:(fun diff -> Diff.print ?oc diff)
 
 (* The purpose of this module is just to group this craziness together. *)
 module Summarize = struct
@@ -391,50 +390,8 @@ end = struct
     ))
 end
 
-module Make_sexp_maybe2 (Random_state:sig val state : Random.State.t end) = struct
-  type ('a,'b) t = ('a * 'b) Sexp_maybe.t with of_sexp, bin_io
-
-  (* Generate a random string and hope it's not generated anywhere else in the code. *)
-  let probably_unused_sexp () =
-    let string_length = 100 in
-    let s = String.create 100 in
-    for i = 0 to string_length - 1 do
-      s.[i] <- Char.of_int_exn (Random.State.int Random_state.state 256)
-    done;
-    s
-
-  let sexp_table = Hashtbl.Poly.create ()
-
-  let sexp_of_t sexp_of_a sexp_of_b a_and_b =
-    match a_and_b with
-    | Error sexp -> sexp
-    | Ok (a,b) ->
-      let sexps = (sexp_of_a a, sexp_of_b b) in
-      let replacement_sexp = probably_unused_sexp () in
-      Hashtbl.replace sexp_table ~key:replacement_sexp
-        ~data:sexps;
-      Sexp.Atom replacement_sexp
-
-  let final_pass sexp ~use_sexp_maybe =
-    let rec loop sexp =
-      match sexp with
-      | Sexp.List l -> [Sexp.List (List.concat_map l ~f:loop)]
-      | Sexp.Atom s ->
-        match Hashtbl.find sexp_table s with
-        | None -> [sexp]
-        | Some (sexp_a,sexp_b) ->
-          Hashtbl.remove sexp_table s;
-          if use_sexp_maybe
-          then [Sexp.List [sexp_a;sexp_b]]
-          else [sexp_a;sexp_b]
-    in
-    match sexp with
-    | Sexp.Atom _ -> sexp
-    | Sexp.List l -> Sexp.List (List.concat_map l ~f:loop)
-end
-
 module Records_table = struct
-  type 'a t = 'a list
+  type 'a t = 'a list with sexp
 
   exception Invalid_record_sexp of Sexp.t with sexp
 

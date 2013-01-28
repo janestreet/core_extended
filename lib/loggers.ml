@@ -70,12 +70,12 @@ module MakeChannelSpec (ChannelSpec : CHANNEL_SPEC) : SPEC = struct
           tm_year = m_year; tm_mon = m_month; tm_mday = m_mday;
           tm_hour = m_hour; tm_min = m_min; tm_sec = m_sec; _
         } = localtime mtime in
-    let m_sec = float m_sec +. mod_float mtime 1. in
+    let m_sec = float m_sec +. Float.mod_float mtime 1. in
     sprintf "%04d-%02d-%02d/%02d:%02d:%05.2f"
       (1900 + m_year) (m_month + 1) m_mday m_hour m_min m_sec
 
   let last_msg_ref = ref (DEBUG, "")
-  let last_msg_time_ref = ref neg_infinity
+  let last_msg_time_ref = ref Float.neg_infinity
   let last_msg_count_ref = ref 0
 
   let get_lev_spaces lev =

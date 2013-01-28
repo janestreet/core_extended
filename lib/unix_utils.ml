@@ -31,7 +31,7 @@ let string_to_ram_usage_limit s =
     if i > Int64.zero then Absolute i
     else Unlimited
   with Failure _ ->
-    let f = float_of_string s in
+    let f = Float.of_string s in
     if f < 0. || f > 1. then raise (Arg.Bad (ram_msg ^ s));
     if f > 0. then Relative f
     else Unlimited

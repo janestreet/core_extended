@@ -32,11 +32,15 @@ val get_groups : string -> string list
 val with_tmp : pre:string -> suf:string -> (string -> 'a) -> 'a
 
 (** [diff s1 s2] returns diff (1) output of the two strings. Identical files returns the
-    empty string. *)
+    empty string. The default value of [options] is "-d -u", to provide shorter, unified
+    diffs. *)
 val diff : ?options : string list -> string -> string -> string
 
-(** [get_ip_from_hostname ()] returns the IP of the current host by resolving the
-    hostname. *)
+(** [ip_of_name hostname] looks up the hostname and prints the IP in dotted-quad
+    format. *)
+val ip_of_name : string -> string
+
+(** [getbyname_ip ()] returns the IP of the current host by resolving the hostname. *)
 val getbyname_ip : unit -> string
 
 (** [ifconfig_ips ()] returns IPs of all active interfaces on the host by parsing ifconfig

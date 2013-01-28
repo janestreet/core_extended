@@ -70,7 +70,7 @@ TEST_MODULE = struct
 
   let histogram = String.Table.create ~size:5 ()
 
-  let num_samples = 1_000_000
+  let num_samples = 10_000_000
 
   TEST_UNIT =
     for _i = 1 to num_samples do

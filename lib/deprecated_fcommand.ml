@@ -1,3 +1,4 @@
+(** DEPRECATED: use Core.Std.Command instead *)
 open Core.Std
 
 module Anons_grammar : sig
@@ -44,7 +45,7 @@ end
 
 type ('a, 'b) t = {
   f : ('a Lazy.t * string list -> 'b Lazy.t * string list);
-  flags : unit Command.Flag.t list;
+  flags : unit Deprecated_command.Flag.t list;
   anons : Anons_grammar.t;
 }
 
@@ -91,7 +92,7 @@ let parse_aux ~name ~of_string arg =
 module Flag = struct
 
   type 'a state = {
-    action : unit Command.Flag.Action.t;
+    action : unit Deprecated_command.Flag.Action.t;
     read : unit -> 'a;
   }
 
@@ -100,7 +101,7 @@ module Flag = struct
   let arg_flag name of_string read write =
     { read = read;
       action =
-        Command.Flag.Action.arg (fun () arg ->
+        Deprecated_command.Flag.Action.arg (fun () arg ->
           write (parse_aux ~name ~of_string arg));
     }
 
@@ -142,7 +143,7 @@ module Flag = struct
       | `Absent -> v := `Present
       | `Present -> failwithf "flag %s passed more than once" name ()
     in
-    { read; action = Command.Flag.Action.noarg write }
+    { read; action = Deprecated_command.Flag.Action.noarg write }
 
   let listed of_string name =
     let v = ref [] in
@@ -161,7 +162,9 @@ module Flag = struct
 
   let capture_remaining_command_line _ =
     let cell = ref None in
-    let action = Command.Flag.Action.rest (fun () cmd_line -> cell := Some cmd_line) in
+    let action =
+      Deprecated_command.Flag.Action.rest (fun () cmd_line -> cell := Some cmd_line)
+    in
     let read () = !cell in
     { action; read }
 
@@ -171,7 +174,7 @@ module Flag = struct
       f = (fun (k, anons) ->
         let v = state.read () in
         (lazy (Lazy.force k v), anons));
-      flags = [Command.Flag.create ~name ~doc state.action];
+      flags = [Deprecated_command.Flag.create ~name ~doc state.action];
       anons = Anons_grammar.empty;
     }
 
@@ -299,10 +302,10 @@ end
 
 let cmd ~summary ?readme ?autocomplete ?(global_flags = []) t main =
   let flags = t.flags @ global_flags in
-  let flag_names = List.map ~f:Command.Flag.name flags in
+  let flag_names = List.map ~f:Deprecated_command.Flag.name flags in
   Option.iter (List.find_a_dup ~compare:String.compare flag_names) ~f:(fun dup ->
     failwithf "Duplicate flag name: %S" dup ());
-  Command.create ~summary ?readme ?autocomplete
+  Deprecated_command.create ~summary ?readme ?autocomplete
     ~usage_arg:(Anons_grammar.usage_arg t.anons)
     ~init:Fn.id
     ~flags

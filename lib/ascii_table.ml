@@ -86,7 +86,7 @@ module Column = struct
   type constraints = {
     total_width : int;
     min_widths : (string * int) list;
-  } with sexp_of
+  } with sexp
   exception Impossible_table_constraints of constraints with sexp
 
   let create_attr ?(align=Align.left) ?min_width ?(max_width=90)
@@ -217,7 +217,7 @@ module Display = struct
             then Art.left ~spacing
             else Art.mid ~spacing
           in
-          add (Art.style art (if (index mod 2 = 1) then [`Blue] else []));
+          add (Art.style art []);
           List.iter ~f:add (El.slice column_width el visual_row align_func));
       add (Art.right_newline ~spacing);
     in
@@ -233,7 +233,7 @@ module Display = struct
       ~spacing ~add ~grid index row_height
   ;;
 
-  let line ~spacing ~add ~grid index (row, _) =
+  let line ~spacing ~add ~grid _index (row, _) =
     assert(List.length row = List.length grid.widths
           && List.length grid.widths = List.length grid.align_funcs);
     List.iter2_exn row (List.zip_exn grid.widths grid.align_funcs)
@@ -243,7 +243,7 @@ module Display = struct
           then Art.left ~spacing
           else Art.mid ~spacing
         in
-        add (Art.style art (if (index mod 2 = 1) then [`Blue] else []));
+        add (Art.style art []);
         let to_add = El.slice column_width el 0 align_func in
         List.iter ~f:add
           begin match List.filter to_add ~f:(Fn.non Art.emptyp) with

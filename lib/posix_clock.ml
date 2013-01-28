@@ -24,9 +24,8 @@ let to_string t =
 
 IFDEF POSIX_TIMERS THEN
 
-external getres : t -> Int63.t = "caml_clock_getres"
-external gettime : t -> Int63.t = "caml_clock_gettime"
-(*external nanosleep : t -> int -> unit = "caml_clock_nanosleep"*)
+external getres : t -> Int63.t = "caml_clock_getres" "noalloc"
+external gettime : t -> Int63.t = "caml_clock_gettime" "noalloc"
 
 module Int63_arithmetic : sig
   type t = Int63.t
@@ -44,9 +43,9 @@ let min_interval t =
     let open Int63_arithmetic in
     if t1 <> t2 && t2 > t1 then current_min := min (t2 - t1) !current_min
   done;
-
   if !current_min <> canary_val then !current_min
   else failwith (Printf.sprintf "unable to calculate min_interval for %s" (to_string t))
+;;
 
 let mean_gettime_cost ~measure ~using =
   assert (getres Process_cpu = Int63.one);
@@ -57,6 +56,7 @@ let mean_gettime_cost ~measure ~using =
   done;
   let stop = gettime using in
   Int63_arithmetic.((stop - start) / Int63.of_int count)
+;;
 
 let getres            = Ok getres
 let gettime           = Ok gettime
@@ -73,3 +73,20 @@ let min_interval      = unimplemented "Posix_clock.min_interval"
 let mean_gettime_cost = unimplemented "Posix_clock.mean_gettime_cost"
 
 ENDIF
+
+module Time_stamp_counter = struct
+  type t = int
+
+  let diff t1 t2 = t1 - t2
+
+  IFDEF ARCH_x86_64 THEN
+    external rdtsc : unit -> int = "caml_rdtsc" "noalloc"
+  ELSE IFDEF ARCH_i386 THEN
+    external rdtsc : unit -> int = "caml_rdtsc" "noalloc"
+  ELSE
+    let rdtsc () =
+      failwith "Posix_clock.Time_stamp_counter.rdtsc \
+                is not implemented for this architecture."
+  ENDIF ENDIF
+
+end

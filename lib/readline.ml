@@ -64,9 +64,12 @@ let interactive_readline ~prompt =
   print_string (prompt);
   let res =
     try
-      Some (Shell.run_one "zenity" ["--entry";
-                                    "--text="^prompt;
-                                    "--title=\"Toploop readline!!\""])
+      Shell.run_one
+        "zenity"
+        [ "--entry"
+        ; "--text=" ^ prompt
+        ; "--title=\"Toploop readline!!\""
+        ]
     with _ -> None
   in
   Option.iter res ~f:print_endline;

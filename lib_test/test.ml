@@ -15,7 +15,6 @@ let all = TestList [
   Cache_test.test;
   Shell_test.test;
   Search_test.test;
-  Union_find_test.test;
   Numbers_test.test;
   Bin_io_utils_test.test;
 ]

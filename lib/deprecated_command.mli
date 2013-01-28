@@ -1,3 +1,4 @@
+(** DEPRECATED: use Core.Std.Command instead *)
 (** command-line parsing with hierarchical sub-commands *)
 
 open Core.Std
@@ -126,6 +127,14 @@ val create :
   val lift : 'a t -> project:('b -> 'a * ('a -> 'b)) -> 'b t
 
   val lift_unit : unit t -> 'any t
+  (* transitional only, not for casual user *)
+  val to_spec :
+    ('accum -> 'accum) ref
+    -> 'accum t
+    -> ('c, 'c) Command.Spec.t
+
+  val to_spec_unit : unit t -> ('c, 'c) Command.Spec.t
+  val to_spec_units : unit t list -> ('c, 'c) Command.Spec.t
 end
 
 module Shared_flags : sig
@@ -238,9 +247,9 @@ end
     }
 *)
 
-val create : 
+val create :
   ?autocomplete:Autocomplete.t
-  -> ?readme:(unit -> string) 
+  -> ?readme:(unit -> string)
   -> summary:string
   -> usage_arg:string
   -> init:(unit -> 'accum)
@@ -324,6 +333,8 @@ module Version : sig
      in the strings instead of using Version_util directly prevents this
      module from being rebuilt constantly, I think(?). *)
   val command : ?version:string -> ?build_info:string -> unit -> t
+
+  val print_version : ?version:string -> unit -> unit
 end
 
 (** This module is intended to help in using pa_fields to easily generate
@@ -358,7 +369,7 @@ end
       let get_opt of_string = A.get_opt accum of_string in
       Fields.map
         ~field1:(get int_of_string)
-        ~field2:(get float_of_string)
+        ~field2:(get Float.of_string)
         ~field3:(get bool_of_string)
         ~field4:(get_opt ident)
     )
@@ -504,5 +515,5 @@ module Helpers : sig
   val no_anons : 'a -> string list -> 'a
 end
 
-val of_core_command : Core_command.t -> t
+val of_core_command : Core.Std.Command.t -> t
 

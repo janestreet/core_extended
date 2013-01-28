@@ -27,7 +27,7 @@ let file_content_ne f1 f2 =
         try loop () with End_of_file -> None
       in
       protectx (open_in f1,open_in f2)
-        ~finally:(fun (ic1,ic2) -> close_in ic1; close_in ic2)
+        ~finally:(fun (ic1,ic2) -> In_channel.close ic1; In_channel.close ic2)
         ~f:(fun (ic1,ic2) ->
           let rec loop () =
             match input_nbchar ic1,input_nbchar ic2 with
@@ -50,7 +50,7 @@ let write_wrap ?(mode:[`Clobber|`Append|`Atomic|`Atomic_update]=`Clobber) ~f fna
         ~f:(fun tmp_file ->
               let res = protectx oc
                 ~f
-                ~finally:close_out
+                ~finally:Out_channel.close
               in
               let diff f1 f2  =
                 try
@@ -65,7 +65,7 @@ let write_wrap ?(mode:[`Clobber|`Append|`Atomic|`Atomic_update]=`Clobber) ~f fna
               res)
         ~finally:Unix.unlink
   | `Clobber ->
-      protectx (open_out fname) ~f ~finally:close_out
+      protectx (open_out fname) ~f ~finally:Out_channel.close
   | `Append ->
       protectx (open_out_gen [Open_append;Open_creat] 0o666 fname)
-        ~f ~finally:close_out
+        ~f ~finally:Out_channel.close

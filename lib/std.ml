@@ -1,26 +1,28 @@
 include Extended_common
 
+module Alternating_primary_backup_assignment = Alternating_primary_backup_assignment
 module Array = struct
   include Core.Std.Array
   include Extended_array
 end
 module Ascii_table = Ascii_table
-module Alternating_primary_backup_assignment = Alternating_primary_backup_assignment
 module Atomic_edit = Atomic_edit
 module Bench = Bench
 module Bin_io_utils = Bin_io_utils
 module Bitarray = Bitarray
 module Cache = Cache
 module Cbuffer = Cbuffer
-module Command = Command
+module Color_print = Color_print
 module Console = Console
-module Core_command = Core_command
-module Core_service_command = Core_service_command
+module Service_command = Service_command
 module Csv_writer = Csv_writer
 module Date = struct
   include Core.Std.Date
   include Extended_time.Extended_date
 end
+module Deprecated_fcommand = Deprecated_fcommand
+module Deprecated_command = Deprecated_command
+module Deprecated_service_command = Deprecated_service_command
 module English = English
 module Environment = Environment
 module Documented_match_statement = Documented_match_statement
@@ -30,7 +32,6 @@ module Exn = struct
   include Extended_exn
 end
 module Extra_fields = Extra_fields
-module Fcommand = Fcommand
 module Fd_leak_check = Fd_leak_check
 module Filename = struct
   include Core.Std.Filename
@@ -54,7 +55,6 @@ module Hashtbl = struct
   include Core.Std.Hashtbl
   include Extended_hashtbl
 end
-module Hmap = Hmap
 module Int = struct
   include Core.Std.Int
   include Extended_int
@@ -106,11 +106,13 @@ module Memo = struct
 end
 module Multi_map = Multi_map
 module Net_utils = Net_utils
+module Or_exn = Or_exn
 module Pp = Pp
 module Printc = Printc
 module Process = Process
 module Procfs = Procfs
 module Posix_clock = Posix_clock
+module Random_selection = Random_selection
 module Readline = Readline
 module Result = struct
   include Core.Std.Result
@@ -120,7 +122,6 @@ module Runtime_blockout_detector = Runtime_blockout_detector
 module Rw_mutex = Rw_mutex
 module Sampler = Sampler
 module Search = Search_foo
-module Service_command = Service_command
 module Semaphore = Semaphore
 module Sendmail = Sendmail
 module Sexp = struct

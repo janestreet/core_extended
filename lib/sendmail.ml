@@ -30,8 +30,9 @@ let mta_memo =
     (fun () ->
       match
         Result.try_with (fun () ->
-          Filename.basename (Shell.run_one "readlink" ["-f";"/usr/sbin/sendmail"]
-          ))
+          match Shell.run_one "readlink" ["-f";"/usr/sbin/sendmail"] with
+          | None -> assert false
+          | Some path -> Filename.basename path)
       with
       | Ok "sendmail.sendmail" -> Sendmail
       | Ok "ssmtp" -> Ssmtp

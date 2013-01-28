@@ -21,25 +21,26 @@ let libs pgm =
 
 let whitelist = ["libpcre"]
 
-let core_hello = ref "core_hello.exe"
-let core_extended_hello = ref "core_extended_hello.exe"
+let core_hello = ref "core_hello"
+let core_extended_hello = ref "core_extended_hello"
 let args =
   ["--core-hello",Arg.Set_string core_hello,"PGM hello world program linked against core";
    "--core-extended-hello",Arg.Set_string core_extended_hello,"PGM hello world program linked against core_extended"
   ]
 
 let check_exe f =
-  if not (Sys.file_exists_exn f) then
-    assert_failure
-      (sprintf "could not find "^f)
+  let exts = [ ""; ".exe"; ".native" ] in
+  match List.find exts ~f:(fun ext -> Sys.file_exists_exn (f ^ ext)) with
+  | Some ext -> f ^ ext
+  | None -> assert_failure (sprintf "could not find "^f)
 
 let test =
   "Ldd_test" >::
     (fun () ->
-       check_exe !core_hello;
-       check_exe !core_extended_hello;
-       let base_libs = libs !core_hello @ whitelist
-       and ext_libs = libs  !core_extended_hello in
+       let core_hello = check_exe !core_hello in
+       let core_extended_hello = check_exe !core_extended_hello in
+       let base_libs = libs core_hello @ whitelist
+       and ext_libs = libs  core_extended_hello in
        let added_libs = List.filter ext_libs
          ~f:(fun l -> not (List.mem base_libs l))
        in

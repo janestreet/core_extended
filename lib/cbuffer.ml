@@ -10,7 +10,7 @@ type 'a t = { mutable data: 'a array; (** base of circular buffer *)
 with sexp
 
 let create ?(never_shrink=false) dummy length =
-  { data = Array.create (Int.max 10 length) dummy;
+  { data = Array.create ~len:(Int.max 10 length) dummy;
     start = 0;
     length = 0;
     never_shrink = never_shrink;
@@ -48,7 +48,7 @@ let copy_data ~src ~dst start length =
 (* [swap_array buf len] copies the contents of [buf] to a new array of length [len] and
    places that new data into the buffer *)
 let swap_array buf new_length =
-  let newdata = Array.create new_length buf.dummy in
+  let newdata = Array.create ~len:new_length buf.dummy in
   copy_data  ~src:buf.data ~dst:newdata buf.start buf.length;
   buf.data <- newdata;
   buf.start <- 0
@@ -65,7 +65,7 @@ let shrink buf =
     swap_array buf (phys_length buf / 2)
 
 let to_array buf =
-  let ar = Array.create buf.length buf.dummy in
+  let ar = Array.create ~len:buf.length buf.dummy in
   copy_data ~src:buf.data ~dst:ar buf.start buf.length;
   ar
 

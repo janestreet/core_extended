@@ -33,7 +33,7 @@ let bits_per_bucket = 62
 let create sz =
   if sz < 0 || sz > (Array.max_length * bits_per_bucket) then
     invalid_argf "invalid size" ();
-  { data = Array.create (1 + (sz / bits_per_bucket)) Int63_chunk.empty;
+  { data = Array.create ~len:(1 + (sz / bits_per_bucket)) Int63_chunk.empty;
     length = sz }
 ;;
 

@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 8badc9229e0d85c216728e7f20f359d1)
+# DO NOT EDIT (digest: 157a6a31a1610bd659706924b65777df)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -23,12 +23,13 @@
 "lib/bitarray.cmx": for-pack(Core_extended)
 "lib/cache.cmx": for-pack(Core_extended)
 "lib/cbuffer.cmx": for-pack(Core_extended)
-"lib/command.cmx": for-pack(Core_extended)
+"lib/color_print.cmx": for-pack(Core_extended)
 "lib/console.cmx": for-pack(Core_extended)
-"lib/core_command.cmx": for-pack(Core_extended)
-"lib/core_service_command.cmx": for-pack(Core_extended)
 "lib/crit_bit.cmx": for-pack(Core_extended)
 "lib/csv_writer.cmx": for-pack(Core_extended)
+"lib/deprecated_command.cmx": for-pack(Core_extended)
+"lib/deprecated_fcommand.cmx": for-pack(Core_extended)
+"lib/deprecated_service_command.cmx": for-pack(Core_extended)
 "lib/documented_match_statement.cmx": for-pack(Core_extended)
 "lib/english.cmx": for-pack(Core_extended)
 "lib/environment.cmx": for-pack(Core_extended)
@@ -60,11 +61,11 @@
 "lib/extended_time.cmx": for-pack(Core_extended)
 "lib/extended_unix.cmx": for-pack(Core_extended)
 "lib/extra_fields.cmx": for-pack(Core_extended)
-"lib/fcommand.cmx": for-pack(Core_extended)
 "lib/fd_leak_check.cmx": for-pack(Core_extended)
 "lib/find.cmx": for-pack(Core_extended)
 "lib/fold_map.cmx": for-pack(Core_extended)
-"lib/hmap.cmx": for-pack(Core_extended)
+"lib/generic.cmx": for-pack(Core_extended)
+"lib/inline_tests.cmx": for-pack(Core_extended)
 "lib/iter.cmx": for-pack(Core_extended)
 "lib/lazy_list.cmx": for-pack(Core_extended)
 "lib/lazy_m.cmx": for-pack(Core_extended)
@@ -78,12 +79,14 @@
 "lib/multi_map.cmx": for-pack(Core_extended)
 "lib/net_utils.cmx": for-pack(Core_extended)
 "lib/number.cmx": for-pack(Core_extended)
+"lib/or_exn.cmx": for-pack(Core_extended)
 "lib/patience_diff.cmx": for-pack(Core_extended)
 "lib/posix_clock.cmx": for-pack(Core_extended)
 "lib/pp.cmx": for-pack(Core_extended)
 "lib/printc.cmx": for-pack(Core_extended)
 "lib/process.cmx": for-pack(Core_extended)
 "lib/procfs.cmx": for-pack(Core_extended)
+"lib/random_selection.cmx": for-pack(Core_extended)
 "lib/readline.cmx": for-pack(Core_extended)
 "lib/readline__input_char.cmx": for-pack(Core_extended)
 "lib/readline__input_loop.cmx": for-pack(Core_extended)
@@ -316,8 +319,7 @@
 <lib_test/*.ml{,i}>: pkg_unix
 <lib_test/test_runner.{native,byte}>: custom
 # OASIS_STOP
-<lib/*.ml{,i}>          : syntax_camlp4o
-"lib/command.ml"        : mlh, pkg_camlp4.macro
+<lib{,_test}/*.ml{,i}>  : syntax_camlp4o
 "lib/console.ml"        : mlh, pkg_camlp4.macro
 "lib/core_command.ml"   : mlh, pkg_camlp4.macro
 "lib/extended_linux.ml" : mlh, pkg_camlp4.macro

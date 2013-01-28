@@ -27,3 +27,10 @@ val min_interval : (t -> Int63.t) Or_error.t
 (* [cost t] returns the cost of calling gettime with the given t int nanoseconds *)
 val mean_gettime_cost : (measure:t -> using:t -> Int63.t) Or_error.t
 
+module Time_stamp_counter : sig
+  type t
+
+  (* [rdtsc ()] returns the cpu cycle count *)
+  val rdtsc : unit -> t
+  val diff : t -> t -> int
+end

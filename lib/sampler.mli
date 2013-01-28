@@ -1,6 +1,6 @@
 open Core.Std
 
-(** compiled finite discrete probability distributions supporting constant
+(** a compiled finite discrete probability distribution that supports constant
     time sampling *)
 type 'a t
 
@@ -11,6 +11,6 @@ type 'a t
     a histogram in which frequencies are interpreted as probabilities. *)
 val create : ('a * float) list -> 'a t
 
-(** take a sample from the distribution in constant time *)
+(** randomly sample the distribution in constant time *)
 val sample : ?state:Random.State.t -> 'a t -> 'a
 

@@ -5,7 +5,7 @@ open OUnit
 let test =
   "extended_float" >:::
     [ "pretty" >:: (fun () ->
-        List.iter ~f:(fun (f, s) -> string_of_float f @? (s = Float.pretty ~on_negative:`Print_dir f))
+        List.iter ~f:(fun (f, s) -> Float.to_string f @? (s = Float.pretty ~on_negative:`Print_dir f))
           [ (0.004, "0");
             (0.0049, "0");
             (0.005, "0.01");
@@ -51,7 +51,7 @@ let test =
           ]);
       "to_float_hum" >:: (fun () ->
         List.iter ~f:(fun (f, s) ->
-          string_of_float f @? (s = Float.to_string_hum f))
+          Float.to_string f @? (s = Float.to_string_hum f))
           [ 1.00004e12, "1.000_04e+12";
             -10004.0004,"-10_004.000_4";
             -14.,"-14.";

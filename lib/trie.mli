@@ -23,7 +23,7 @@ module type S = sig
     include Hashable with type t := t
   end
 
-  type t = Node of (bool * t) Part.Table.t 
+  type t = Node of (bool * t) Part.Table.t
 
   val create : unit -> t
 
@@ -38,10 +38,10 @@ module type S = sig
   val remove : t -> Key.t -> unit
 
   (* [render_as_regexp t f] renders the trie as an optimized regular expression *)
-  val render_as_regexp : 
-       t 
+  val render_as_regexp :
+       t
     -> capture_parts:bool
-    -> to_quoted_string:(Part.t -> string) 
+    -> to_quoted_string:(Part.t -> string)
     -> string
 end
 

@@ -5,6 +5,8 @@ module Filesize = struct
 
   module Infix64 = (Int64 :
     sig type t = Int64.t
+        val (+) : t -> t -> t
+        val (-) : t -> t -> t
         val ( * ) : t -> t -> t
         val (/) : t -> t -> t
     end)

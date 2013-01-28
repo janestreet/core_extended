@@ -5,7 +5,7 @@ module type T = sig
   type main_fun
   val lock_file : string
   val name : string
-  val spec : (main_fun, unit) Fcommand.t
+  val spec : (main_fun, unit) Deprecated_fcommand.t
   val main : main_fun
 end
 
@@ -36,6 +36,7 @@ let start_daemon ~lock_file main =
     (* we release the daemon's parent *after* the lock file is created
        so that any error messages during lock file creation happen
        prior to severing the daemon's connection to std{out,err} *)
+    let release_parent = Staged.unstage release_parent in
     release_parent ();
     (* unix automatically handles unlocking the lock file, but it is
        our responsibility to delete it *)
@@ -62,15 +63,15 @@ let still_alive pid =
   | `No_such_process -> false
 
 let stop_signal_flag () =
-  let open Fcommand in
+  let open Deprecated_fcommand in
   flag "-kill" ~doc:" send SIGKILL instead of SIGTERM"
     Flag.(map no_arg ~f:(function
       | `Present -> Signal.kill
       | `Absent -> Signal.term))
 
 let status_command t =
-  Fcommand.cmd ~summary:(sprintf "check status of %s" (name t))
-    Fcommand.(anon zero)
+  Deprecated_fcommand.cmd ~summary:(sprintf "check status of %s" (name t))
+    Deprecated_fcommand.(anon zero)
     (fun () ->
       match check_lock_file t with
       | `Not_running -> printf "%s is not running\n%!" (name t)
@@ -109,7 +110,7 @@ let stop signal t =
 
 let stop_command t =
   let module T = (val t : T) in
-  Fcommand.cmd ~summary:(sprintf "stop %s" T.name)
+  Deprecated_fcommand.cmd ~summary:(sprintf "stop %s" T.name)
     (stop_signal_flag ())
     (fun signal ->
       match stop signal t with
@@ -118,21 +119,21 @@ let stop_command t =
 
 let start_command t =
   let module T = (val t : T) in
-  Fcommand.cmd ~summary:(sprintf "restart %s" T.name)
-    Fcommand.(const () ++ T.spec)
+  Deprecated_fcommand.cmd ~summary:(sprintf "restart %s" T.name)
+    Deprecated_fcommand.(const () ++ T.spec)
     (fun () -> start_daemon ~lock_file:T.lock_file T.main)
 
 let restart_command t =
   let module T = (val t : T) in
-  Fcommand.cmd ~summary:(sprintf "restart %s" T.name)
-    Fcommand.(stop_signal_flag () ++ T.spec)
+  Deprecated_fcommand.cmd ~summary:(sprintf "restart %s" T.name)
+    Deprecated_fcommand.(stop_signal_flag () ++ T.spec)
     (fun signal ->
       match stop signal t with
       | `Did_not_die -> exit 1
       | `Was_not_running | `Died -> start_daemon ~lock_file:T.lock_file T.main)
 
 let group t =
-  Command.group ~summary:(sprintf "manage %s" (name t)) [
+  Deprecated_command.group ~summary:(sprintf "manage %s" (name t)) [
     ("start",   start_command   t);
     ("stop",    stop_command    t);
     ("restart", restart_command t);
