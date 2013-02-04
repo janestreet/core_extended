@@ -162,7 +162,7 @@ let input_line
     ~hist:(History.snapshot history)
     ~prompt
     ?text
-    ?completion:tab_completion
+    ~completion:tab_completion
   in
   begin match res with
   | None | Some "" -> ()

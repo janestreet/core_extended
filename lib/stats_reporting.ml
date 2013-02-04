@@ -18,7 +18,7 @@ type report = {
 let header_size = 16
 
 
-let report = { data = Bigstring.create 10000000;
+let report = { data = Bigstring.create 1000000000;
                used = header_size; }
 
 let field_counter_ref = ref 1
@@ -26,6 +26,8 @@ let field_counter_ref = ref 1
 let write_header () =
   Int.bin_write_t report.data ~pos:0 report.used
 
+let perc_used () =
+  (report.used * 100) / (Bigstring.length report.data)
 
 let expand_report_buffer () =
   let buf = Bigstring.create ((Bigstring.length report.data) * 2) in
@@ -56,6 +58,13 @@ let add_datum field num =
 
 let add_datum_float field num =
   report_t (Float_datum (field, num, Time.now()))
+
+let resize_if_required () =
+  if perc_used () > 90
+  then begin
+    printf "Resizing stats_reporting buffer\n%!";
+    expand_report_buffer ()
+  end
 
 let write_report () =
   let fn = "stats.data" in

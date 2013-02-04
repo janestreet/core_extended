@@ -341,12 +341,12 @@ module Net : sig
         | TCP_LISTEN
         | TCP_CLOSING
         | TCP_MAX_STATES
-    val to_int : t -> int 
-    val of_int : int -> t 
+    val to_int : t -> int
+    val of_int : int -> t
   end
 
   (** /proc/net/tcp, or what netstat or lsof -i parses. *)
-  module Tcp : sig 
+  module Tcp : sig
     type t =
       {
         sl : int;
@@ -369,10 +369,10 @@ module Net : sig
 
     (** These don't do any IO and should be async-ok *)
     val of_line : string -> t option
-    val of_line_exn : string -> t 
+    val of_line_exn : string -> t
 
     (** This does IO and is not async-ok. *)
-    val load_exn : unit -> t list 
+    val load_exn : unit -> t list
 
   end
 end

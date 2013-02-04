@@ -153,4 +153,3 @@ module Unix = struct
 end
 module Unix_utils = Unix_utils
 module Update_queue = Update_queue
-module Uuid = Uuid

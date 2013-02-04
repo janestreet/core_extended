@@ -7,6 +7,7 @@ val init : unit -> unit
 val create_field    : desc:string -> type_desc:string -> name:string -> field
 val add_datum       : field -> int -> unit
 val add_datum_float : field -> float -> unit
+val resize_if_required : unit -> unit
 
 
 type type_desc = string with sexp, bin_io

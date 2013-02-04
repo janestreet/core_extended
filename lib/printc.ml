@@ -26,8 +26,8 @@ let pad side ~fill n s =
     String.blit ~src:s ~dst:s' ~src_pos:0 ~dst_pos ~len:orig_len;
     s'
 
-let lpad ?fill n s = pad `left ?fill n s
-let rpad ?fill n s = pad `right ?fill n s
+let lpad ?fill n s = pad `left ~fill n s
+let rpad ?fill n s = pad `right ~fill n s
 
 let i2s = Int.to_string
 let f2s = Float.to_string

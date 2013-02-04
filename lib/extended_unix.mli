@@ -198,3 +198,19 @@ module Quota : sig
     -> inodes limit
     -> unit Or_error.t
 end
+
+module Mount_entry : sig
+  (* see: man 3 getmntent *)
+  type t with sexp
+
+  val parse_line : string -> t option Or_error.t
+
+  val fsname    : t -> string
+  val directory : t -> string
+  val fstype    : t -> string
+  val options   : t -> string
+  val dump_freq : t -> int option
+  val fsck_pass : t -> int option
+
+  val visible_filesystem : t list -> t String.Map.t
+end

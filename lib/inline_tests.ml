@@ -98,7 +98,6 @@ let tests () = OUnit.TestList [
     Trie.ounit_tests ();
     Unix_utils.ounit_tests ();
     Update_queue.ounit_tests ();
-    Uuid.ounit_tests ();
 ];;
 
 let run () =  ignore (OUnit.run_test_tt_main (tests ()):OUnit.test_result list)

@@ -15,7 +15,6 @@ module Test = struct
   ;;
 
   let create ?name ?(size = 1) f = { name; size; f }
-
   let name t = t.name
   let size t = t.size
 end
@@ -293,7 +292,7 @@ let time_cycles ~rdtscp =
       let after = rdtscp () in
       loop (n-1) ((Posix_clock.Time_stamp_counter.diff after start)::lst)
   in
-  let times = loop 10000 [] in
+  let times = loop 100000 [] in
   (List.fold_left ~f:(+) ~init:0 times) / (List.length times)
 
 let bench_basic =
@@ -333,11 +332,12 @@ let bench_basic =
   print_high "calculating minimal measurable interval: %s ns\n%!"
     (Int63.to_string gettime_min_interval);
   (* find the number of samples of f needed before gettime cost is < 1% of the total *)
+  print_high "determining number of trials: %!";
   let run_count = match trials with
     | `Auto -> find_run_size ~now ~mean_cycles ~rdtscp test.Test.f
     | `Num n -> n
   in
-  print_high "determining number of trials: %d\n%!" run_count;
+  print_high "%d\n%!" run_count;
   let runs = Array.create ~len:run_count Result.Stat.empty in
   print_high "stabilizing GC: %!";
   stabilize_gc ();
@@ -374,7 +374,7 @@ let bench_raw
     ?(trials=`Auto) ?(clock=`Wall) tests =
   let bench_basic = Or_error.ok_exn bench_basic in
   List.map tests ~f:(fun test -> test.Test.name, test.Test.size,
-    bench_basic ~verbosity ~gc_prefs ~no_compactions ?clock ~trials test)
+    bench_basic ~verbosity ~gc_prefs ~no_compactions ~clock ~trials test)
 ;;
 
 let bench

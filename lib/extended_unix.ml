@@ -489,3 +489,92 @@ module Quota = struct
     with Unix.Unix_error _ as exn ->
       Or_error.of_exn exn
 end
+
+module Mount_entry = struct
+  (* see: man 3 getmntent *)
+  type t = {
+    fsname     : string;
+    directory  : string;
+    fstype     : string;
+    options    : string;
+    dump_freq  : int sexp_option;
+    fsck_pass  : int sexp_option;
+  } with sexp, fields
+
+  let escape_seqs = [ "040", " " ;
+                      "011", "\t";
+                      "012", "\n";
+                      "134", "\\";
+                      "\\",  "\\"; ]
+  let rec unescape s =
+    match String.lsplit2 s ~on:'\\' with
+    | None -> s
+    | Some (l, r) ->
+      match
+        List.find_map escape_seqs ~f:(fun (prefix, replacement) ->
+          Option.map (String.chop_prefix ~prefix r)
+            ~f:(fun r -> l ^ replacement ^ unescape r))
+      with
+      | None -> l ^ "\\" ^ unescape r
+      | Some ret -> ret
+
+  let parse_optional_int = function
+    | "0" -> None
+    |  s  -> Some (Int.of_string s)
+
+  let parse_line line =
+    if String.is_empty line then Ok None
+    else if line.[0] = '#' then Ok None
+    else
+      match
+        List.map ~f:unescape
+          (String.split_on_chars ~on:[' ';'\t'] (String.strip line))
+      with
+      | [] | [""] -> Ok None
+      | fsname :: directory :: fstype :: options
+        :: ([] | [_] | [_;_] as dump_freq_and_fsck_pass) ->
+        begin
+          let dump_freq, fsck_pass =
+            match dump_freq_and_fsck_pass with
+            | [                    ] -> None,           None
+            | [dump_freq           ] -> Some dump_freq, None
+            | [dump_freq; fsck_pass] -> Some dump_freq, Some fsck_pass
+            | _ -> assert false
+          in
+          try
+            let dump_freq = Option.bind dump_freq parse_optional_int in
+            let fsck_pass = Option.bind fsck_pass parse_optional_int in
+            if String.equal fstype "ignore"
+            then Ok (None)
+            else Ok (Some { fsname; directory; fstype;
+                            options; dump_freq; fsck_pass })
+          with exn ->
+            Or_error.of_exn exn
+        end
+      | _ -> Or_error.error "wrong number of fields" line String.sexp_of_t
+
+  let visible_filesystem ts =
+    let add_slash = function
+      | "" -> "/"
+      | p  -> if p.[String.length p - 1] = '/' then p else p ^ "/"
+    in
+    let overlay map t =
+      let remove_prefix = add_slash (directory t) in
+      let rec loop map =
+        match String.Map.next_key map remove_prefix with
+        | None ->
+          map
+        | Some (key, _) ->
+          if not (String.is_prefix ~prefix:remove_prefix key) then
+            map
+          else
+            loop (String.Map.remove map key)
+      in
+      String.Map.add (loop map) ~key:(directory t) ~data:t
+    in
+    List.fold ts ~init:String.Map.empty ~f:(fun map t ->
+      if not (String.is_prefix ~prefix:"/" (directory t)) then
+        map
+      else
+        overlay map t)
+end
