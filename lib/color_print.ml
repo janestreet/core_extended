@@ -90,7 +90,7 @@ let color str ~color      = wrap str ~code:(color_code ~color)
    This is probably not necessary, but it helps ensure that the code that turns
    off the special formatting actually does get output *)
 let wrap_print ~code fmt =
-  printf "%s" code; kfprintf (fun oc -> fprintf oc "%s%!" normal_code) stdout fmt
+  printf "%s" code; Printf.kfprintf (fun oc -> fprintf oc "%s%!" normal_code) stdout fmt
 
 let boldprintf      fmt = wrap_print ~code:bold_code      fmt
 let underlineprintf fmt = wrap_print ~code:underline_code fmt
@@ -202,4 +202,3 @@ let colorprintf ~color     fmt = wrap_print ~code:(color_code ~color)     fmt
  *   (module M : T)
  *
  * module S = (val create ~style:Style.ansi ~oc:stdout : T) *)
-

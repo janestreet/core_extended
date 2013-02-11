@@ -10,7 +10,7 @@ let test = "iter" >::: [
     "array" @? (a = Iter.to_array (Iter.of_array a) ~f:ident);
     "print" @? (let b = Buffer.create 10 in
                 Iter.i (Iter.of_list l)
-                  ~f:(fun x -> bprintf b "%d" x);
+                  ~f:(fun x -> Printf.bprintf b "%d" x);
                 Buffer.contents b = "12345");
     "map1" @? (let f x = x * x in
                Iter.to_array (Iter.map (Iter.of_array a) ~f)

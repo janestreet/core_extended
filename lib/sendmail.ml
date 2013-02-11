@@ -42,7 +42,7 @@ let mta_memo =
 let mta () = Mutex.critical_section mta_mutex ~f:mta_memo ;;
 
 let header k v buf nl =
-  bprintf buf "%s%s"
+  Printf.bprintf buf "%s%s"
     (Extended_string.word_wrap (k ^ ": " ^ v)
        ~nl:(nl^ " ")
        ~trailing_nl:false
@@ -76,6 +76,6 @@ let send
   list "Cc" cc;
   list "Bcc" bcc;
   list "Reply-to" reply_to;
-  bprintf buf "%s%s" nl body;
+  Printf.bprintf buf "%s%s" nl body;
   let input = Buffer.contents buf in
   Shell.run ~input "/usr/sbin/sendmail" ["-t";"-oi"]

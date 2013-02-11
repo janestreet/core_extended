@@ -304,11 +304,11 @@ let bench_basic =
   fun ~verbosity ~gc_prefs ~no_compactions ~clock ~trials test ->
   let print_high s = match verbosity with
     | `High -> printf s
-    | `Low | `Mid -> ifprintf stdout s
+    | `Low | `Mid -> Printf.ifprintf stdout s
   in
   let print_mid s = match verbosity with
     | `High | `Mid -> printf s
-    | `Low -> ifprintf stdout s
+    | `Low -> Printf.ifprintf stdout s
   in
   print_mid "\n===== running test: %s ======\n%!" (Option.value ~default:"(NO NAME)" test.Test.name);
   let old_gc = Gc.get () in

@@ -145,7 +145,7 @@ TEST_MODULE = struct
   TEST "mapping" =
     let cb = of_array [|0;1;2;3;4|] in
     let bu = Buffer.create 10 in
-    let out n x = bprintf bu "(%d %d)" n x in
+    let out n x = Printf.bprintf bu "(%d %d)" n x in
     iter cb ~f:out;
     "map" @? (Buffer.contents bu = "(0 0)(1 1)(2 2)(3 3)(4 4)");
     Buffer.clear bu;

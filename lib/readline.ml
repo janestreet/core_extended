@@ -76,7 +76,7 @@ let interactive_readline ~prompt =
   res
 *)
 
-let mainloop ?text ~map_out ~completion ~prompt ~hist =
+let mainloop ?text ~map_out ?completion ~prompt ~hist =
   let module IL = Readline__input_loop in
   let rec loop v =
     IL.print ~prompt ~map_out v;
@@ -162,7 +162,7 @@ let input_line
     ~hist:(History.snapshot history)
     ~prompt
     ?text
-    ~completion:tab_completion
+    ?completion:tab_completion
   in
   begin match res with
   | None | Some "" -> ()
@@ -192,7 +192,7 @@ let password ?(prompt="") () =
     ~map_out:(String.map ~f:(fun _ -> '*'))
     ~hist:[]
     ~prompt
-    ~completion:None
+    ?completion:None
     ?text:None
 
 let confirm ?(prompt="") true_answer =
@@ -200,7 +200,7 @@ let confirm ?(prompt="") true_answer =
     ~map_out:ident
     ~hist:[]
     ~prompt
-    ~completion:None
+    ?completion:None
     ?text:None
   in
   Option.value_map ans
@@ -244,7 +244,7 @@ let choice choices =
   let prompt = String.concat ~sep:"," (List.rev strings) ^ "? " in
   let rec loop () =
     match
-      mainloop ~prompt ~map_out:ident ~hist:[] ~completion:None ?text:None
+      mainloop ~prompt ~map_out:ident ~hist:[] ?completion:None ?text:None
     with
     | None -> None
     | Some x ->

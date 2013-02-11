@@ -278,7 +278,7 @@ module Process = struct
               | Some ("Gid",_) -> true
               | _ -> false))
       in
-      sscanf (String.concat ~sep:" " [String.strip uids; String.strip gids])
+      Scanf.sscanf (String.concat ~sep:" " [String.strip uids; String.strip gids])
         "%d %d %d %d %d %d %d %d"
         (fun a b c d e f g h -> { uid = a; euid = b; suid = c; fsuid = d;
                                   gid = e; egid = f; sgid = g; fsgid = h; })
@@ -653,7 +653,7 @@ let jiffies_per_second_exn () =
     let statline = Option.value_exn (List.nth statlines 1) in
 
     let user_j, nice_j, sys_j, idle_j, iowait_j =
-      sscanf statline "cpu0 %Lu %Lu %Lu %Lu %Lu" (fun a b c d e -> a,b,c,d,e)
+      Scanf.sscanf statline "cpu0 %Lu %Lu %Lu %Lu %Lu" (fun a b c d e -> a,b,c,d,e)
     in
     let up2 = get_uptime () in
     if ((up2 -. up1) > 0.01) then
@@ -789,8 +789,10 @@ module Net = struct
     with fields;;
 
   let unix_inet_addr_of_revhex revhex_str =
-    let ip =  sscanf revhex_str "%2x%2x%2x%2x" (fun a b c d -> sprintf "%d.%d.%d.%d" d c b
-    a) in
+    let ip =
+      Scanf.sscanf revhex_str "%2x%2x%2x%2x"
+        (fun a b c d -> sprintf "%d.%d.%d.%d" d c b a)
+    in
     Unix.Inet_addr.of_string ip ;;
 
   let of_string str =

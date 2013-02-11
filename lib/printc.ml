@@ -11,10 +11,7 @@ let printl s = print s; print "\n"; flush stdout
 let fprintl f s = fprint f s; fprint f "\n"; flush stdout
 let eprintl s = eprint s; eprint "\n"; flush stderr
 
-let pad side ~fill n s =
-  let fill = match fill with
-    | None -> ' ' | Some c -> c
-  in
+let pad side ?(fill=' ') n s =
   let orig_len = String.length s in
   if orig_len >= n then s
   else
@@ -26,8 +23,8 @@ let pad side ~fill n s =
     String.blit ~src:s ~dst:s' ~src_pos:0 ~dst_pos ~len:orig_len;
     s'
 
-let lpad ?fill n s = pad `left ~fill n s
-let rpad ?fill n s = pad `right ~fill n s
+let lpad ?fill n s = pad `left ?fill n s
+let rpad ?fill n s = pad `right ?fill n s
 
 let i2s = Int.to_string
 let f2s = Float.to_string
