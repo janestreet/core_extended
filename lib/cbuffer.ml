@@ -140,46 +140,45 @@ let drop_old ?(cmp = compare) ?free ~f ~cutoff buf =
 (* This is a bit of a hacky test module because it's a straightforward copy of
    the  one that was in lib_test *)
 TEST_MODULE = struct
-  let (@?) = OUnit.(@?)
 
-  TEST "mapping" =
-    let cb = of_array [|0;1;2;3;4|] in
-    let bu = Buffer.create 10 in
-    let out n x = Printf.bprintf bu "(%d %d)" n x in
-    iter cb ~f:out;
-    "map" @? (Buffer.contents bu = "(0 0)(1 1)(2 2)(3 3)(4 4)");
-    Buffer.clear bu;
-    iterr cb ~f:out;
-    "mapr" @? (Buffer.contents bu = "(4 4)(3 3)(2 2)(1 1)(0 0)");
-    true
+  TEST_MODULE "mapping" = struct
+    let cb = of_array [|0;1;2;3;4|]
+    let bu = Buffer.create 10
+    let out n x = Printf.bprintf bu "(%d %d)" n x
+    let () = iter cb ~f:out
+    TEST "map" = Buffer.contents bu = "(0 0)(1 1)(2 2)(3 3)(4 4)"
+    let () = Buffer.clear bu
+    let () = iterr cb ~f:out
+    TEST "mapr" = Buffer.contents bu = "(4 4)(3 3)(2 2)(1 1)(0 0)"
+  end
 
-  TEST "drop_old" =
-    let cb = of_array [|4;3;2;1;0|] in
-    let list = ref [] in
-    let free obj = list := obj::!list in
-    "ret-1" @? (drop_old ~cutoff:(-1) ~free cb ~f:ident = 0);
-    "buf-1" @? (to_array cb = [|4;3;2;1;0|]);
-    "free-1" @? (!list = []);
-    "ret0" @? (drop_old ~cutoff:0 ~free cb ~f:ident = 1);
-    "buf0" @? (to_array cb = [|4;3;2;1|]);
-    "free0" @? (!list = [0]);
-    "ret1" @? (drop_old ~cutoff:1 ~free cb ~f:ident = 1);
-    "buf1" @? (to_array cb = [|4;3;2|]);
-    "free1" @? (!list = [1;0]);
-    "ret2" @? (drop_old ~cutoff:2 ~free cb ~f:ident = 1);
-    "buf2" @? (to_array cb = [|4;3|]);
-    "free2" @? (!list = [2;1;0]);
-    "ret3" @? (drop_old ~cutoff:3 ~free cb ~f:ident = 1);
-    "buf3" @? (to_array cb = [|4|]);
-    "free3" @? (!list = [3;2;1;0]);
-    "ret4" @? (drop_old ~cutoff:4 ~free cb ~f:ident = 1);
-    "buf4" @? (to_array cb = [||]);
-    "free4" @? (!list = [4;3;2;1;0]);
-    true
+  TEST_MODULE "drop_old" = struct
+    let cb = of_array [|4;3;2;1;0|]
+    let list = ref []
+    let free obj = list := obj::!list
+    TEST "ret-1" = drop_old ~cutoff:(-1) ~free cb ~f:ident = 0
+    TEST "buf-1" = to_array cb = [|4;3;2;1;0|]
+    TEST "free-1" = !list = []
+    TEST "ret0" = drop_old ~cutoff:0 ~free cb ~f:ident = 1
+    TEST "buf0" = to_array cb = [|4;3;2;1|]
+    TEST "free0" = !list = [0]
+    TEST "ret1" = drop_old ~cutoff:1 ~free cb ~f:ident = 1
+    TEST "buf1" = to_array cb = [|4;3;2|]
+    TEST "free1" = !list = [1;0]
+    TEST "ret2" = drop_old ~cutoff:2 ~free cb ~f:ident = 1
+    TEST "buf2" = to_array cb = [|4;3|]
+    TEST "free2" = !list = [2;1;0]
+    TEST "ret3" = drop_old ~cutoff:3 ~free cb ~f:ident = 1
+    TEST "buf3" = to_array cb = [|4|]
+    TEST "free3" = !list = [3;2;1;0]
+    TEST "ret4" = drop_old ~cutoff:4 ~free cb ~f:ident = 1
+    TEST "buf4" = to_array cb = [||]
+    TEST "free4" = !list = [4;3;2;1;0]
+  end
 
-   TEST "drop_old2" =
-    let cb = of_array [|4;3;2;1;0|] in
-    "ret5" @? (drop_old ~cutoff:5 cb ~f:ident = 5);
-    "buf5" @? (to_array cb = [||]);
-    true
+  TEST_MODULE "drop_old2" = struct
+    let cb = of_array [|4;3;2;1;0|]
+    TEST "ret5" = drop_old ~cutoff:5 cb ~f:ident = 5
+    TEST "buf5" = to_array cb = [||]
+  end
 end

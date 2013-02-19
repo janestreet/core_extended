@@ -55,7 +55,7 @@ CAMLprim value tsc_clock_mono_getres( )
 
 CAMLprim value tsc_clock_rt_gettime( )
 {
-#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+#ifdef __MACH__ /* OS X does not have clock_gettime, use clock_get_time */
   clock_serv_t cclock;
   mach_timespec_t ts;
   if ( host_get_clock_service( mach_host_self(), CALENDAR_CLOCK, &cclock ) != KERN_SUCCESS )
@@ -74,7 +74,7 @@ CAMLprim value tsc_clock_rt_gettime( )
 
 CAMLprim value tsc_clock_mono_gettime( )
 {
-#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+#ifdef __MACH__ /* OS X does not have clock_gettime, use clock_get_time */
   clock_serv_t cclock;
   mach_timespec_t ts;
   if ( host_get_clock_service( mach_host_self(), SYSTEM_CLOCK, &cclock ) != KERN_SUCCESS )

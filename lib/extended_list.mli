@@ -39,6 +39,11 @@ val enumerate_from : int -> 'a list -> ('a * int) list
     it should halt *)
 val fold_left_term : 'a list -> f:('b -> 'a -> [`Final of 'b | `Continue of 'b]) -> init:'b -> 'b
 
+(** A combination of [map] and [fold]. Applies a function to each element of the input
+    list, building up an accumulator, returning both the final state of the accumulator
+    and a new list. *)
+val map_accum : 'a list -> f:('b -> 'a -> 'b * 'c) -> init:'b -> 'b * 'c list
+
 val max : ?cmp:('a -> 'a -> int) -> 'a list -> 'a option
 val min : ?cmp:('a -> 'a -> int) -> 'a list -> 'a option
 

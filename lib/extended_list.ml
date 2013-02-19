@@ -164,3 +164,10 @@ let rec compare ~cmp t1 t2 =
     end
 ;;
 
+let map_accum t ~f ~init =
+  let s, rev =
+    List.fold t ~init:(init, []) ~f:(fun (s, acc) x ->
+      let s, y = f s x in
+      s, y::acc)
+  in
+  s, List.rev rev

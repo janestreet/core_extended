@@ -106,6 +106,8 @@ module Memo = struct
 end
 module Multi_map = Multi_map
 module Net_utils = Net_utils
+module Packed_array = Packed_array
+module Packed_map = Packed_map
 module Pp = Pp
 module Printc = Printc
 module Process = Process

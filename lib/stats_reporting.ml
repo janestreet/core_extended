@@ -28,7 +28,8 @@ type report = {
 let allow_for_header = 256
 let field_counter_ref = ref 1
 
-let header = {
+
+let lazy_header = lazy {
   snapshot = Cycles.get_snapshot ();
   msg = "";
 }
@@ -39,8 +40,6 @@ let report = {
   previous = [];
 }
 
-let perc_used () =
-  (report.used * 100) / (Bigstring.length report.data)
 
 let expand_report_buffer () =
   let buf = Bigstring.create (Bigstring.length report.data) in
@@ -69,6 +68,9 @@ let add_datum_float field num =
   write_to_report_buffer (Float_datum (field, num, Cycles.now()))
 
 let resize_if_required () =
+  let perc_used () =
+    (report.used * 100) / (Bigstring.length report.data)
+  in
   if perc_used () > 95
   then begin
     if debug then printf "Resizing stats_reporting buffer\n%!";
@@ -120,17 +122,11 @@ let fold ~file ~init ~f =
       loop init)
 
 let init ~msg =
+  let header = Lazy.force lazy_header in
   let write_header () =
     let writer = bin_writer_header in
     ignore (writer.Bin_prot.Type_class.write report.data ~pos:0 header)
-  in begin
-    header.msg <- msg;
-    write_header ();
-    at_exit (write_report_to_file);
-  end
-
-
-
-
-
-
+  in
+  header.msg <- msg;
+  write_header ();
+  at_exit (write_report_to_file)
