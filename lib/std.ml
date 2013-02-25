@@ -71,6 +71,7 @@ module Int64 = struct
   include Core.Std.Int64
   include Extended_int64
 end
+module Invocation = Invocation
 module Lazy_sequence = Lazy_sequence
 module Low_level_debug = Low_level_debug
 module Nativeint = struct

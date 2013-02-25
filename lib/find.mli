@@ -16,12 +16,14 @@ module Options : sig
       | Handle_with of (string -> unit)
 
   type t = {
+    min_depth: int;
     max_depth: int option;
     follow_links: bool;
     on_open_errors: error_handler;
     on_stat_errors: error_handler;
     filter: (file_info -> bool) option;
     skip_dir : (file_info -> bool) option;
+    relative_paths : bool;
   }
 
   val default : t

@@ -84,15 +84,21 @@ end
 (** A module for getting a process's CPU use. *)
 module Cpu_use : sig
   type t
+
   (** [get] returns a Cpu_use.t for the given pid or the current processes's pid, if none
       given. Note that the [cpu_use] given by this initial value will probably be
       invalid. *)
   val get : ?pid : Pid.t -> unit -> t
+
   (** [update_exn] updates a Cpu_use.t. It will fail if the process no longer exists. *)
   val update_exn : t -> unit
+
   (** [cpu_use] gives an estimated CPU usage (between 0 and 1) in the time period between
       the last 2 calls to [update_exn]. *)
   val cpu_use : t -> float
+
+  (** [mem_use] gives the resident memory use from the last sample. *)
+  val resident_mem_use_in_kb : t -> float
 end
 
 (* The Linux Standard Base (LSB) standardizes a few OS properties. *)
