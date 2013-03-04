@@ -90,20 +90,31 @@ module Column = struct
     let desired_widths = List.map ts ~f:(desired_width ~spacing data) in
     let all_min_width = List.filter_map ts ~f:(fun t -> t.min_width) in
 
-    (* The minimum number of characters for a column that doesn't have an
-       [min_width] value. *)
-    let generic_min_chars =
-      let width = table_width - (list_sum all_min_width ~f:Fn.id) in
-      let len = (List.length ts) - (List.length all_min_width) in
-      (width/len)
+    (* [generic_min_chars] = minimum number of characters for a column that doesn't have
+       an [min_width] value. *)
+    let table_constraints_are_impossible, generic_min_chars =
+      let columns_with_no_min_width = (List.length ts) - (List.length all_min_width) in
+      if Int.(<>) 0 columns_with_no_min_width (* need to avoid a divide-by-zero *)
+      then begin
+        let width = table_width - (list_sum all_min_width ~f:Fn.id) in
+        let generic_min_chars = width / columns_with_no_min_width in
+        let impossible = generic_min_chars < 1 + (1 + (spacing * 2)) in
+        (impossible, generic_min_chars)
+      end else begin
+        let min_total = List.fold ~init:0 all_min_width ~f:Int.(+) in
+        let extra_per_col = 1 + 1 + (spacing * 2) in
+        let impossible = table_width < min_total + (List.length ts * extra_per_col) in
+        (* the zero is a nonsense value, but we only generate it when every column has a
+           min width and therefore this zero will never be used. *)
+        (impossible, 0)
+      end
     in
-    if generic_min_chars < 1+(1+(spacing*2)) then
+    if table_constraints_are_impossible then
       raise (Impossible_table_constraints {
         total_width = (table_width+1);
         min_widths = (List.filter_map ts ~f:(fun t ->
           Option.map t.min_width ~f:(fun num_chars -> (t.header, num_chars))));
       });
-
 
     let left = ref ((list_sum ~f:Fn.id desired_widths) - table_width) in
     let stop = ref false in
@@ -433,3 +444,9 @@ TEST =
 "|--------------|";
 "";
 ""]
+
+
+(* test for bug where specifying minimum widths on all columns causes a Division_by_zero
+   error while calculating generic_min_chars in Column.layout *)
+TEST = const true (to_string [Column.create ~min_width:9 "foo" Fn.id] ["bar"])
+

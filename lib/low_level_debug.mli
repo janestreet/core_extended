@@ -43,6 +43,8 @@ val stop_upon_exit : unit -> unit
    to see a backtrace with OCAMLRUNPARAM=b. *)
 val stop_me_now : unit -> unit
 
+val segfault_me_now : unit -> unit
+
 (** A canary thread starts two threads, one in caml and one in C.  The caml
     thread tries to take the caml lock every [check_interval], and immediately
     releases it once it succeeds. The C thread checks that your thread is

@@ -97,8 +97,11 @@ module Cpu_use : sig
       the last 2 calls to [update_exn]. *)
   val cpu_use : t -> float
 
-  (** [mem_use] gives the resident memory use from the last sample. *)
   val resident_mem_use_in_kb : t -> float
+
+  val age : t -> Time.Span.t
+
+  val fds : t -> int
 end
 
 (* The Linux Standard Base (LSB) standardizes a few OS properties. *)

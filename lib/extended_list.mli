@@ -17,17 +17,6 @@ val set_diff : 'a list -> 'a list -> 'a list
 val classify : ?equal:('b -> 'b -> bool) -> f:('a -> 'b) -> 'a list ->
   ('b * 'a list) list
 
-(** [take_while xs f] produces the longest prefix of [xs] on which [f] is always true. *)
-val take_while : 'a list -> ('a -> bool) -> 'a list
-
-(** [split_while xs f] splits [xs] into sublists [ys] and [zs] such that [ys] is
-        the longest prefix on which [f] is true, and [zs] is the remaining elements. *)
-val split_while : 'a list -> ('a -> bool) -> ('a list * 'a list)
-
-(** [intersperse] returns a list with the given element placed between every two
-  original elements.  e.g.  intersperse [1;2;3] 0  =  [1; 0; 2; 0; 3] *)
-val intersperse : 'a list -> 'a -> 'a list
-
 (** [enumerate_from n xs] returns a list of pairs constructed by pairing an
     incrementing counter, starting at [n], with the elements of [xs].
     e.g.  enumerate_from 1 [a,b,c]  =  [a,1; b,2; c,3] *)

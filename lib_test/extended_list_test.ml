@@ -20,7 +20,7 @@ let test = "Extended_list" >::: [
          List.sort ~cmp:Int.compare header = [0;1;2;4]));
   ("take_while" >:: fun () ->
     "take evens" @? (
-      (L.take_while [2;4;6;7;8;9] is_even) = [2;4;6]));
+      (L.take_while [2;4;6;7;8;9] ~f:is_even) = [2;4;6]));
   ("equal" >:::
     let equal xs ys = L.equal ~equal:Int.equal xs ys in
     let assert_equal xs ys = assert (equal xs ys) in

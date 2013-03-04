@@ -32,34 +32,6 @@ let classify ?(equal=( = )) ~f list =
   List.fold list
     ~init:[] ~f:classify_element
 
-let take_while xs f =
-  let rec loop xs rev_prefix = match xs with
-    | x::xs' -> if f x then loop xs' (x::rev_prefix) else List.rev rev_prefix
-    | []     -> List.rev rev_prefix
-  in
-  loop xs []
-
-let split_while xs p =
-        let rec loop acc = function
-                | [] -> (List.rev acc, [])
-                | x::xs as x_xs -> if p x then loop (x::acc) xs else (List.rev acc, x_xs)
-        in loop [] xs
-
-let intersperse t sep =
-  match t with
-  | [] -> []
-  | x :: xs -> x :: List.fold_right xs ~init:[] ~f:(fun y acc -> sep :: y :: acc )
-;;
-
-TEST_MODULE "intersperse" = struct
-  let sep = 0
-  TEST = intersperse  []           sep = []
-  TEST = intersperse  [1]          sep = [1]
-  TEST = intersperse  [1; 2]       sep = [1; sep; 2]
-  TEST = intersperse  [1; 2; 3]    sep = [1; sep; 2; sep; 3]
-  TEST = intersperse  [1; 2; 3; 4] sep = [1; sep; 2; sep; 3; sep; 4]
-end
-
 let lcs = Extended_list__LCS.lcs
 let number = Extended_list__multimerge.number
 

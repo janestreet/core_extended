@@ -9,6 +9,14 @@ external stop_upon_exit : unit -> unit = "low_level_debug_stop_upon_exit"
 
 external stop_me_now : unit -> unit = "low_level_debug_stop_me_now"
 
+let segfault_me_now () =
+  let string_that_should_be_easy_to_detect =
+    "The major difference between a thing that might go wrong and a thing that \
+     cannot possibly go wrong is that when a thing that cannot possibly go wrong \
+     goes wrong it usually turns out to be impossible to get at or repair."
+  in
+  Obj.set_field (Obj.repr 0) 0 (Obj.repr string_that_should_be_easy_to_detect)
+
 external start_canary_thread_internal :
   max_wait:float -> check_interval:int -> never_returns = "start_canary"
 

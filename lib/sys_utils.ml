@@ -191,47 +191,66 @@ end
 
 
 module Cpu_use = struct
-  type sample = {
+  type cpu_sample = {
     jiffies : Big_int.big_int;
-    rss : Big_int.big_int;
     time : Time.t;
   }
 
   type t = {
     pid : Pid.t;
     jps : float;
-    mutable s0 : sample;
-    mutable s1 : sample;
-  }
+    (* needed because of time-skew issues (see comment in sys_utils.mli) *)
+    initial_age : Time.Span.t;
+    mutable age : Time.Span.t;
+    mutable fds : int;
+    mutable rss : Big_int.big_int;
+    mutable cpu0 : cpu_sample;
+    mutable cpu1 : cpu_sample;
+  } with fields
 
-  let sample_exn pid =
-    let module P = Procfs.Process in
-    let {P.Stat.utime; stime; rss; _ } = (Procfs.with_pid_exn pid).P.stat in
+  module P = Procfs.Process
+
+  let sample_of_stat {P.Stat.utime; stime; _ } =
     { jiffies = Big_int.add_big_int utime stime;
-      rss;
       time = Time.now () }
 
+  let fds_of_proc proc = proc.P.fds |! Option.value_map ~f:List.length ~default:0
+
   let get ?(pid=Unix.getpid ()) () =
+    let proc0 = Procfs.with_pid_exn pid in
+    let proc1 = Procfs.with_pid_exn pid in
+    let jiffies_per_second = Procfs.jiffies_per_second_exn () in
     { pid;
-      jps = Procfs.jiffies_per_second_exn ();
-      s0 = sample_exn pid;
-      s1 = sample_exn pid; }
+      jps = jiffies_per_second;
+      initial_age = Procfs.process_age' ~jiffies_per_second proc1;
+      age = Time.Span.zero;
+      fds = fds_of_proc proc1;
+      rss = proc1.P.stat.P.Stat.rss;
+      cpu0 = sample_of_stat proc0.P.stat;
+      cpu1 = sample_of_stat proc1.P.stat;
+    }
 
   let update_exn t =
-    t.s0 <- t.s1;
-    t.s1 <- sample_exn t.pid
+    let proc = Procfs.with_pid_exn t.pid in
+    let age =
+      Time.Span.(-) (Procfs.process_age' ~jiffies_per_second:t.jps proc) t.initial_age
+    in
+    t.age <- age;
+    t.fds <- fds_of_proc proc;
+    t.rss <- proc.P.stat.P.Stat.rss;
+    t.cpu0 <- t.cpu1;
+    t.cpu1 <- sample_of_stat proc.P.stat
 
-  let cpu_use {jps; s0={jiffies=j0;time=t0;_}; s1={jiffies=j1;time=t1;_}; _} =
-    let my_jps =
+  let cpu_use {jps; cpu0={jiffies=j0;time=t0}; cpu1={jiffies=j1;time=t1}; _} =
+    let proc_jps =
       Big_int.float_of_big_int (Big_int.sub_big_int j1 j0)
       /. Time.Span.to_sec (Time.diff t1 t0)
     in
-    my_jps /. jps
+    proc_jps /. jps
 
   (* rss is in pages. /should/ call getpagesize... but it's 4k. *)
   let resident_mem_use_in_kb t =
-    Big_int.float_of_big_int t.s1.rss *. 4.
-
+    Big_int.float_of_big_int t.rss *. 4.
 end
 
 module Lsb_release = struct

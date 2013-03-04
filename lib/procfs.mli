@@ -399,3 +399,4 @@ val supported_filesystems : unit -> string list
 val uptime : unit -> Time.Span.t
 
 val process_age : Process.t -> Time.Span.t option
+val process_age' : jiffies_per_second : float -> Process.t -> Time.Span.t
