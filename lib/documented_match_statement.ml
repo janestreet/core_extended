@@ -31,9 +31,6 @@ let map t ~f =
       end;
   }
 
-let map_cases l ~f =
-  List.map l ~f:(map_case ~f_pattern:ident ~f_value:(fun g () -> f (g ())))
-
 let map_pattern t ~f1 ~f2 =
   { specific_cases = List.map t.specific_cases ~f:(map_case ~f_pattern:f1 ~f_value:ident);
     catchall_case = begin
@@ -43,6 +40,9 @@ let map_pattern t ~f1 ~f2 =
         `Used (map_case case ~f_pattern:ident ~f_value:(fun g -> (fun k -> (g (f2 k)))))
     end;
   }
+
+let map_case case ~f = map_case case ~f_pattern:ident ~f_value:(fun g () -> f (g ()))
+let map_cases cases ~f = List.map cases ~f:(map_case ~f)
 
 let prepend ~specific_cases t =
   { t with

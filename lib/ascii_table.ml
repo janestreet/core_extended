@@ -417,6 +417,25 @@ let to_string_gen ?(display=Display.short_box) ?(spacing=1) ?(limit_width_to=90)
 let to_string_noattr = to_string_gen ~use_attr:false
 let to_string        = to_string_gen ~use_attr:true
 
+
+let simple_list_table ?(index=false)
+    ?(limit_width_to=160)
+    ?(oc=stdout)
+    ?(display=Display.line)
+    cols data =
+  let cols, data =
+    if index
+    then "#" :: cols, List.mapi data ~f:(fun i row -> Int.to_string (i+1) :: row)
+    else cols, data in
+  let cols = List.mapi cols ~f:(fun i col ->
+    let col, align =
+      match String.chop_prefix col ~prefix:"-" with
+      | None -> col, Align.right
+      | Some col -> col, Align.left
+    in Column.create col (fun ls -> List.nth_exn ls i) ~align) in
+  output ~oc ~display ~limit_width_to cols data
+
+
 TEST =
   let col1 = Column.create "a" (fun (x, _, _) -> x) in
   let col2 = Column.create "b" (fun (_, x, _) -> x) in

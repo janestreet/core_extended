@@ -192,7 +192,7 @@ end
 
 module Cpu_use = struct
   type cpu_sample = {
-    jiffies : Big_int.big_int;
+    jiffies : Int63.t;
     time : Time.t;
   }
 
@@ -203,7 +203,7 @@ module Cpu_use = struct
     initial_age : Time.Span.t;
     mutable age : Time.Span.t;
     mutable fds : int;
-    mutable rss : Big_int.big_int;
+    mutable rss : Int63.t;
     mutable cpu0 : cpu_sample;
     mutable cpu1 : cpu_sample;
   } with fields
@@ -211,7 +211,7 @@ module Cpu_use = struct
   module P = Procfs.Process
 
   let sample_of_stat {P.Stat.utime; stime; _ } =
-    { jiffies = Big_int.add_big_int utime stime;
+    { jiffies = Int63.(utime + stime);
       time = Time.now () }
 
   let fds_of_proc proc = proc.P.fds |! Option.value_map ~f:List.length ~default:0
@@ -243,14 +243,14 @@ module Cpu_use = struct
 
   let cpu_use {jps; cpu0={jiffies=j0;time=t0}; cpu1={jiffies=j1;time=t1}; _} =
     let proc_jps =
-      Big_int.float_of_big_int (Big_int.sub_big_int j1 j0)
+      Int63.to_float Int63.(j1 - j0)
       /. Time.Span.to_sec (Time.diff t1 t0)
     in
     proc_jps /. jps
 
   (* rss is in pages. /should/ call getpagesize... but it's 4k. *)
   let resident_mem_use_in_kb t =
-    Big_int.float_of_big_int t.rss *. 4.
+    Int63.to_float t.rss *. 4.
 end
 
 module Lsb_release = struct

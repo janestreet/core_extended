@@ -114,3 +114,36 @@ val load_sexp_conv_exn_sample :
   -> t_of_sexp:(Sexp.t -> 'a)
   -> sample:'a
   -> 'a
+
+(* Relaces elements that match (:include filename) with the Sexp.t list that is containted
+   in filename.  Useful for sharing information across multiple config files.
+
+   Eg if my input Sexp.t is:
+
+   ((field1 value1)
+    (accounts (
+               (:include /home/user/accounts_master_list.txt)
+               0004
+               0005
+              )
+    )
+    (field3 value 3)
+   )
+
+   and accounts_master_list.txt contains "0001 0002 0003", this function will return the
+   Sexp.t:
+
+   ((field1 value1)
+    (accounts (
+               0001
+               0002
+               0003
+               0004
+               0005
+              )
+    )
+    (field3 value 3)
+   )
+
+*)
+val load_includes_in_sexp : ?max_depth:int -> Sexp.t -> Sexp.t

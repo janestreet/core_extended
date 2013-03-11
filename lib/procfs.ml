@@ -3,11 +3,34 @@ open Core.Std
 (* Learn more about this business by consulting proc(5) *)
 
 (* lu and ld match the proc(5) format strings %lu and %ld *)
-let lu x = Big_int.big_int_of_string x
-let ld x = lu x   (* bigint everything so we don't have to worry about overflows *)
-let string_of_file fn = In_channel.with_file ~f:In_channel.input_all fn ;;
+let lu x = Int63.of_string x
+let ld x = lu x   (* Int63.t everything so we don't have to worry about overflows *)
 
-type bigint = Big_int.big_int with sexp ;;
+(* In_channel.input_all creates a 64k buffer and string every time. In_channel.t's are
+   also custom blocks with finalizers that are allocated on the major heap. get_all_procs
+   calls this many, many times and causes terrible GC performance. This un-thread-safe
+   version is a work-around. *)
+let read_all_reused_buffer =
+  let buf_size = 65536 in
+  let buf = String.create buf_size in
+  let buffer = Buffer.create buf_size in
+  (fun fd ->
+    let rec loop () =
+      let len = Unix.read fd ~buf ~len:(String.length buf) in
+      if len > 0 then begin
+        Buffer.add_substring buffer buf 0 len;
+        loop ();
+      end
+    in
+    loop ();
+    let res = Buffer.contents buffer in
+    Buffer.clear buffer;
+    res
+  )
+;;
+
+(* let string_of_file fn = In_channel.with_file ~f:In_channel.input_all fn ;; *)
+let string_of_file fn = Unix.with_file fn ~mode:[Unix.O_RDONLY] ~f:read_all_reused_buffer ;;
 
 module Process = struct
 
@@ -19,7 +42,7 @@ module Process = struct
 
   module Limits = struct
     module Rlimit = struct
-      type value = [ `unlimited | `limited of bigint ] with sexp ;;
+      type value = [ `unlimited | `limited of Int63.t ] with sexp ;;
       type t = { soft : value; hard: value } with fields, sexp ;;
     end ;;
     type t =
@@ -76,7 +99,7 @@ module Process = struct
         in
         let value x =
           if x = "unlimited" then `unlimited
-          else `limited (Big_int.big_int_of_string x)
+          else `limited (Int63.of_string x)
         in
         { Rlimit.soft = fst data |! value; hard = snd data |! value }
       in
@@ -109,51 +132,51 @@ module Process = struct
         tty_nr      : int;    (** The tty the process uses. *)
         tpgid       : int;    (** The process group ID of the process which currently owns
                                   the tty... *)
-        flags       : bigint; (** The kernel flags word of the process. *)
-        minflt      : bigint; (** The number of minor faults the process has made which have
+        flags       : Int63.t; (** The kernel flags word of the process. *)
+        minflt      : Int63.t; (** The number of minor faults the process has made which have
                                   not required loading a memory page from disk. *)
-        cminflt     : bigint; (** The number of minor faults that the process’s waited-for
+        cminflt     : Int63.t; (** The number of minor faults that the process’s waited-for
                                   children have made. *)
-        majflt      : bigint; (** The number of major faults the process has made which have
+        majflt      : Int63.t; (** The number of major faults the process has made which have
                                   required loading a page from disk. *)
-        cmajflt     : bigint; (** The number of major faults that the process’s waited-for
+        cmajflt     : Int63.t; (** The number of major faults that the process’s waited-for
                                   children have made. *)
-        utime       : bigint; (** The number of jiffies that this process has been scheduled
+        utime       : Int63.t; (** The number of jiffies that this process has been scheduled
                                   in user mode. *)
-        stime       : bigint; (** The number of jiffies that this process has been scheduled
+        stime       : Int63.t; (** The number of jiffies that this process has been scheduled
                                   in kernel mode. *)
-        cutime      : bigint; (** The number of jiffies that this process’s waited-for
+        cutime      : Int63.t; (** The number of jiffies that this process’s waited-for
                                   children have been scheduled in user mode. *)
-        cstime      : bigint; (** The number of jiffies that this process’s waited-for
+        cstime      : Int63.t; (** The number of jiffies that this process’s waited-for
                                   children have been scheduled in kernel mode. *)
-        priority    : bigint; (** The standard nice value, plus fifteen.  The value is never
+        priority    : Int63.t; (** The standard nice value, plus fifteen.  The value is never
                                   negative in the kernel. *)
-        nice        : bigint; (** The nice value ranges from 19 to -19*)
-        unused      : bigint; (** placeholder for removed field *)
-        itrealvalue : bigint; (** The time in jiffies before the next SIGALRM is sent to the
+        nice        : Int63.t; (** The nice value ranges from 19 to -19*)
+        unused      : Int63.t; (** placeholder for removed field *)
+        itrealvalue : Int63.t; (** The time in jiffies before the next SIGALRM is sent to the
                                   process due to an interval timer. *)
-        starttime   : bigint; (** The time in jiffies the process started after system boot.*)
-        vsize       : bigint; (** Virtual memory size in bytes. *)
-        rss         : bigint; (** Resident Set Size: number of pages the process has in real
+        starttime   : Int63.t; (** The time in jiffies the process started after system boot.*)
+        vsize       : Int63.t; (** Virtual memory size in bytes. *)
+        rss         : Int63.t; (** Resident Set Size: number of pages the process has in real
                                   memory. *)
-        rlim        : bigint; (** Current limit in bytes on the rss of the process. *)
-        startcode   : bigint; (** The address above which program text can run. *)
-        endcode     : bigint; (** The address below which program text can run. *)
-        startstack  : bigint; (** The address of the start of the stack. *)
-        kstkesp     : bigint; (** The current value of esp (stack pointer) *)
-        kstkeip     : bigint; (** The current value of eip (instruction pointer) *)
-        signal      : bigint; (** The bitmap of pending signals. *)
-        blocked     : bigint; (** The bitmap of blocked signals. *)
-        sigignore   : bigint; (** The bitmap of ignored signals. *)
-        sigcatch    : bigint; (** The bitmap of caught signals. *)
-        wchan       : bigint; (** This is  the "channel" in which the process is waiting.
+        rlim        : Int63.t; (** Current limit in bytes on the rss of the process. *)
+        startcode   : Int63.t; (** The address above which program text can run. *)
+        endcode     : Int63.t; (** The address below which program text can run. *)
+        startstack  : Int63.t; (** The address of the start of the stack. *)
+        kstkesp     : Int63.t; (** The current value of esp (stack pointer) *)
+        kstkeip     : Int63.t; (** The current value of eip (instruction pointer) *)
+        signal      : Int63.t; (** The bitmap of pending signals. *)
+        blocked     : Int63.t; (** The bitmap of blocked signals. *)
+        sigignore   : Int63.t; (** The bitmap of ignored signals. *)
+        sigcatch    : Int63.t; (** The bitmap of caught signals. *)
+        wchan       : Int63.t; (** This is  the "channel" in which the process is waiting.
                                   Address of a system call. *)
-        nswap       : bigint; (** (no longer maintained) *)
-        cnswap      : bigint; (** (no longer maintained) *)
+        nswap       : Int63.t; (** (no longer maintained) *)
+        cnswap      : Int63.t; (** (no longer maintained) *)
         exit_signal : int;    (** Signal sent to parent when we die. *)
         processor   : int;    (** CPU number last executed on. *)
-        rt_priority : bigint; (** Real-time scheduling priority. *)
-        policy      : bigint; (** Scheduling policy *)
+        rt_priority : Int63.t; (** Real-time scheduling priority. *)
+        policy      : Int63.t; (** Scheduling policy *)
       }
     with fields, sexp ;;
     let of_string s =
@@ -225,13 +248,13 @@ module Process = struct
   module Statm = struct
     type t =
       {
-        size     : bigint; (** total program size *)
-        resident : bigint; (** resident set size *)
-        share    : bigint; (** shared pages *)
-        text     : bigint; (** text (code) *)
-        lib      : bigint; (** library *)
-        data     : bigint; (** data/stack *)
-        dt       : bigint; (** dirty pages (unused) *)
+        size     : Int63.t; (** total program size *)
+        resident : Int63.t; (** resident set size *)
+        share    : Int63.t; (** shared pages *)
+        text     : Int63.t; (** text (code) *)
+        lib      : Int63.t; (** library *)
+        data     : Int63.t; (** data/stack *)
+        dt       : Int63.t; (** dirty pages (unused) *)
       }
     with fields, sexp ;;
     let of_string s =
@@ -365,9 +388,9 @@ module Process = struct
       |! String.strip
     in
     let task_stats =
-      Array.fold_right (required (slurp_dir "task"))
+      Array.fold (required (slurp_dir "task"))
         ~init:Pid.Map.empty
-        ~f:(fun task m ->
+        ~f:(fun m task ->
           Pid.Map.add m
             ~key:(Pid.of_string task)
             ~data:(Stat.of_string (require_str
@@ -378,9 +401,10 @@ module Process = struct
       try
         Some (
           Sys.readdir (sprintf "/proc/%s/fd" (Pid.to_string pid))
-          |! Array.map ~f:Int.of_string
-          |! Array.filter_map ~f:(fun fd ->
-              slurp Unix.readlink (sprintf "fd/%d" fd)
+          |! Array.to_list
+          |! List.filter_map ~f:(fun fd_str ->
+            let fd = Int.of_string fd_str in
+            slurp Unix.readlink ("fd/" ^ fd_str)
               |! Option.map ~f:(fun path ->
                 let parse inode = (* "[123]" -> 123 *)
                   inode |!
@@ -398,7 +422,6 @@ module Process = struct
                     | _                   -> Fd.Path path;
                 }
               ))
-          |! Array.to_list
         )
       with
         Sys_error _ -> None
@@ -428,32 +451,32 @@ end ;;
 module Meminfo = struct
   type t =
     {
-      mem_total     : bigint;
-      mem_free      : bigint;
-      buffers       : bigint;
-      cached        : bigint;
-      swap_cached   : bigint;
-      active        : bigint;
-      inactive      : bigint;
-      swap_total    : bigint;
-      swap_free     : bigint;
-      dirty         : bigint;
-      writeback     : bigint;
-      anon_pages    : bigint;
-      mapped        : bigint;
-      slab          : bigint;
-      page_tables   : bigint;
-      nfs_unstable  : bigint;
-      bounce        : bigint;
-      commit_limit  : bigint;
-      committed_as  : bigint;
-      vmalloc_total : bigint;
-      vmalloc_used  : bigint;
-      vmalloc_chunk : bigint;
+      mem_total     : Int63.t;
+      mem_free      : Int63.t;
+      buffers       : Int63.t;
+      cached        : Int63.t;
+      swap_cached   : Int63.t;
+      active        : Int63.t;
+      inactive      : Int63.t;
+      swap_total    : Int63.t;
+      swap_free     : Int63.t;
+      dirty         : Int63.t;
+      writeback     : Int63.t;
+      anon_pages    : Int63.t;
+      mapped        : Int63.t;
+      slab          : Int63.t;
+      page_tables   : Int63.t;
+      nfs_unstable  : Int63.t;
+      bounce        : Int63.t;
+      commit_limit  : Int63.t;
+      committed_as  : Int63.t;
+      vmalloc_total : Int63.t;
+      vmalloc_used  : Int63.t;
+      vmalloc_chunk : Int63.t;
     }
   with fields, sexp ;;
   let load_exn () =
-    let of_kb = Big_int.mult_int_big_int 1024 in
+    let of_kb k = Int63.(of_int 1024 * k) in
     let map =
       In_channel.read_lines "/proc/meminfo"
       |! List.fold ~init:String.Map.empty ~f:(fun map line ->
@@ -463,7 +486,7 @@ module Meminfo = struct
               |! List.filter ~f:(fun s -> s <> "")
         with
         | key :: value :: "kB" :: [] ->
-            let data = Big_int.big_int_of_string value |! of_kb in
+            let data = Int63.of_string value |! of_kb in
             Map.add map ~key ~data
         | _ -> map (* ignore weird lines *)
       )
@@ -505,15 +528,15 @@ module Kstat = struct
 
   type cpu_t =
     {
-      user : bigint;
-      nice  : bigint;
-      sys: bigint;
-      idle: bigint;
-      iowait: bigint option;
-      irq: bigint option;
-      softirq: bigint option;
-      steal: bigint option;
-      guest: bigint option;
+      user : Int63.t;
+      nice  : Int63.t;
+      sys: Int63.t;
+      idle: Int63.t;
+      iowait: Int63.t option;
+      irq: Int63.t option;
+      softirq: Int63.t option;
+      steal: Int63.t option;
+      guest: Int63.t option;
     } with fields, sexp;;
 
   type t =
@@ -523,43 +546,43 @@ module Kstat = struct
     match l with
     | [user;nice;sys;idle;iowait;irq;softirq;steal;guest] ->
       (* > 2.6.24 *)
-      {  user = Big_int.big_int_of_string user;
-         nice  = Big_int.big_int_of_string nice ;
-         sys  = Big_int.big_int_of_string sys;
-         idle  = Big_int.big_int_of_string idle;
-         iowait = Some (Big_int.big_int_of_string iowait);
-         irq = Some (Big_int.big_int_of_string irq);
-         softirq = Some (Big_int.big_int_of_string softirq);
-         steal = Some (Big_int.big_int_of_string steal);
-         guest = Some (Big_int.big_int_of_string guest)}
+      {  user = Int63.of_string user;
+         nice  = Int63.of_string nice ;
+         sys  = Int63.of_string sys;
+         idle  = Int63.of_string idle;
+         iowait = Some (Int63.of_string iowait);
+         irq = Some (Int63.of_string irq);
+         softirq = Some (Int63.of_string softirq);
+         steal = Some (Int63.of_string steal);
+         guest = Some (Int63.of_string guest)}
     | [user;nice;sys;idle;iowait;irq;softirq;steal] ->
       (* > 2.6.11 *)
-      {  user = Big_int.big_int_of_string user;
-         nice  = Big_int.big_int_of_string nice ;
-         sys  = Big_int.big_int_of_string sys;
-         idle  = Big_int.big_int_of_string idle;
-         iowait = Some (Big_int.big_int_of_string iowait);
-         irq = Some (Big_int.big_int_of_string irq);
-         softirq = Some (Big_int.big_int_of_string softirq);
-         steal = Some (Big_int.big_int_of_string steal);
+      {  user = Int63.of_string user;
+         nice  = Int63.of_string nice ;
+         sys  = Int63.of_string sys;
+         idle  = Int63.of_string idle;
+         iowait = Some (Int63.of_string iowait);
+         irq = Some (Int63.of_string irq);
+         softirq = Some (Int63.of_string softirq);
+         steal = Some (Int63.of_string steal);
          guest = None}
     | [user;nice;sys;idle;iowait;irq;softirq] ->
       (* > 2.6.0  *)
-      {  user = Big_int.big_int_of_string user;
-         nice  = Big_int.big_int_of_string nice ;
-         sys  = Big_int.big_int_of_string sys;
-         idle  = Big_int.big_int_of_string idle;
-         iowait = Some (Big_int.big_int_of_string iowait);
-         irq = Some (Big_int.big_int_of_string irq);
-         softirq = Some (Big_int.big_int_of_string softirq);
+      {  user = Int63.of_string user;
+         nice  = Int63.of_string nice ;
+         sys  = Int63.of_string sys;
+         idle  = Int63.of_string idle;
+         iowait = Some (Int63.of_string iowait);
+         irq = Some (Int63.of_string irq);
+         softirq = Some (Int63.of_string softirq);
          steal = None;
          guest = None}
     | [user; nice; sys; idle] ->
       (* < 2.5.41 ish *)
-      {  user = Big_int.big_int_of_string user;
-         nice  = Big_int.big_int_of_string nice ;
-         sys  = Big_int.big_int_of_string sys;
-         idle  = Big_int.big_int_of_string idle;
+      {  user = Int63.of_string user;
+         nice  = Int63.of_string nice ;
+         sys  = Int63.of_string sys;
+         idle  = Int63.of_string idle;
          iowait = None;
          irq = None;
          softirq = None;
@@ -613,7 +636,8 @@ end
 
 let get_all_procs () =
   Sys.readdir "/proc"
-  |! Array.filter_map ~f:(fun pid ->
+  |! Array.to_list
+  |! List.filter_map ~f:(fun pid ->
     (* Failures usually aren't a fatal *system* condition.
        procfs queries on Linux simply are not consistent.
        They're generally thwarted by terminating processes.
@@ -621,7 +645,6 @@ let get_all_procs () =
     *)
     Option.try_with (fun () -> Process.load_exn (Pid.of_string pid))
   )
-  |! Array.to_list
 ;;
 
 let with_pid_exn = Process.load_exn ;;
@@ -670,7 +693,7 @@ let jiffies_per_second () = Option.try_with jiffies_per_second_exn ;;
 
 let process_age' ~jiffies_per_second p =
   let start_time =
-    Big_int.float_of_big_int p.Process.stat.Process.Stat.starttime
+    Int63.to_float p.Process.stat.Process.Stat.starttime
     /. jiffies_per_second
   in
   Time.Span.of_sec (get_uptime () -. start_time)

@@ -30,6 +30,11 @@ type ('input,'output) t = {
 
 val map : ('input,'output1) t -> f:('output1 -> 'output2) -> ('input,'output2) t
 
+val map_case :
+  ('input, unit -> 'output1) case
+  -> f:('output1 -> 'output2)
+  -> ('input, unit -> 'output2) case
+
 val map_cases :
   ('input, unit -> 'output1) case list
   -> f:('output1 -> 'output2)

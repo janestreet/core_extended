@@ -75,6 +75,7 @@ type column = [ `Name
               | `Input_size
               | `Cycles
               | `Normalized_cycles
+              | `Nanos
               | `Allocated
               | `Warnings ]
 
@@ -98,6 +99,7 @@ type column = [ `Name
 type 'a with_print_flags =
   ?limit_width_to:int
   -> ?columns:[ column | `If_not_empty of column ] list
+  -> ?display:Ascii_table.Display.t
   -> 'a
 
 val bench : (Test.t list -> unit) with_benchmark_flags with_print_flags

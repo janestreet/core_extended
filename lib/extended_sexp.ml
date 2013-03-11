@@ -484,3 +484,21 @@ let load_sexp_conv_exn_sample ?strict ?buf ?(on_non_existence=`Exit) ?name
         exit 1
       | `Raise -> failwithf "%s." message ()
     end
+
+let load_includes_in_sexp ?max_depth ext_sexp =
+  let rec loop ~visited ~max_depth = function
+    | Sexp.Atom str -> [Sexp.Atom str]
+    | Sexp.List [Sexp.Atom ":include"; Sexp.Atom filename] ->
+      if List.mem visited filename then failwithf "ext_sexp loop in %s" filename ()
+      else if max_depth = Some 0   then failwithf "ext_sexp max depth reached on %s" filename ()
+      else
+        loop_list
+          ~visited:(filename::visited)
+          ~max_depth:(Option.map max_depth ~f:((-) 1))
+          (Sexp.load_sexps filename)
+    | Sexp.List list ->
+      [Sexp.List (loop_list ~visited ~max_depth list)]
+  and loop_list ~visited ~max_depth list =
+    List.map list ~f:(loop ~visited ~max_depth) |! List.concat
+  in
+  List.hd_exn (loop ~visited:[] ~max_depth ext_sexp)

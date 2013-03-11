@@ -22,6 +22,7 @@ module Cycles = struct
   let add  t1 t2 = t1 + t2
   let diff t1 t2 = t1 - t2
   let to_cycle_count t = t (* cycle count is just an int *)
+  let of_int (t : int) : t = t  (* cycle count is just an int *)
 
   let get_snapshot () =
     let cycles = ref 0 in

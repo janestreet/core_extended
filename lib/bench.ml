@@ -124,6 +124,16 @@ let make_norm_cycles (_name_opt, size, results) =
     ""
 ;;
 
+let make_nanos (_name_opt, size, results) =
+  let module Cycles = Time_stamp_counter.Cycles in
+  if size > 0 then
+    let mean_cycles = (Result.mean results).Result.Stat.run_cycles in
+    let nanos = Cycles.to_ns (Cycles.of_int (mean_cycles / size)) in
+    Core.Int_conversions.insert_underscores (Int.to_string nanos)
+  else
+    ""
+;;
+
 let make_warn (_name_opt, _size, results) =
   let twenty = 20 in
   let maybe_string s predicate = if predicate then s else "" in
@@ -141,6 +151,7 @@ type column = [ `Name
               | `Input_size
               | `Cycles
               | `Normalized_cycles
+              | `Nanos
               | `Allocated
               | `Warnings ] with sexp, compare
 
@@ -167,7 +178,7 @@ module Warning_set = Set.Make (struct
       Char.compare a b
 end)
 
-let print ?(limit_width_to=72) ?(columns=default_columns) data =
+let print ?(limit_width_to=72) ?(columns=default_columns) ?display data =
   let left, right = Ascii_table.Align.(left, right) in
   (* Map displayed columns to `If_not_empty or `Yes. *)
   let displayed =
@@ -185,12 +196,13 @@ let print ?(limit_width_to=72) ?(columns=default_columns) data =
     col `Input_size          "Input size"           make_size                    right;
     col `Cycles              "Cycles"               make_cycles                  right;
     col `Normalized_cycles   "Normalized cycles"    make_norm_cycles             right;
+    col `Nanos               "Time (ns)"            make_nanos                   right;
     col `Allocated           "Allocated (minor)"    make_minor_allocated         right;
     col `Allocated           "Allocated (major)"    make_major_allocated         right;
     col `Allocated           "Promoted"             make_promoted                right;
     col `Warnings            "Warnings"             make_warn                    right;
   ] in
-  Ascii_table.output ~oc:stdout ~limit_width_to columns data;
+  Ascii_table.output ?display ~oc:stdout ~limit_width_to columns data;
   (* Print the meaning of warnings. *)
   if CMap.mem displayed `Warnings then begin
     (* Collect used warnings. *)
@@ -367,6 +379,7 @@ type 'a with_benchmark_flags =
 type 'a with_print_flags =
   ?limit_width_to:int
   -> ?columns:[ column | `If_not_empty of column ] list
+  -> ?display:Ascii_table.Display.t
   -> 'a
 
 let bench_raw
@@ -378,7 +391,7 @@ let bench_raw
 ;;
 
 let bench
-    ?limit_width_to ?columns ?verbosity ?gc_prefs ?no_compactions ?trials ?clock tests =
-  print ?limit_width_to ?columns
+    ?limit_width_to ?columns ?display ?verbosity ?gc_prefs ?no_compactions ?trials ?clock tests =
+  print ?limit_width_to ?columns ?display
     (bench_raw ?verbosity ?gc_prefs ?no_compactions ?trials ?clock tests)
 ;;

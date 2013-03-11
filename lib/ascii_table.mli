@@ -58,3 +58,8 @@ val output : (_, oc:Out_channel.t -> unit) renderer
 
 val to_string_noattr : (_, string) renderer
 val to_string : (_, string) renderer
+
+val simple_list_table : ?index:bool -> ?limit_width_to:int ->
+  ?oc:Out_channel.t -> ?display:Display.t ->
+  string list -> string list list -> unit
+

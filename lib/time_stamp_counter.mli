@@ -18,7 +18,9 @@ module Cycles : sig
   external now : unit -> t = "tsc_rdtsc" "noalloc"
   val add : t -> t -> t
   val diff : t -> t -> t
+
   val to_cycle_count : t -> int
+  val of_int : int -> t
 
   val get_snapshot : unit -> snapshot
   val cpu_mhz : unit -> float
