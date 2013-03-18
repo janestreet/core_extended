@@ -23,10 +23,16 @@ module Cycles : sig
   val of_int : int -> t
 
   val get_snapshot : unit -> snapshot
-  val cpu_mhz : unit -> float
+  val cpu_mhz : ?snapshot:snapshot -> unit -> float
 
   (* use information in the supplied snapshot *)
   val to_ns : ?snapshot:snapshot -> t -> int
   val to_time : ?snapshot:snapshot -> t -> Time.t
+  val calibrate_snapshot : snapshot -> snapshot
+
+  (* Recalibrate the internal snapshot maintained by this module. Recalibration at the
+     rate of once in 10secs causes an error of about 1microsec. Increasing the frequency
+     of recalibration does not change the precision by much. *)
+  val recalibrate : unit -> unit
 
 end

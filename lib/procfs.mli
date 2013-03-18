@@ -4,6 +4,10 @@ open Core.Std
    Process and system stats
 *)
 
+type bigint = Big_int.big_int with sexp ;;
+
+val input_all_with_reused_buffer : unit -> (string -> string) Staged.t
+
 module Process : sig
   module Inode : sig
     type t with sexp ;;
@@ -12,7 +16,7 @@ module Process : sig
   end ;;
   module Limits : sig
     module Rlimit : sig
-      type value = [ `unlimited | `limited of Int63.t ] with sexp ;;
+      type value = [ `unlimited | `limited of bigint ] with sexp ;;
       type t = { soft : value; hard: value } with fields, sexp ;;
     end ;;
     type t =
@@ -48,53 +52,58 @@ module Process : sig
         tty_nr      : int;    (** The tty the process uses. *)
         tpgid       : int;    (** The process group ID of the process which currently owns
                                   the tty... *)
-        flags       : Int63.t; (** The kernel flags word of the process. *)
-        minflt      : Int63.t; (** The number of minor faults the process has made which have
+        flags       : bigint; (** The kernel flags word of the process. *)
+        minflt      : bigint; (** The number of minor faults the process has made which have
                                   not required loading a memory page from disk. *)
-        cminflt     : Int63.t; (** The number of minor faults that the process’s waited-for
+        cminflt     : bigint; (** The number of minor faults that the process’s waited-for
                                   children have made. *)
-        majflt      : Int63.t; (** The number of major faults the process has made which have
+        majflt      : bigint; (** The number of major faults the process has made which have
                                   required loading a page from disk. *)
-        cmajflt     : Int63.t; (** The number of major faults that the process’s waited-for
+        cmajflt     : bigint; (** The number of major faults that the process’s waited-for
                                   children have made. *)
-        utime       : Int63.t; (** The number of jiffies that this process has been scheduled
+        utime       : bigint; (** The number of jiffies that this process has been scheduled
                                   in user mode. *)
-        stime       : Int63.t; (** The number of jiffies that this process has been scheduled
+        stime       : bigint; (** The number of jiffies that this process has been scheduled
                                   in kernel mode. *)
-        cutime      : Int63.t; (** The number of jiffies that this process’s waited-for
+        cutime      : bigint; (** The number of jiffies that this process’s waited-for
                                   children have been scheduled in user mode. *)
-        cstime      : Int63.t; (** The number of jiffies that this process’s waited-for
+        cstime      : bigint; (** The number of jiffies that this process’s waited-for
                                   children have been scheduled in kernel mode. *)
-        priority    : Int63.t; (** The standard nice value, plus fifteen.  The value is never
+        priority    : bigint; (** The standard nice value, plus fifteen.  The value is never
                                   negative in the kernel. *)
-        nice        : Int63.t; (** The nice value ranges from 19 to -19*)
-        unused      : Int63.t; (** placeholder for removed field *)
-        itrealvalue : Int63.t; (** The time in jiffies before the next SIGALRM is sent to the
+        nice        : bigint; (** The nice value ranges from 19 to -19*)
+        unused      : bigint; (** placeholder for removed field *)
+        itrealvalue : bigint; (** The time in jiffies before the next SIGALRM is sent to the
                                   process due to an interval timer. *)
-        starttime   : Int63.t; (** The time in jiffies the process started after system boot.*)
-        vsize       : Int63.t; (** Virtual memory size in bytes. *)
-        rss         : Int63.t; (** Resident Set Size: number of pages the process has in real
+        starttime   : bigint; (** The time in jiffies the process started after system boot.*)
+        vsize       : bigint; (** Virtual memory size in bytes. *)
+        rss         : bigint; (** Resident Set Size: number of pages the process has in real
                                   memory. *)
-        rlim        : Int63.t; (** Current limit in bytes on the rss of the process. *)
-        startcode   : Int63.t; (** The address above which program text can run. *)
-        endcode     : Int63.t; (** The address below which program text can run. *)
-        startstack  : Int63.t; (** The address of the start of the stack. *)
-        kstkesp     : Int63.t; (** The current value of esp (stack pointer) *)
-        kstkeip     : Int63.t; (** The current value of eip (instruction pointer) *)
-        signal      : Int63.t; (** The bitmap of pending signals. *)
-        blocked     : Int63.t; (** The bitmap of blocked signals. *)
-        sigignore   : Int63.t; (** The bitmap of ignored signals. *)
-        sigcatch    : Int63.t; (** The bitmap of caught signals. *)
-        wchan       : Int63.t; (** This is  the "channel" in which the process is waiting.
+        rlim        : bigint; (** Current limit in bytes on the rss of the process. *)
+        startcode   : bigint; (** The address above which program text can run. *)
+        endcode     : bigint; (** The address below which program text can run. *)
+        startstack  : bigint; (** The address of the start of the stack. *)
+        kstkesp     : bigint; (** The current value of esp (stack pointer) *)
+        kstkeip     : bigint; (** The current value of eip (instruction pointer) *)
+        signal      : bigint; (** The bitmap of pending signals. *)
+        blocked     : bigint; (** The bitmap of blocked signals. *)
+        sigignore   : bigint; (** The bitmap of ignored signals. *)
+        sigcatch    : bigint; (** The bitmap of caught signals. *)
+        wchan       : bigint; (** This is  the "channel" in which the process is waiting.
                                   Address of a system call. *)
-        nswap       : Int63.t; (** (no longer maintained) *)
-        cnswap      : Int63.t; (** (no longer maintained) *)
+        nswap       : bigint; (** (no longer maintained) *)
+        cnswap      : bigint; (** (no longer maintained) *)
         exit_signal : int;    (** Signal sent to parent when we die. *)
         processor   : int;    (** CPU number last executed on. *)
-        rt_priority : Int63.t; (** Real-time scheduling priority. *)
-        policy      : Int63.t; (** Scheduling policy *)
+        rt_priority : bigint; (** Real-time scheduling priority. *)
+        policy      : bigint; (** Scheduling policy *)
       }
     with fields, sexp ;;
+
+    (* For a stat string such as "14574 (cat) R 10615 14574 ...", extract_command returns
+       (`command "cat", `rest "R 10615 14574 ..."). Note that the pid at the beginning is
+       dropped. *)
+    val extract_command : string -> [`command of string] * [`rest of string]
 
     val of_string : string -> t
   end ;;
@@ -102,13 +111,13 @@ module Process : sig
   module Statm : sig
     type t =
       {
-        size     : Int63.t; (** total program size *)
-        resident : Int63.t; (** resident set size *)
-        share    : Int63.t; (** shared pages *)
-        text     : Int63.t; (** text (code) *)
-        lib      : Int63.t; (** library *)
-        data     : Int63.t; (** data/stack *)
-        dt       : Int63.t; (** dirty pages (unused) *)
+        size     : bigint; (** total program size *)
+        resident : bigint; (** resident set size *)
+        share    : bigint; (** shared pages *)
+        text     : bigint; (** text (code) *)
+        lib      : bigint; (** library *)
+        data     : bigint; (** data/stack *)
+        dt       : bigint; (** dirty pages (unused) *)
       }
     with fields, sexp ;;
 
@@ -172,28 +181,28 @@ module Meminfo : sig
   (** [t] corresponds to the values in /proc/meminfo.  All values in bytes. *)
   type t =
     {
-      mem_total     : Int63.t;
-      mem_free      : Int63.t;
-      buffers       : Int63.t;
-      cached        : Int63.t;
-      swap_cached   : Int63.t;
-      active        : Int63.t;
-      inactive      : Int63.t;
-      swap_total    : Int63.t;
-      swap_free     : Int63.t;
-      dirty         : Int63.t;
-      writeback     : Int63.t;
-      anon_pages    : Int63.t;
-      mapped        : Int63.t;
-      slab          : Int63.t;
-      page_tables   : Int63.t;
-      nfs_unstable  : Int63.t;
-      bounce        : Int63.t;
-      commit_limit  : Int63.t;
-      committed_as  : Int63.t;
-      vmalloc_total : Int63.t;
-      vmalloc_used  : Int63.t;
-      vmalloc_chunk : Int63.t;
+      mem_total     : bigint;
+      mem_free      : bigint;
+      buffers       : bigint;
+      cached        : bigint;
+      swap_cached   : bigint;
+      active        : bigint;
+      inactive      : bigint;
+      swap_total    : bigint;
+      swap_free     : bigint;
+      dirty         : bigint;
+      writeback     : bigint;
+      anon_pages    : bigint;
+      mapped        : bigint;
+      slab          : bigint;
+      page_tables   : bigint;
+      nfs_unstable  : bigint;
+      bounce        : bigint;
+      commit_limit  : bigint;
+      committed_as  : bigint;
+      vmalloc_total : bigint;
+      vmalloc_used  : bigint;
+      vmalloc_chunk : bigint;
     }
   with fields, sexp ;;
 end ;;
@@ -203,15 +212,15 @@ module Kstat : sig
 
   type cpu_t =
     {
-      user    : Int63.t;
-      nice    : Int63.t;
-      sys     : Int63.t;
-      idle    : Int63.t;
-      iowait  : Int63.t option;
-      irq     : Int63.t option;
-      softirq : Int63.t option;
-      steal   : Int63.t option;
-      guest   : Int63.t option;
+      user    : bigint;
+      nice    : bigint;
+      sys     : bigint;
+      idle    : bigint;
+      iowait  : bigint option;
+      irq     : bigint option;
+      softirq : bigint option;
+      steal   : bigint option;
+      guest   : bigint option;
     } with fields, sexp;;
 
   type t =

@@ -1092,8 +1092,8 @@ module Annotated_field = struct
   module F = Fieldslib.Field
 
   let with_names name field ~doc ~value = {
-    field_name = field.F.name;
-    flag_name = Option.value name ~default:field.F.name;
+    field_name = F.name field;
+    flag_name = Option.value name ~default:(F.name field);
     doc = doc;
     value = value;
   }
@@ -1196,7 +1196,7 @@ module Annotated_field = struct
   ;;
 
   let get accum of_string field =
-    let field_name = field.F.name in
+    let field_name = F.name field in
     let err_unspecified () = failwithf "%s not specified" field_name () in
     match List.find !accum ~f:(fun t -> t.field_name = field_name) with
     | None -> err_unspecified ()
@@ -1212,7 +1212,7 @@ module Annotated_field = struct
   ;;
 
   let get_opt accum of_string field =
-    let field_name = field.F.name in
+    let field_name = F.name field in
     let err_unspecified () = failwithf "%s not specified" field_name () in
     match List.find !accum ~f:(fun t -> t.field_name = field_name) with
     | None -> err_unspecified ()
@@ -1224,7 +1224,7 @@ module Annotated_field = struct
   ;;
 
   let get_list accum of_string field =
-    let field_name = field.F.name in
+    let field_name = F.name field in
     let err_unspecified () = failwithf "%s not specified" field_name () in
     match List.find !accum ~f:(fun t -> t.field_name = field_name) with
     | None -> err_unspecified ()
