@@ -112,11 +112,11 @@ let status_command t =
                                     | `Not_running -> printf "%s is not running\n%!" slot.name
                                     | `Running_with_pid pid ->
                                       if still_alive pid then
-                                        printf "%s is running with pid %s\n%!" slot.name (Pid.to_string pid)
+                                        printf !"%s is running with pid %{Pid}\n%!" slot.name pid
                                       else
-                                        printf "%s is not running, even though we saw pid %s in its lockfile\n%!"
+                                        printf !"%s is not running, even though we saw pid %{Pid} in its lockfile\n%!"
                                           slot.name
-                                          (Pid.to_string pid))
+                                          pid)
 
 let stop_command t =
   let module T = (val t : T) in let () = () in

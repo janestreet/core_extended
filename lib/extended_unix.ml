@@ -188,7 +188,7 @@ module Cidr = struct
     with _ -> None
 
   let to_string t =
-    sprintf "%s/%d" (Unix.Inet_addr.to_string t.address) t.bits
+    sprintf !"%{Unix.Inet_addr}/%d" t.address t.bits
 
 
   (** IPv6 addresses are not supported.

@@ -1,3 +1,4 @@
+open Core.Std
 open Core_extended.Std
 open OUnit
 

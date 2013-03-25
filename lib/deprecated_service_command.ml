@@ -35,10 +35,10 @@ let command ~lock_file ~name main =
     | `Not_running -> printf "%s is not running\n%!" name
     | `Running_with_pid pid ->
       if still_alive pid then
-        printf "%s is running with pid %s\n%!" name (Pid.to_string pid)
+        printf !"%s is running with pid %{Pid}\n%!" name pid
       else
-        printf "%s is not running, even though we saw pid %s in its lockfile\n%!"
-          name (Pid.to_string pid)
+        printf !"%s is not running, even though we saw pid %{Pid} in its lockfile\n%!"
+          name pid
     end;
     0
   in

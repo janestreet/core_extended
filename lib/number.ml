@@ -41,7 +41,7 @@ module Make_verified (Spec : Verified_spec) = struct
 
   type repr = Spec.t
 
-  let get_err_str msg n = sprintf "%s: %s" msg (to_string n)
+  let get_err_str msg n = sprintf !"%s: %{}" msg n
 
   let verify n =
     match Spec.check n with
@@ -185,7 +185,7 @@ module Make_verified_std (Spec : Verified_std_spec) = struct
             module_name name (to_string lower) (to_string upper) ()
         else
           let mk_error cmp_c bound =
-            Error (sprintf "%s.t %c %s" name cmp_c (to_string bound))
+            Error (sprintf !"%s.t %c %{}" name cmp_c bound)
           in
           let lower_error = mk_error '<' lower in
           let upper_error = mk_error '>' upper in

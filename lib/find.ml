@@ -82,8 +82,8 @@ let rec open_next_dir t =
               f (output_path_name t dir_name);
               open_next_dir t
           | O.Print ->
-              Printf.eprintf "unable to open %s - %s\n"
-                (output_path_name t dir_name) (Exn.to_string e);
+              Printf.eprintf !"unable to open %s - %{Exn}\n"
+                (output_path_name t dir_name) e;
               open_next_dir t
 ;;
 
@@ -126,7 +126,7 @@ let rec next t =
             f output_fn;
             None
         | O.Print ->
-            Printf.eprintf "unable to stat %s - %s\n" output_fn (Exn.to_string e);
+            Printf.eprintf !"unable to stat %s - %{Exn}\n" output_fn e;
             None
   in
   let is_new (_output_fn, _path, stats as info) =

@@ -1,7 +1,7 @@
 open Core.Std
 
 let default_callback ~elapsed =
-  eprintf "tick thread stopped for %s\n%!" (Time.Span.to_string elapsed)
+  eprintf !"tick thread stopped for %{Time.Span}\n%!" elapsed
 ;;
 
 let start ?(callback = default_callback) () =

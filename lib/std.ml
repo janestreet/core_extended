@@ -43,10 +43,6 @@ module Float = struct
   include Core.Float
   include Extended_float
 end
-module Fn = struct
-  include Core.Std.Fn
-  include Extended_fn
-end
 module Gc = struct
   include Core.Std.Gc
   include Extended_gc

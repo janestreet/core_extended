@@ -44,7 +44,7 @@ let min_interval t =
     if t1 <> t2 && t2 > t1 then current_min := min (t2 - t1) !current_min
   done;
   if !current_min <> canary_val then !current_min
-  else failwith (Printf.sprintf "unable to calculate min_interval for %s" (to_string t))
+  else failwith (Printf.sprintf !"unable to calculate min_interval for %{}" t)
 ;;
 
 let mean_gettime_cost ~measure ~using =

@@ -38,7 +38,7 @@ module Process = struct
     String.concat ~sep:" " (List.map ~f (prog::args))
 
   let status_to_string = function
-    | `Timeout t -> sprintf "Timed out (ran for %s)" (Time.Span.to_string t)
+    | `Timeout t -> sprintf !"Timed out (ran for %{Time.Span})" t
     | #Process.Status.t as s -> Process.Status.to_string s
 
   let format_failed c =
@@ -128,7 +128,7 @@ module Process = struct
       =
     k (fun cmd stdoutf stderrf ->
       if echo then
-        Console.Ansi.printf [`Underscore] "Shell: %s\n%!" (to_string cmd);
+        Console.Ansi.printf [`Underscore] !"Shell: %{}\n%!" cmd;
       let stderrf =
         if verbose then
           (fun s len -> Console.Ansi.output [`Red] stderr s 0 len)

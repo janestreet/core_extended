@@ -5,7 +5,7 @@ let run_main f =
     f ();
     exit 0
   with e ->
-    eprintf "Uncaught exception:\n%s\n" (Extended_exn.to_string e);
+    eprintf !"Uncaught exception:\n%{Extended_exn}\n" e;
     if Caml.Printexc.backtrace_status () then begin
       Caml.Printexc.print_backtrace stderr;
     end;

@@ -346,7 +346,7 @@ module Process = struct
   let load_exn pid =
     let slurp f fn =
       try
-        Some (f (sprintf "/proc/%s/%s" (Pid.to_string pid) fn))
+        Some (f (sprintf !"/proc/%{Pid}/%s" pid fn))
       with
       | Sys_error _ -> None
       | Unix.Unix_error (Unix.EACCES, _, _) -> None

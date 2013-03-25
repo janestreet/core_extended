@@ -145,9 +145,9 @@ module Status = struct
   let to_string = function
     | `Exited i -> sprintf "exited with code %d" i
     | `Signaled s ->
-      sprintf "died after receiving %s (signal number %d)"
-        (Signal.to_string s) (Signal.to_system_int s)
-    | `Timeout s -> sprintf "Timed out (ran for %s)" (Time.Span.to_string s)
+      sprintf !"died after receiving %{Signal} (signal number %d)"
+        s (Signal.to_system_int s)
+    | `Timeout s -> sprintf !"Timed out (ran for %{Time.Span})" s
 
 end
 module Command_result = struct
