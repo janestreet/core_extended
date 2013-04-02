@@ -942,13 +942,11 @@ module Net = struct
             plus; some; other; state; i; guess; lol] ->
         {
           sl = Int.of_string sl;
-          local_address= Extended_unix.Cidr.inet4_addr_of_int_exn
-            (Extended_unix.ntohl
-               (dehex_int32 local_address));
+          local_address= Unix.Inet_addr.inet4_addr_of_int32
+              (Extended_unix.ntohl (dehex_int32 local_address));
           local_port= Extended_unix.Inet_port.of_int_exn (dehex_int local_port);
-          remote_address= Extended_unix.Cidr.inet4_addr_of_int_exn
-            (Extended_unix.ntohl
-               (dehex_int32 remote_address));
+          remote_address= Unix.Inet_addr.inet4_addr_of_int32
+            (Extended_unix.ntohl (dehex_int32 remote_address));
 
           (* This can be 0 which is technically invalid but...*)
           remote_port = Extended_unix.Inet_port.of_int (dehex_int remote_port);
