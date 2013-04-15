@@ -4,7 +4,7 @@ deadlock.  Feel free to come up with a better name than search_foo *)
 open Core.Std
 
 type comparison = int
-  
+
 (** cf Jane.Std.Common.ascending *)
 let cmp_fasc f = fun x y -> compare (f x) (f y)
 
