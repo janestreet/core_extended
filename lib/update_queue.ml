@@ -14,12 +14,9 @@ let create ?init () = {
   executing = Mutex.create ();
 }
 
-let try_lock mtx =
-  try Mutex.try_lock mtx with _ -> false
-
 let clear_queue t =
-  if try_lock t.executing
-  then begin
+  match Mutex.try_lock t.executing with
+  | `Acquired ->
     let rec loop () =
       match t.state with
       | None -> ()
@@ -33,7 +30,8 @@ let clear_queue t =
           loop ()
     in
     Exn.protect ~f:loop ~finally:(fun () -> Mutex.unlock t.executing; Queue.clear t.updates)
-  end
+  | `Already_held_by_me_or_other ->
+    ()
 
 let init t state =
   if Option.is_some t.state

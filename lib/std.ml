@@ -152,6 +152,8 @@ module Unix = struct
 end
 module Unix_utils = Unix_utils
 module Update_queue = Update_queue
+module Splay_tree = Splay_tree
 module Stats_reporting = Stats_reporting
+module Text_block = Text_block
 module Time_stamp_counter = Time_stamp_counter
 

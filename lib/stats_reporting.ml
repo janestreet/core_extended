@@ -1,9 +1,19 @@
 open Core.Std
 module Cycles = Time_stamp_counter.Cycles
 
-type field = int with sexp, bin_io
-type type_desc = string with sexp, bin_io
-type name = string with sexp, bin_io
+module Basic_types = struct
+  type field = int with sexp, bin_io
+  type type_desc = string with sexp, bin_io
+  type name = string with sexp, bin_io
+
+  type t =
+  | New_field of field * string * type_desc * name
+  | Int_datum of field * int * Cycles.t
+  | Float_datum of field * float * Cycles.t
+  with sexp, bin_io
+end
+include Basic_types
+
 
 let debug = false
 
@@ -12,48 +22,90 @@ type header = {
   mutable msg : string;
 } with bin_io
 
-type t =
-| New_field of field * string * type_desc * name
-| Int_datum of field * int * Cycles.t
-| Float_datum of field * float * Cycles.t
-with sexp, bin_io
-
 type report = {
   mutable data : Bigstring.t;
   mutable used : int;
   mutable previous : (Bigstring.t * int) list;
+  mutable total_previous : int;
+  mutable memory_limit : int;
+  mutable file_name: string;
 }
 
+let initial_report_buffer_size = 10_000_000
 
+(* globals *)
 let allow_for_header = 256
 let field_counter_ref = ref 1
 
 
+(* lazy globals *)
 let lazy_header = lazy {
   snapshot = Cycles.get_snapshot ();
   msg = "";
 }
 
-let report = {
-  data = Bigstring.create 10000000;
+let report = lazy {
+  data = Bigstring.create initial_report_buffer_size;
   used = allow_for_header;
   previous = [];
+  total_previous = 0;
+  file_name = "";
+  memory_limit = 0;
 }
 
+let determine_file =
+  let first_time = ref true in
+  (fun report ->
+    let fn = report.file_name in
+    let mode =
+    if !first_time then begin
+      first_time := false;
+      let fn_old = fn ^ ".old" in
+      begin match Sys.file_exists fn with
+      | `Yes -> Unix.rename ~src:fn ~dst:fn_old
+      | `No | `Unknown -> ()
+      end;
+      [Unix.O_CREAT; Unix.O_WRONLY]
+    end
+    else [Unix.O_APPEND; Unix.O_WRONLY] in
+    fn, mode)
+
+let write_report_to_file () =
+  let report = Lazy.force report in
+  let fn, mode = determine_file report in
+  let ls = (report.data, report.used) :: report.previous in
+  let ls = List.rev ls in
+  ignore (Unix.with_file fn
+            ~mode
+            ~f:(fun fd ->
+              List.iter ls ~f:(fun (data, len) ->
+                ignore (Bigstring.write fd ~len data))))
 
 let expand_report_buffer () =
-  let buf = Bigstring.create (Bigstring.length report.data) in
-  report.previous <- (report.data, report.used) :: report.previous;
-  report.data <- buf;
-  report.used <- 0
+  let report = Lazy.force report in
+  let current_size = Bigstring.length report.data in
+  let new_total = report.total_previous + current_size in
+  if report.memory_limit > 0 &&  new_total >= report.memory_limit then begin
+    write_report_to_file ();
+    report.previous <- [];
+    report.total_previous <- 0;
+    report.used <- 0; (* re-use the data buffer *)
+  end
+  else begin
+    let next_alloc = Int.min initial_report_buffer_size report.memory_limit in
+    report.previous <- (report.data, report.used) :: report.previous;
+    report.total_previous <- new_total;
+    report.data <- Bigstring.create next_alloc;
+    report.used <- 0
+  end
 
 let write_to_report_buffer t =
-  let writer = bin_writer_t in
-  let len  = bin_size_t t in
+  let writer = bin_writer_t      in
+  let len    = bin_size_t t      in
+  let report = Lazy.force report in
   if len + report.used > (Bigstring.length report.data)
   then expand_report_buffer ();
   report.used <- writer.Bin_prot.Type_class.write report.data ~pos:(report.used) t
-
 
 let create_field  ~desc ~type_desc ~name =
   let field = !field_counter_ref in
@@ -67,7 +119,8 @@ let add_datum field num =
 let add_datum_float field num =
   write_to_report_buffer (Float_datum (field, num, Cycles.now()))
 
-let resize_if_required () =
+let adjust_if_required () =
+  let report = Lazy.force report in
   let perc_used () =
     (report.used * 100) / (Bigstring.length report.data)
   in
@@ -77,20 +130,6 @@ let resize_if_required () =
     expand_report_buffer ()
   end
 
-let write_report_to_file () =
-  let fn = "stats.data" in
-  let fn_old = "stats.data.old" in
-  begin match Sys.file_exists fn with
-  | `Yes -> Unix.rename ~src:fn ~dst:fn_old
-  | `No | `Unknown -> ()
-  end;
-  let ls = (report.data, report.used) :: report.previous in
-  let ls = List.rev ls in
-  ignore (Unix.with_file fn
-            ~mode:[Unix.O_CREAT; Unix.O_WRONLY]
-            ~f:(fun fd ->
-              List.iter ls ~f:(fun (data, len) ->
-                ignore (Bigstring.write fd ~len data))))
 
 
 let read_msg_and_snapshot ~file =
@@ -121,12 +160,23 @@ let fold ~file ~init ~f =
         end in
       loop init)
 
-let init ~msg =
+let init ~msg ?(memory_limit=0) ?(file_name="stats.data") () =
   let header = Lazy.force lazy_header in
+  let report = Lazy.force report in
   let write_header () =
     let writer = bin_writer_header in
     ignore (writer.Bin_prot.Type_class.write report.data ~pos:0 header)
   in
+  report.file_name <- file_name;
+  report.memory_limit <- memory_limit;
   header.msg <- msg;
   write_header ();
   at_exit (write_report_to_file)
+
+
+module Stored_data = struct
+  include Basic_types
+
+  let read_msg_and_snapshot = read_msg_and_snapshot
+  let fold = fold
+end
