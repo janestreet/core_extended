@@ -61,7 +61,7 @@ CAMLprim value syslog_stub(value v_priority, value v_str) {
   char *str = caml_stat_alloc(len);
   memcpy(str, String_val(v_str), len);
   caml_enter_blocking_section();
-  syslog(Int_val(v_priority), str);
+  syslog(Int_val(v_priority), "%s", str);
   free(str);
   caml_leave_blocking_section();
   return Val_unit;
