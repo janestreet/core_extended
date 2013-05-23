@@ -1,5 +1,5 @@
 open Core.Std
-open Core_extended.Std.Bench
+open Core_extended.Std.Deprecated_bench
 
 module F = struct
   let ok x = Ok x

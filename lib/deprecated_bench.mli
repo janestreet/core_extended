@@ -1,4 +1,6 @@
+(** DEPRECATED: use the base/bench library instead *)
 open Core.Std
+open Textutils
 
 
 (**

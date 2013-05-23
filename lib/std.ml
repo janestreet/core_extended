@@ -1,19 +1,18 @@
 include Extended_common
+include Textutils.Std
 
 module Alternating_primary_backup_assignment = Alternating_primary_backup_assignment
 module Array = struct
   include Core.Std.Array
   include Extended_array
 end
-module Ascii_table = Ascii_table
 module Atomic_edit = Atomic_edit
-module Bench = Bench
+module Deprecated_bench = Deprecated_bench
 module Bin_io_utils = Bin_io_utils
 module Bitarray = Bitarray
 module Cache = Cache
 module Cbuffer = Cbuffer
 module Color_print = Color_print
-module Console = Console
 module Service_command = Service_command
 module Csv_writer = Csv_writer
 module Date = struct

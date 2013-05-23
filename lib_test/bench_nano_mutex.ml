@@ -1,6 +1,6 @@
 open Core.Std
 
-module Bench = Core_extended.Std.Bench
+module Bench = Core_extended.Std.Deprecated_bench
 
 module type Mutex = sig
   type t

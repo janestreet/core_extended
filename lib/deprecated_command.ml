@@ -1,5 +1,7 @@
 (** DEPRECATED: use Core.Std.Command instead *)
 open Core.Std
+open Textutils.Std
+
 open Printf
 
 exception Invalid_arguments of string list with sexp
