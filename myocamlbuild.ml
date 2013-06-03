@@ -8,6 +8,8 @@ let dispatch = function
     flag ["mlh"; "ocaml"; "ocamldep"] (S[A"-ppopt"; A"-Ilib/"]);
     flag ["mlh"; "ocaml"; "compile"]  (S[A"-ppopt"; A"-Ilib/"]);
     flag ["mlh"; "ocaml"; "doc"]      (S[A"-ppopt"; A"-Ilib/"]);
+
+    flag ["c"; "compile"] & S[A"-I"; A"lib"; A"-package"; A"core"; A"-thread"];
   | _ ->
     ()
 
