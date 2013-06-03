@@ -26,20 +26,18 @@ module Patience = struct
   module Piles = struct
     type 'a t = 'a Pile.t Dequeue.t
 
-    (* If [dummy] is of type [a], [empty ~dummy] returns an empty thing with type
-       [a Piles.t].  It doesn't matter what [dummy] actually is, only its type matters. *)
-    let empty ~dummy : 'a t = Dequeue.create ~never_shrink:true ~dummy:(Pile.create dummy) ()
+    let empty () : 'a t = Dequeue.create ~never_shrink:true ()
 
     let get_ith_pile t i dir =
-      let i =
-        match dir with
-        | `From_left -> Dequeue.front_index t + i
-        | `From_right -> Dequeue.back_index t - i
+      let get index offset =
+        Option.bind (index t) (fun index -> Dequeue.get t (index + offset))
       in
-      try Some (Dequeue.get_exn t i) with _ -> None
+      match dir with
+      | `From_left  -> get Dequeue.front_index i
+      | `From_right -> get Dequeue.back_index (-i)
 
-    let new_rightmost_pile t pile = Dequeue.push_back t pile
-    let length t = Dequeue.back_index t
+    let new_rightmost_pile t pile = Dequeue.enqueue_back t pile
+    let length t = Dequeue.length t
   end
 
   module Play_patience (Tagged:Tagged_array_elt) = struct
@@ -79,7 +77,7 @@ module Patience = struct
     *)
     let play_patience ar ~get_tag =
       if Array.length ar = 0 then raise (Invalid_argument "Patience_diff.play_patience");
-      let piles = Piles.empty ~dummy:{Tagged.value = ar.(0);tag = None} in
+      let piles = Piles.empty () in
       let prev = ref None in
       Array.iter ar ~f:(fun x ->
         let pile_opt = optimized_findi_from_left piles ~prev:!prev ~f:(fun pile -> x < (Pile.top pile).Tagged.value) in

@@ -22,7 +22,7 @@
 #include <arpa/inet.h>
 
 #include "config.h"
-#include "ocaml_utils.h"
+#include <ocaml_utils.h>
 
 #define MAX_ERROR_LEN 4096
 

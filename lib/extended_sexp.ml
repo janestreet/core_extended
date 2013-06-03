@@ -51,6 +51,8 @@ module Diff :
 sig
   type t
   val print : ?oc:out_channel -> t -> unit
+  val to_buffer : t -> Buffer.t
+  val to_string : t -> string
   val of_sexps : Sexp.t -> Sexp.t -> t option
 end
 =
@@ -127,9 +129,10 @@ struct
         else Some (Different (sexp1, sexp2))
     | _ -> Some (Different (sexp1, sexp2))
 
-  let print ?(oc = stdout) diff =
+  let to_buffer diff =
+    let buf = Buffer.create 80 in
     let print_string ~tag ~indent str =
-      Printf.fprintf oc "%-*s %s\n%!" indent tag str
+      Buffer.add_string buf (Printf.sprintf "%-*s %s\n%!" indent tag str)
     in
     let print_sexp ~tag ~indent sexp =
       print_string ~tag ~indent (Sexp.to_string sexp)
@@ -152,7 +155,12 @@ struct
         in
         List.iter ~f:print_record_field record_fields;
     in
-    loop 0 diff
+    loop 0 diff;
+    buf
+
+  let to_string diff = Buffer.contents (to_buffer diff)
+
+  let print ?(oc = stdout) diff = Buffer.output_buffer oc (to_buffer diff)
 end
 
 let print_diff ?oc sexp1 sexp2 =
@@ -485,20 +493,37 @@ let load_sexp_conv_exn_sample ?strict ?buf ?(on_non_existence=`Exit) ?name
       | `Raise -> failwithf "%s." message ()
     end
 
-let load_includes_in_sexp ?max_depth ext_sexp =
-  let rec loop ~visited ~max_depth = function
-    | Sexp.Atom str -> [Sexp.Atom str]
-    | Sexp.List [Sexp.Atom ":include"; Sexp.Atom filename] ->
-      if List.mem visited filename then failwithf "ext_sexp loop in %s" filename ()
-      else if max_depth = Some 0   then failwithf "ext_sexp max depth reached on %s" filename ()
-      else
-        loop_list
-          ~visited:(filename::visited)
-          ~max_depth:(Option.map max_depth ~f:((-) 1))
-          (Sexp.load_sexps filename)
-    | Sexp.List list ->
-      [Sexp.List (loop_list ~visited ~max_depth list)]
-  and loop_list ~visited ~max_depth list =
-    List.map list ~f:(loop ~visited ~max_depth) |! List.concat
+
+let load_sexp_with_includes ?max_depth ?buf filename =
+
+  let rec load ~visited ~max_depth filename =
+
+    let rec expand = function
+      | Sexp.Atom str :: l -> Sexp.Atom str :: expand l
+      | Sexp.List [Sexp.Atom ":include"; Sexp.Atom include_filename] :: l ->
+        let include_filename =
+          if Filename.is_absolute include_filename then
+            include_filename
+          else
+            Filename.concat (Filename.dirname filename) include_filename
+        in
+        if List.mem visited include_filename then
+          failwithf "include loop in %s" filename ()
+        else if max_depth = Some 0 then
+          failwithf "max depth reached on %s" filename ()
+        else
+          let visited = include_filename::visited in
+          let max_depth = Option.map max_depth ~f:((-) 1) in
+          load ~visited ~max_depth include_filename @ expand l
+      | Sexp.List l :: l' ->
+        Sexp.List (expand l) :: expand l'
+      | [] -> []
+    in
+    Sexp.load_sexps ?buf filename |> expand
+
   in
-  List.hd_exn (loop ~visited:[] ~max_depth ext_sexp)
+  match load ~visited:[] ~max_depth filename with
+  | [sexp] -> sexp
+  | _ -> failwithf "wrong number of sexps, expecting 1: %s" filename ()
+
+

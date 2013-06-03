@@ -36,6 +36,8 @@ val comment : string -> string
 module Diff : sig
   type t
   val print : ?oc:out_channel -> t -> unit
+  val to_buffer : t -> Buffer.t
+  val to_string : t -> string
   val of_sexps : Sexp.t -> Sexp.t -> t option
 end
 
@@ -115,8 +117,9 @@ val load_sexp_conv_exn_sample :
   -> sample:'a
   -> 'a
 
-(* Relaces elements that match (:include filename) with the Sexp.t list that is containted
-   in filename.  Useful for sharing information across multiple config files.
+(* Replaces elements that match (:include filename) with the Sexp.t list
+   that is containted in filename.
+   Useful for sharing information across multiple config files.
 
    Eg if my input Sexp.t is:
 
@@ -130,8 +133,8 @@ val load_sexp_conv_exn_sample :
     (field3 value 3)
    )
 
-   and accounts_master_list.txt contains "0001 0002 0003", this function will return the
-   Sexp.t:
+   and accounts_master_list.txt contains "0001 0002 0003",
+   this function will return the Sexp.t:
 
    ((field1 value1)
     (accounts (
@@ -145,5 +148,13 @@ val load_sexp_conv_exn_sample :
     (field3 value 3)
    )
 
+   A relative path in include is taken with respect to the file
+   that contains the :include.
 *)
-val load_includes_in_sexp : ?max_depth:int -> Sexp.t -> Sexp.t
+
+val load_sexp_with_includes:
+  ?max_depth:int
+  -> ?buf:string
+  -> string
+  -> Sexp.t
+

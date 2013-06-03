@@ -810,14 +810,20 @@ let create ?autocomplete ?readme ~summary ~usage_arg ~init ~flags ~final main =
             flags ++ flag)
         in
         flags
-        ++ step (fun m anons ->
+        ++ step (fun m anons help ->
           let env = init () in
           let env = !flag_env_updates env in
           let argv = final env anons in
           fun () ->
-            m argv
+            try
+              m argv
+            with Invalid_arguments lines ->
+              printf "Invalid arguments: %s\n\n" (String.concat ~sep:" " lines);
+              print_endline (Lazy.force help);
+              exit 1
         )
         +> anon (Command.Deprecated.Spec.ad_hoc ~usage_arg)
+        +> help
       )
       main
   in
