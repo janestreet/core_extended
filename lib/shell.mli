@@ -35,6 +35,7 @@ type 'a with_process_flags =
   -> ?echo:bool
   -> ?input:string
   -> ?keep_open:bool
+  -> ?tail_len:int
   -> 'a
 
 (**

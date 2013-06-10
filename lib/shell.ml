@@ -126,6 +126,7 @@ module Process = struct
       ?(echo = !Defaults.echo)
       ?input
       ?keep_open
+      ?tail_len
       =
     k (fun cmd stdoutf stderrf ->
       if echo then
@@ -144,6 +145,7 @@ module Process = struct
       (Process.run
          ?timeout ?input ?keep_open ?working_dir
          ?setuid ?setgid ?use_extra_path ?env
+         ?tail_len
          ~stdoutf
          ~stderrf
          ~prog:cmd.program
@@ -288,6 +290,7 @@ type 'a with_process_flags =
   -> ?echo:bool
   -> ?input:string
   -> ?keep_open:bool
+  -> ?tail_len:int
   -> 'a
 
 type 'a with_run_flags =
