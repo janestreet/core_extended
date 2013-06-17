@@ -57,8 +57,7 @@ module Access_control = struct
     val filter_mapi : ('a,_) any -> f:(int -> 'a -> 'b option) -> ('b,_) any
     val map2_exn : ('a,_) any -> ('b,_) any -> f:('a -> 'b -> 'c) -> ('c,_) any
     val findi : ('a,_) any -> f:(int -> 'a -> bool) -> (int * 'a) option
-    val blit : src:('a,_) any -> src_pos:int -> dst:'a Read_write.t -> dst_pos:int ->
-      len:int -> unit
+    val blito : (('a,_) any, 'a Read_write.t) Blit.blito
 
     val permute : ?random_state:Random.State.t -> _ Read_write.t -> unit
     val fill : 'a Read_write.t -> pos:int -> len:int -> 'a -> unit

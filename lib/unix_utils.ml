@@ -86,10 +86,10 @@ let ensure_at_exit () =
   let pid = Unix.getpid () in
   let handler signal =
     do_at_exit ();
-    Signal.set signal `Default;
+    Signal.handle_default signal;
     Signal.send_i signal (`Pid pid)
   in
-  List.iter ~f:(fun s -> Signal.set s (`Handle handler)) [
+  List.iter ~f:(fun s -> Signal.Expert.set s (`Handle handler)) [
     (* there are the signals which terminate a program due to
        "external circumstances" as opposed to "internal bugs" *)
     Signal.hup;
