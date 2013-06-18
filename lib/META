@@ -1,0 +1,13 @@
+# OASIS_START
+# DO NOT EDIT (digest: e21f5d5b777964e6ff5817884dd88766)
+version = "109.30.00"
+description = "Jane Street Capital's standard library overlay"
+requires =
+"sexplib fieldslib bin_prot oUnit pa_ounit core bigarray pcre res textutils unix custom_printf threads"
+archive(byte) = "core_extended.cma"
+archive(byte, plugin) = "core_extended.cma"
+archive(native) = "core_extended.cmxa"
+archive(native, plugin) = "core_extended.cmxs"
+exists_if = "core_extended.cma"
+# OASIS_STOP
+
