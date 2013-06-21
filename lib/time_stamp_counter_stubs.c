@@ -24,9 +24,13 @@
 /* http://en.wikipedia.org/wiki/Time_Stamp_Counter */
 CAMLprim value tsc_rdtsc( )
 {
+#if defined(__x86_64__) || defined(__i386__)
   uint32_t hi, lo;
   __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
   return Val_long( ((uint64_t)lo) | (((uint64_t)hi)<<32) );
+#else
+  return Val_long( 0 );
+#endif
 }
 
 CAMLprim value tsc_clock_rt_getres( )
