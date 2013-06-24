@@ -44,7 +44,7 @@ module Cycles = struct
   ;;
 
   (* get the local cpu's snapshot *)
-  let local_snapshot = ref (Lazy.lazy_from_fun get_snapshot)
+  let local_snapshot = ref (Lazy.from_fun get_snapshot)
 
   (* work with a given snapshot *)
   let to_ns ?snapshot:(ss=Lazy.force !local_snapshot) t =

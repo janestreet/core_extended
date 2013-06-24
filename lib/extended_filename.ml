@@ -178,7 +178,6 @@ let filename_compare map v1 v2 =
   and v2 = explode v2 in
   List.compare ~cmp:(basename_compare map) v1 v2
 
-
 let parent p = normalize (concat p parent_dir_name)
 
 TEST_MODULE "parent" = struct
@@ -191,11 +190,6 @@ let extension_map = create_extension_map [["h";"c"];["mli";"ml"]]
 
 let compare = filename_compare extension_map
 
-(**
-   [with_open_temp_file prefix suffix ~f]
-   runs f on the output_channel pointing to the temporary file and returns the
-   name of the file.
-*)
 let with_open_temp_file ?in_dir ?(write=ignore) ~f prefix suffix =
   protectx (open_temp_file ?in_dir prefix suffix)
     ~f:(fun (fname,oc) ->

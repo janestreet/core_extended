@@ -1,21 +1,17 @@
-(**
-   Extensions to [Core.Core_String] .
-*)
+(** Extensions to [Core.Core_String]. *)
 
-(**
-   [collate s1 s2] sorts string in an order that's is usaully more suited
-   for human consumption by treating ints specificaly:
-   (e.g. it will output: [["rfc1.txt";"rfc822.txt";"rfc2086.txt"]]).
+(** [collate s1 s2] sorts string in an order that's usaully more suited for human
+    consumption by treating ints specially, e.g. it will output:
+    [["rfc1.txt";"rfc822.txt";"rfc2086.txt"]].
 
-   It works by splitting the strings in numerical and non numerical chunks and
-   comparing chunks two by two from left to right (and starting on a non
-   numerical chunks):
-   - Non_numerical chunks are compared using lexicographical ordering.
-   - Numerical chunks are compared based on the values of the represented ints
-   and the number of trailing zeros.
+    It works by splitting the strings in numerical and non-numerical chunks and comparing
+    chunks two by two from left to right (and starting on a non numerical chunk):
 
-   It is a total order.
-*)
+    - Non_numerical chunks are compared using lexicographical ordering.
+    - Numerical chunks are compared based on the values of the represented ints
+      and the number of trailing zeros.
+
+    It is a total order. *)
 val collate : string -> string -> int
 
 (**

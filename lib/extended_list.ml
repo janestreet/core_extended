@@ -5,8 +5,6 @@ let of_option = function
   | None -> []
   | Some x -> [x]
 
-
-
 let set_diff l1 l2 =
   let set = Set.Poly.of_list l2 in
   List.filter l1 ~f:(fun x -> not (Set.mem set x))

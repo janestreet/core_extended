@@ -244,5 +244,5 @@ let memoize ?destruct ?(expire=`Keep_all) f =
   | `Keep_one -> keep_one ?destruct f
 
 let unit f =
-  let l = Lazy.lazy_from_fun f in
+  let l = Lazy.from_fun f in
   (fun () -> Lazy.force l)
