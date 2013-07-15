@@ -38,10 +38,10 @@ module Diff : sig
   val print : ?oc:out_channel -> t -> unit
   val to_buffer : t -> Buffer.t
   val to_string : t -> string
-  val of_sexps : Sexp.t -> Sexp.t -> t option
+  val of_sexps : original:Sexp.t -> updated:Sexp.t -> t option
 end
 
-val print_diff : ?oc:out_channel -> Sexp.t -> Sexp.t -> unit
+val print_diff : ?oc:out_channel -> original:Sexp.t -> updated:Sexp.t -> unit -> unit
 
 (** Returns a smaller sexp by replacing sections with "...".  Will try to show parts of the
    sexp "near" sub_sexp.

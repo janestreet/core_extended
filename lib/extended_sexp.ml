@@ -53,27 +53,22 @@ sig
   val print : ?oc:out_channel -> t -> unit
   val to_buffer : t -> Buffer.t
   val to_string : t -> string
-  val of_sexps : Sexp.t -> Sexp.t -> t option
+  val of_sexps : original:Sexp.t -> updated:Sexp.t -> t option
 end
 =
 struct
   type t =
-      | Different of Sexp.t * Sexp.t
+      | Different of ([`Original of Sexp.t] * [`Updated of Sexp.t])
       | List of t list
       | Record of record_field list
 
   and record_field =
-      | New_in_first of Sexp.t
-      | Not_in_first of Sexp.t
+      | New_in_updated of Sexp.t
+      | Not_in_updated of Sexp.t
       | Bad_match of string * t
 
-  let rec rev_map_append f lst1 lst2 =
-    match lst1 with
-    | [] -> lst2
-    | h :: t -> rev_map_append f t (f h :: lst2)
-
   let make_tail make tail acc =
-    Some (Record (List.rev (rev_map_append make tail acc)))
+    Some (Record (List.rev (List.rev_map_append ~f:make tail acc)))
 
   let recf (k, v) = Sexp.List [Sexp.Atom k; v]
 
@@ -93,41 +88,41 @@ struct
     let pairs = List.map ~f:to_pair sexp_list in
     List.sort ~cmp:(fun (k1, _) (k2, _) -> compare k1 k2) pairs
 
-  let rec of_record_fields acc pairs1 pairs2 =
-    match pairs1, pairs2 with
+  let rec of_record_fields acc pairs_orig pairs_upd =
+    match pairs_orig, pairs_upd with
     | [], [] when acc = [] -> None
     | [], [] -> Some (Record (List.rev acc))
-    | tail, [] -> make_tail (fun kv -> New_in_first (recf kv)) tail acc
-    | [], tail -> make_tail (fun kv -> Not_in_first (recf kv)) tail acc
-    | (((k1, v1) as h1) :: t1 as l1), (((k2, v2) as h2) :: t2 as l2) ->
-        let c = compare k1 k2 in
+    | [], tail -> make_tail (fun kv -> New_in_updated (recf kv)) tail acc
+    | tail, [] -> make_tail (fun kv -> Not_in_updated (recf kv)) tail acc
+    | (((k_o, v_o) as h_o) :: t_o as l_o), (((k_u, v_u) as h_u) :: t_u as l_u) ->
+        let c = compare k_o k_u in
         if c = 0 then
-          match of_sexps v1 v2 with
-          | None -> of_record_fields acc t1 t2
-          | Some diff -> of_record_fields (Bad_match (k1, diff) :: acc) t1 t2
-        else if c < 0 then of_record_fields (New_in_first (recf h1) :: acc) t1 l2
-        else of_record_fields (Not_in_first (recf h2) :: acc) l1 t2
+          match of_sexps ~original:v_o ~updated:v_u with
+          | None -> of_record_fields acc t_o t_u
+          | Some diff -> of_record_fields (Bad_match (k_u, diff) :: acc) t_o t_u
+        else if c < 0 then of_record_fields (New_in_updated (recf h_u) :: acc) l_o t_u
+        else of_record_fields (Not_in_updated (recf h_o) :: acc) t_o l_u
 
-  and of_lists acc l1 l2 =
-    match l1, l2 with
+  and of_lists acc original updated =
+    match original, updated with
     | [], [] when acc = [] -> None
     | [], [] -> Some (List (List.rev acc))
     | [], _ | _, [] -> assert false  (* impossible *)
-    | h1 :: t1, h2 :: t2 ->
-        match of_sexps h1 h2 with
-        | None -> of_lists acc t1 t2
-        | Some res -> of_lists (res :: acc) t1 t2
+    | h_orig :: t_orig, h_upd :: t_upd ->
+        match of_sexps ~original:h_orig ~updated:h_upd with
+        | None -> of_lists acc t_orig t_upd
+        | Some res -> of_lists (res :: acc) t_orig t_upd
 
-  and of_sexps sexp1 sexp2 =
-    match sexp1, sexp2 with
+  and of_sexps ~original ~updated =
+    match original, updated with
     | Sexp.List [], Sexp.List [] -> None
     | Sexp.Atom a1, Sexp.Atom a2 when a1 = a2 -> None
-    | Sexp.List l1, Sexp.List l2 ->
-        if maybe_record l1 && maybe_record l2 then
-          of_record_fields [] (sort_record_fields l1) (sort_record_fields l2)
-        else if List.length l1 = List.length l2 then of_lists [] l1 l2
-        else Some (Different (sexp1, sexp2))
-    | _ -> Some (Different (sexp1, sexp2))
+    | Sexp.List orig, Sexp.List upd ->
+        if maybe_record orig && maybe_record upd then
+          of_record_fields [] (sort_record_fields orig) (sort_record_fields upd)
+        else if List.length orig = List.length upd then of_lists [] orig upd
+        else Some (Different (`Original original, `Updated updated))
+    | _ -> Some (Different (`Original original, `Updated updated))
 
   let to_buffer diff =
     let buf = Buffer.create 80 in
@@ -138,17 +133,17 @@ struct
       print_string ~tag ~indent (Sexp.to_string sexp)
     in
     let rec loop indent = function
-      | Different (sexp1, sexp2) ->
-        print_sexp ~tag:"+" ~indent sexp1;
-        print_sexp ~tag:"-" ~indent sexp2
+      | Different (`Original sexp1, `Updated sexp2) ->
+        print_sexp ~tag:"-" ~indent sexp1;
+        print_sexp ~tag:"+" ~indent sexp2
       | List lst ->
         print_string ~tag:"" ~indent "(";
         List.iter ~f:(loop (indent + 1)) lst;
         print_string ~tag:"" ~indent ")"
       | Record record_fields ->
         let print_record_field = function
-          | New_in_first sexp -> print_sexp ~tag:"+" ~indent sexp
-          | Not_in_first sexp -> print_sexp ~tag:"-" ~indent sexp
+          | New_in_updated sexp -> print_sexp ~tag:"+" ~indent sexp
+          | Not_in_updated sexp -> print_sexp ~tag:"-" ~indent sexp
           | Bad_match (key, diff) ->
             print_string ~tag:"" ~indent key;
             loop (indent + 1) diff
@@ -163,8 +158,8 @@ struct
   let print ?(oc = stdout) diff = Buffer.output_buffer oc (to_buffer diff)
 end
 
-let print_diff ?oc sexp1 sexp2 =
-  Option.iter (Diff.of_sexps sexp1 sexp2) ~f:(fun diff -> Diff.print ?oc diff)
+let print_diff ?oc ~original ~updated () =
+  Option.iter (Diff.of_sexps ~original ~updated) ~f:(fun diff -> Diff.print ?oc diff)
 
 (* The purpose of this module is just to group this craziness together. *)
 module Summarize = struct
