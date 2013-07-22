@@ -46,6 +46,16 @@ let of_list list =
   in
   Lazy (fun () -> of_list list)
 
+let of_array arr =
+  let arr = Array.copy arr in
+  let len = Array.length arr in
+  let rec loop idx =
+    if idx >= len
+    then Nil
+    else arr.(idx) ==> fun () -> loop (idx+1)
+  in
+  Lazy (fun () -> loop 0)
+
 let read_lines filename =
   initialize (fun () ->
     let ic = In_channel.create filename in

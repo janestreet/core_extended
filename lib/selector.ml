@@ -1,5 +1,125 @@
+module Stable = struct
+  open Core.Stable
+  open Sexplib.Type
+
+  module Date_selector = struct
+    module V1 = struct
+      type t =
+        | GT of Date.V1.t
+        | LT of Date.V1.t
+        | Between of Date.V1.t * Date.V1.t
+        | On of Date.V1.t
+        with bin_io, sexp
+
+      let t_of_sexp sexp =
+        let module Date = Core.Std.Date in
+        match sexp with
+        | Atom _ as d -> On (Date.t_of_sexp d)
+        | List [Atom ">"; Atom _ as d]      -> GT (Date.t_of_sexp d)
+        | List [Atom ">="; Atom _ as d]     -> GT (Date.add_days (Date.t_of_sexp d) (-1))
+        | List [Atom "<"; Atom _ as d]      -> LT (Date.t_of_sexp d)
+        | List [Atom "<="; Atom _ as d]     -> LT (Date.add_days (Date.t_of_sexp d) (1))
+        | List [Atom _ as d1; Atom "><"; Atom _ as d2]
+        | List [Atom "><"; Atom _ as d1; Atom _ as d2]
+        | List [Atom _ as d1; Atom _ as d2] ->
+          (* The basic cases (GT, LT etc.) are being matched here, since
+             they are lists of two atoms. Here the check whether the first
+             atom is a date is done with try-with. *)
+          begin
+            try
+              Between ((Date.t_of_sexp d1), (Date.t_of_sexp d2))
+            with _ -> t_of_sexp sexp
+          end
+        | _ -> t_of_sexp sexp
+    end
+    module Current = V1
+  end
+
+  module String_selector = struct
+    module Regexp = struct
+      module V1 = struct
+        module T = struct
+          (* This type is stable in spite of using the Pcre.regexp non-stable type
+            because bin_io and sexp conversion functions are explicitly defined below. *)
+          type t = string * Pcre.regexp
+
+          let to_string (s, _) = s
+          let of_regexp s = s, Pcre.regexp s
+          let of_string s = of_regexp s
+        end
+        include T
+        include Core.Std.Binable.Of_stringable(T)
+
+        let t_of_sexp sexp =
+          let open Core.Std in
+          let fail () =
+            of_sexp_error "expected string bounded with / on both sides" sexp
+          in
+          match sexp with
+          | List _ -> of_sexp_error "expected Atom" sexp
+          | Atom s ->
+            if String.length s < 2 then fail ()
+            else if s.[0] = '/' && s.[String.length s - 1] = '/' then
+              let s = String.sub s ~pos:1 ~len:(String.length s - 2) in
+              of_regexp s
+            else fail ()
+
+        let sexp_of_t (s, _) = Sexp.Atom ("/" ^ s ^ "/")
+      end
+      module Current = V1
+    end
+
+    module V1 = struct
+      type t =
+        | Equal of string list
+        | Matches of Regexp.V1.t list
+        | Mixed of [ `Regexp of Regexp.V1.t | `Literal of string ] list
+        with bin_io, sexp
+
+      let t_of_sexp sexp =
+        let parse_atom a =
+          match a with
+          | List _ -> assert false
+          | Atom s ->
+            if String.length s >= 1 && s.[0] = '/'
+            then `Regexp (Regexp.V1.t_of_sexp a)
+            else `Literal s
+        in
+        try
+          match sexp with
+          | Atom _ as a ->
+            begin match parse_atom a with
+            | `Regexp r -> Matches [r]
+            | `Literal s -> Equal [s]
+            end
+          | List l ->
+            Mixed
+              (Core.Std.List.map l ~f:(fun sexp ->
+                match sexp with
+                | List _ -> Core.Std.of_sexp_error "expected Atom" sexp
+                | Atom _ as a -> parse_atom a))
+        with
+        | e -> try t_of_sexp sexp with _ -> raise e
+    end
+    module Current = V1
+  end
+
+  module String_list_selector = struct
+    module V1 = struct
+      type t = string list with bin_io, sexp
+
+      let t_of_sexp sexp =
+        match sexp with
+        | Sexp.Atom s -> [s]
+        | _ -> t_of_sexp sexp
+    end
+    module Current = V1
+  end
+
+end
+
+
 open Core.Std
-open Sexplib.Type
 
 
 
@@ -11,31 +131,10 @@ module type Selector = sig
 end
 
 module Date_selector = struct
-  type t =
-    | GT of Date.t
-    | LT of Date.t
-    | Between of Date.t * Date.t
-    | On of Date.t
-    with bin_io, sexp
+  include Stable.Date_selector.Current
+
   type selector = t
   type value = Date.t
-
-  let t_of_sexp sexp =
-    match sexp with
-    | Atom _ as d -> On (Date.t_of_sexp d)
-    | List [Atom ">"; Atom _ as d]      -> GT (Date.t_of_sexp d)
-    | List [Atom ">="; Atom _ as d]     -> GT (Date.add_days (Date.t_of_sexp d) (-1))
-    | List [Atom "<"; Atom _ as d]      -> LT (Date.t_of_sexp d)
-    | List [Atom "<="; Atom _ as d]     -> LT (Date.add_days (Date.t_of_sexp d) (1))
-    | List [Atom _ as d1; Atom "><"; Atom _ as d2]
-    | List [Atom "><"; Atom _ as d1; Atom _ as d2]
-    | List [Atom _ as d1; Atom _ as d2] ->
-      begin
-        try
-          Between ((Date.t_of_sexp d1), (Date.t_of_sexp d2))
-        with _ -> t_of_sexp sexp
-      end
-    | _ -> t_of_sexp sexp
 
   let eval t d =
     match t with
@@ -47,71 +146,24 @@ end
 
 module String_selector = struct
   module Regexp : sig
-    type t with bin_io, sexp
+    type t = Stable.String_selector.Regexp.Current.t
+    with bin_io, sexp
 
     val of_regexp : string -> t
     val to_string : t -> string
     val matches : t -> string -> bool
     val to_regexp : t -> Pcre.regexp
   end = struct
-    module T = struct
-      type t = string * Pcre.regexp
-
-      let to_string (s, _) = s
-      let of_regexp s = s, Pcre.regexp s
-      let of_string s = of_regexp s
-    end
-    include T
-    include Binable.Of_stringable(T)
-
-    let t_of_sexp sexp =
-      let fail () = of_sexp_error "expected string bounded with / on both sides" sexp in
-      match sexp with
-      | List _ -> of_sexp_error "expected Atom" sexp
-      | Atom s ->
-        if String.length s < 2 then fail ()
-        else if s.[0] = '/' && s.[String.length s - 1] = '/' then
-          let s = String.sub s ~pos:1 ~len:(String.length s - 2) in
-          of_regexp s
-        else fail ()
-
-    let sexp_of_t (s, _) = Sexp.Atom ("/" ^ s ^ "/")
+    include Stable.String_selector.Regexp.Current
 
     let to_regexp (_, p) = p
     let matches (_, rex) s = Pcre.pmatch ~rex s
   end
 
-  type t =
-    | Equal of string list
-    | Matches of Regexp.t list
-    | Mixed of [ `Regexp of Regexp.t | `Literal of string ] list
-    with bin_io, sexp
+  include Stable.String_selector.Current
+
   type selector = t
   type value = String.t
-
-  let t_of_sexp sexp =
-    let parse_atom a =
-      match a with
-      | List _ -> assert false
-      | Atom s ->
-        if String.length s >= 1 && s.[0] = '/' then `Regexp (Regexp.t_of_sexp a)
-        else `Literal s
-    in
-    try
-      match sexp with
-      | Atom _ as a ->
-        begin match parse_atom a with
-        | `Regexp r -> Matches [r]
-        | `Literal s -> Equal [s]
-        end
-      | List l ->
-        Mixed
-          (List.map l ~f:(fun sexp ->
-            match sexp with
-            | List _ -> of_sexp_error "expected Atom" sexp
-            | Atom _ as a -> parse_atom a))
-    with
-    | e -> try t_of_sexp sexp with _ -> raise e
 
   let eval t s =
     match t with
@@ -124,14 +176,10 @@ module String_selector = struct
 end
 
 module String_list_selector = struct
-  type t = string list with bin_io, sexp
+  include Stable.String_list_selector.Current
+
   type selector = t
   type value = string
-
-  let t_of_sexp sexp =
-    match sexp with
-    | Sexp.Atom s -> [s]
-    | _ -> t_of_sexp sexp
 
   let eval t s =
     match List.find t ~f:(fun m -> m = s) with

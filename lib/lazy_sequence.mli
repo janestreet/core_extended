@@ -66,6 +66,7 @@ val length_if_at_most: max:int -> _ t -> int option
 val length_bounded_by: ?min:int -> ?max:int -> _ t -> bool
 
 val of_list: 'a list -> 'a t
+val of_array: 'a array -> 'a t
 
 (* [init f] Creates a sequence by lazily evaluating [f] on the infinite sequence
    [0; 1; 2; 3; ...], stopping if/when [f] returns None. *)
@@ -140,7 +141,7 @@ end
 
    let read_lazy file = Lazy_sequence.initialize (fun () ->
      let ic = In_channel.create file in
-     Lazy_sequence.protect ~finally:(fun () -> In_channel.close ic) (
+     Lazy_sequence.protect ~finally:(fun () -> In_channel.close ic) (fun () ->
        let (==>) = Lazy_sequence.(==>) in
        let rec loop () =
          match In_channel.input_line ic with

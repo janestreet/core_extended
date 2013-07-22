@@ -68,3 +68,28 @@ module String_list_selector : sig
 
   include Selector with type selector = t and type value = string
 end
+
+module Stable : sig
+  open Core.Stable
+
+  module Date_selector : sig
+    module V1 : sig
+      type t = Date_selector.t with sexp, bin_io 
+    end
+  end
+  module String_selector : sig
+    module Regexp : sig
+      module V1 : sig
+        type t = String_selector.Regexp.t with sexp, bin_io
+      end
+    end
+    module V1 : sig
+      type t = String_selector.t with bin_io, sexp
+    end
+  end
+  module String_list_selector : sig
+    module V1 : sig
+      type t = String_list_selector.t with sexp, bin_io
+    end
+  end
+end
