@@ -158,3 +158,38 @@ val load_sexp_with_includes:
   -> string
   -> Sexp.t
 
+
+(* Sexp serializer for lists that supports wildcard expansion.
+   This follows bash brace-expansion syntax as closely as possible except
+   when it's really inconvenient or we can do better.
+
+   In particular, there are two known deviations:
+   In bash, complicated sets of integers are written with nested braces, e.g.
+   {{1..3},4} expands to 1 2 3 4, but our in our syntax this would be {1..3, 4}.
+
+   Bash is also picky about whitespace. We're not. So { 1 .. 2 } is the same as {1..2}.
+
+   Supported expansions:
+
+   {a,b,c} expands to one instance for each of a, b and c
+   {a..c} expands to one instance for each character in the range a..c
+   pat1pat2 expands pat1 and pat2 and concatenates all possible combinations
+   {1..10} expands to an instance for each integer 1..10
+   {1..10..2} expands to an instance for each integer 1..10, increasing by 2
+   {1,3,5} expands to an instance for each integer 1, 3, 5
+
+   All other strings expand to themselves.
+
+   This is mostly meant to be used for types that have simple sexp serializers,
+   like string and int, but can be used on more complicated types. The expansions
+   disregard the structure of the sexp and are just a transformation on its text
+   representation. This adds an unfortunate number of intermediate steps to the
+   translation, but makes it easy to reason about the effects on a complicated
+   sexp.
+
+   Comprehension.t unifies with list, so you can use a Comprehension.t anywhere that you
+   have a list and you want bash expansion/compression.
+*)
+module Comprehension : sig
+  type 'a t = 'a list with sexp
+end

@@ -522,3 +522,430 @@ let load_sexp_with_includes ?max_depth ?buf filename =
   | _ -> failwithf "wrong number of sexps, expecting 1: %s" filename ()
 
 
+module Comprehension = struct
+  module Format = struct
+    type ispec =
+    | Sing of int
+    | IRange of int * int * int
+    with sexp
+
+    type t =
+    | Atom of string
+    | Plus of string list
+    | Times of t list
+    | Set of ispec list
+    | CRange of char * char
+    with sexp
+
+    let print_list print_elem list =
+      match list with
+      | [] -> failwith "Invalid arity"
+      | e :: es -> sprintf "{%s%s}" (print_elem e)
+        (String.concat (List.map es ~f:(fun e -> sprintf ",%s" (print_elem e))))
+
+    let spec_to_string spec =
+      match spec with
+      | Sing n -> Int.to_string n
+      | IRange(n,m,1) -> sprintf "%d..%d" n m
+      | IRange(n,m,inc) -> sprintf "%d..%d..%d" n m inc
+
+    let rec to_string fmt =
+      match fmt with
+      | Atom str -> str
+      | Plus [str] -> str
+      | Plus strs -> print_list Fn.id strs
+      | Times es -> String.concat (List.map es ~f:to_string)
+      | Set [Sing i] -> Int.to_string i
+      | Set specs -> print_list spec_to_string specs
+      | CRange (c1,c2) -> sprintf "{%c..%c}" c1 c2
+  end
+
+  type 'a t = 'a list with sexp
+
+  (* Takes a comprehension spec and produces all the strings it matches *)
+  let rec expand fmt =
+    let open Format in
+    match fmt with
+    | Atom str -> [str]
+    | Plus strs -> strs
+    | Times comps -> List.fold_right comps ~init:[""]
+      ~f:(fun comp acc ->
+        let strs = expand comp in
+        List.concat (List.map strs ~f:(fun str1 -> List.map acc ~f:(fun str2 ->
+          str1 ^ str2))))
+    (* Range is inclusive, but should never generate numbers outside the range
+     * (see tests for clarification if needed) *)
+    | Set elems -> List.concat (List.map elems ~f:(function
+      | Sing x -> [Int.to_string x]
+      | IRange (min, max, inc) -> List.init (1 + ((max - min) / inc))
+        ~f:(fun i -> Int.to_string (min+(i*inc)))))
+    | CRange (cmin, cmax) -> let min, max = Char.to_int cmin, Char.to_int cmax in
+                             try
+                               List.init (1 + max - min)
+                                 ~f:(fun i -> String.of_char (Char.of_int_exn (i + min)))
+                             with Failure _ -> failwith "Invalid spec for character range"
+
+  (* If str begins with {, then split_brace_exn 0 str finds the matching }
+   * and splits the string at that location. Raises an exception if
+   * the braces aren't matched *)
+  let rec split_brace_exn n str =
+    match n, str with
+    | _, '{' :: str' -> let left, right = split_brace_exn (n+1) str' in
+                        '{' :: left, right
+    | 1, '}' :: str' -> ['}'], str'
+    | _, '}' :: str' -> let left, right = split_brace_exn (n-1) str' in
+                        '}' :: left, right
+    | _, c :: str' -> let left, right = split_brace_exn n str' in
+                      c :: left, right
+    | _, [] -> failwith "Unbalanced braces in list comprehension"
+
+  let str_split_brace_exn str =
+    let str1, str2 = split_brace_exn 0 (String.to_list str)
+    in
+    String.of_char_list str1, String.of_char_list str2
+
+  (* If str begins with an alphanumeric, split_char str
+   * splits it at the next opening brace *)
+  let rec split_char str =
+    match str with
+    | [] -> [], []
+    | '{' :: _ -> [], str
+    | c :: cs -> let left, right = split_char cs in
+                 c :: left, right
+
+  let str_split_char str =
+    let left, right = split_char (String.to_list str) in
+    String.of_char_list left, String.of_char_list right
+
+  let extract_opt ~rex str =
+    try Some(Pcre.extract ~rex str)
+    with _ -> None
+
+  let rec parse_exn' str =
+    let open Format in
+    let find_crange cs =
+      let str = String.of_char_list cs in
+      (* Matches str {a .. z} and returns |str, a, z| *)
+      let r = Pcre.regexp "^{ *([a-zA-Z]) *\\.\\. *([a-zA-Z]) *}$" in
+      Option.bind (extract_opt ~rex:r str) (fun matches ->
+        let str1, str2 = matches.(1), matches.(2) in
+        match String.length str1, String.length str2 with
+        | 1, 1 -> let c1, c2 = str1.[0], str2.[0] in
+                  if Char.to_int c1 < Char.to_int c2 then
+                    Some(CRange(c1,c2))
+                  else
+                    failwith "Invalid character range in comprehension"
+        | _ -> None)
+    in
+    (* Some <range> if cs is an integer range, None if not an integer range,
+     * exception if an invalid integer range *)
+    let find_range cs =
+      let str = String.of_char_list cs in
+      (* Matches str {num1 .. num2 .. inc} and returns |str, num1, num2, inc| *)
+      let r_inc = Pcre.regexp "^ *([0-9]+) *\\.\\. *([0-9]+) *\\.\\. *([0-9]+) *$" in
+      match extract_opt ~rex:r_inc str with
+      | Some matches ->
+        let min = Int.of_string matches.(1) in
+        let max = Int.of_string matches.(2) in
+        let inc = Int.of_string matches.(3) in
+        if inc = 0
+        then failwith "Invalid increment for range, must be positive"
+        else IRange(min,max,inc)
+      | None ->
+        (* Matches str {num1 .. num2} and returns |str, num1, num2| *)
+        let r = Pcre.regexp "^ *([0-9]+) *\\.\\. *([0-9]*) *$" in
+        match extract_opt ~rex:r str with
+        | Some matches ->
+            let min, max = Int.of_string matches.(1), Int.of_string matches.(2) in
+            if min >= max
+            then failwith (sprintf "Invalid range in sexp: %d to %d" min max)
+            else IRange(min,max,1)
+        | None -> try Sing(Int.of_string (String.strip str))
+          with _ -> failwith (sprintf "Invalid integer spec in comprehension: %s" str)
+    in
+    let find_range_opt cs =
+      try Some(find_range cs)
+      with _ -> None
+    in
+    let find_set cs =
+      let str = String.of_char_list cs in
+      (* Sets look like {5, 11.. 23, 16, 1 .. 5 .. 2}, so as long as the first
+       * non-blank character is a digit we've found one*)
+      let r = Pcre.regexp "^{ *([0-9].*) *}$" in
+      Option.bind (extract_opt ~rex:r str) (fun matches ->
+        let separated = matches.(1) in
+        let strs = String.split ~on:',' separated in
+        match List.map strs ~f:(fun str -> find_range (String.to_list str)) with
+        (* Singleton sets aren't very interesting, so let this get interpreted
+         * as an atom later instead. Not clear whether we want this behavior -
+         * just copying bash *)
+        | [Sing _] -> None
+        | specs -> Some(Set specs))
+    in
+    (* Some <cs> if Plus <cs> is a valid sum expression, None otherwise *)
+    let find_sum cs =
+      let module S = String in
+      let str = S.of_char_list cs in
+      (* Check for comma because sums of one thing aren't very interesting, so let
+       * them get interpreted as atoms later instead *)
+      if S.is_prefix str ~prefix:"{" && S.is_suffix str ~suffix:"}" && S.contains str ','
+      then
+        let stripped = S.drop_prefix (S.drop_suffix str 1) 1 in
+        let split = S.split ~on:',' stripped in
+          (* If it still contains braces then it looks like {foo{a,b,c}bar}
+           * which isn't a sum. *)
+        if S.contains stripped '{' || S.contains stripped '}'
+        then None
+          (* If one of the branches of the sum can be interpreted
+           * as an integer range, then someone's probably trying to mix
+           * integers and strings, which isn't supported right now, so don't let them. *)
+        else if List.exists split ~f:(fun str -> Option.is_some
+          (find_range_opt (String.to_list str)))
+        then failwith "Can't mix integers and strings in sum comprehension"
+        else Some(List.map ~f:S.strip split)
+      else None
+    in
+    (* Splits str into consecutive blocks of brace-delimited and undelimited characters *)
+    let rec split_prod str =
+      match str with
+      | [] -> []
+      | '{' :: _ -> let head, str' = split_brace_exn 0 str in
+                    head :: (split_prod str')
+      | _ :: _ -> let head, str' = split_char str in
+                  head :: (split_prod str')
+    in
+    (* Handles the case where str is wrapped in braces but doesn't denote an expression.
+     * This should come up rarely in our use cases, but it recursively looks for
+     * expressions inside str *)
+    let singleton str =
+      match str with
+      | '{' :: cs -> let cs' = List.take cs (List.length cs - 1) in
+                     Times[Atom "{"; parse_exn' cs'; Atom "}"]
+      | cs -> Atom (String.of_char_list cs)
+    in
+    let find_prod str =
+      match split_prod str with
+      | [] -> Some(Atom "")
+      | [_] -> None
+      | strs -> Some(Times(List.map strs ~f:(function
+        | ('{' :: _) as str -> parse_exn' str
+        | ('}' :: _) -> failwith "Unbalanced braces in list comprehension"
+        | str -> Atom (String.of_char_list str))))
+    in
+    match find_prod str with
+    | Some exp -> exp
+    | None ->
+      match find_crange str with
+      | Some exp -> exp
+      | None ->
+        match find_set str with
+        | Some exp -> exp
+        | None ->
+          match find_sum str with
+          | Some strs -> Plus strs
+          | None -> singleton str
+
+  let parse_exn str = parse_exn' (String.to_list str)
+  let expand_string_exn str = expand (parse_exn str)
+  let expand_strings_exn strs = List.concat (List.map strs ~f:expand_string_exn)
+
+  let t_of_sexp elem_of_sexp sexp =
+    match sexp with
+    | Atom _ -> failwith "Invalid sexp, expected list of atoms, but got atom"
+    | List elems -> List.concat (List.map elems ~f:(fun sexp ->
+      sexp |> Sexp.to_string |> expand_string_exn
+      |> List.map ~f:(fun str -> str |> Sexp.of_string |> elem_of_sexp)))
+
+  (* Count consecutive elements of ints that differ by delta *)
+  let rec extract_run delta ints =
+    match ints with
+    | [] -> 0, []
+    | [_] -> 1, []
+    | x :: y :: xs ->
+      if y = x + delta then
+        let len, tail = extract_run delta (y :: xs) in
+        len+1, tail
+      else
+        1, y :: xs
+
+  (* Split ints into consecutive runs*)
+  let rec find_runs ints =
+    match ints with
+    | [] -> []
+    | [x] -> [Format.Sing x]
+    | x :: y :: _ ->
+      match extract_run (y - x) ints with
+      | 1, tail -> (Format.Sing x) :: find_runs tail
+      (* Use whatever format requires the least information:
+       * {1,3} is less numbers than {1..3..2} but not less than
+       * {1..2} *)
+      | 2, tail -> if (y-x) = 1
+        then
+          (Format.IRange(x,x+1,1)) :: find_runs tail
+        else
+          (Format.Sing x) :: (Format.Sing y) :: find_runs tail
+      | len, tail -> (Format.IRange(x, x + (len-1)*(y-x), y-x)) :: find_runs tail
+
+  let compress_ints ints = Format.Set(find_runs (List.dedup ints))
+
+  (* Simplistic compression scheme: split each string into str1<num>str2 if possible.
+   * For each set of matching str1 and str2, group together all the numbers in
+   * a subpattern. *)
+  let compress strs =
+    let rec collect_num nums =
+      match nums with
+      | [] -> []
+      | (front,_,back) :: _->
+        let same, diff = List.partition_map nums ~f:(fun (front',i',back') ->
+          if front = front' && back = back'
+          then `Fst i'
+          else `Snd(front', i', back'))
+        in
+        (front, compress_ints same, back) :: collect_num diff
+    in
+    let rec collect_suff nums =
+      match nums with
+      | [] -> []
+      | (front, ints, _) :: _ ->
+        let same, diff = List.partition_map nums ~f:(fun (front', ints', back') ->
+          if front = front' && ints = ints'
+          then `Fst back'
+          else `Snd(front', ints', back'))
+        in
+        Format.(Times[Atom front; ints; Plus same]) :: collect_suff diff
+    in
+    let collect_suff nums =
+      if List.exists nums ~f:(fun (_, _, suff) -> String.exists suff ~f:(fun c -> c = ')' || c = '('))
+      then List.map nums ~f:(fun (front, ints, back) -> Format.(Times[Atom front; ints; Atom back]))
+      else collect_suff nums
+    in
+    let num, alph = List.partition_map strs ~f:(fun str ->
+      let r = Pcre.regexp "^([^0-9]*)([0-9]+)(.*)$" in
+      match extract_opt ~rex:r str with
+      | Some matches -> `Fst(matches.(1), Int.of_string matches.(2), matches.(3))
+      | None -> `Snd (Format.Atom str))
+    in
+    List.map ~f:Format.to_string (alph @ collect_suff (collect_num num))
+
+  let sexp_of_t sexp_of_elem elems =
+    let strs = List.map ~f:(fun elem -> elem |> sexp_of_elem |> Sexp.to_string) elems in
+    List (List.map (compress strs) ~f:Sexp.of_string)
+
+  let die f = try let _ = f () in false with _ -> true
+
+  (* You should always be able to convert a string list to comprehensions and back. *)
+  let roundtrip strs =
+    let sort = List.sort ~cmp:String.compare in
+    sort strs = (strs |> sort |> compress |> expand_strings_exn |> sort)
+
+  TEST = Format.(["1";"2";"3"] = expand (Set[IRange(1,3,1)]))
+  TEST = Format.(["ab1";"ab2";"ab3"] = expand (Times[Atom "ab"; Set[IRange (1,3,1)]]))
+  TEST = Format.(["foobar"] = expand(Times[Atom "foo"; Atom "bar"]))
+  TEST = Format.(["a1";"b1";"c1"] = expand(Times[Plus["a";"b";"c"]; Set[IRange(1,1,1)]]))
+  TEST = Format.(["a1";"a2";"d1";"d2"] = expand(Times[Plus["a";"d"]; Set[IRange(1,2,1)]]))
+  TEST = Format.(["135"; "136"; "145"; "146"; "235"; "236"; "245"; "246"]
+                 = expand(Times[Set[IRange(1,2,1)]; Set[IRange(3,4,1)]; Set[IRange(5,6,1)]]))
+  (* Sums where the branches are different sizes *)
+  TEST = ["adefg"; "adfg"; "adg"; "abdefg"; "abdfg"; "abdg";
+          "abcdefg"; "abcdfg"; "abcdg"] = expand_string_exn "{a,ab,abc}d{efg,fg,g}"
+  (* Brace matching *)
+  TEST = ("{foo}", "bar") = str_split_brace_exn "{foo}bar"
+  TEST = ("foo", "{bar}") = str_split_char "foo{bar}"
+  TEST = ("{{{}}{}{{}}{}}", "{{}{}}") = str_split_brace_exn "{{{}}{}{{}}{}}{{}{}}"
+  TEST = Format.(Atom "") = parse_exn ""
+  (* Whitepsace insensitivity for integer ranges *)
+  TEST = Format.(Set[IRange(12,25,1)]) = parse_exn "{12       ..  25}"
+  TEST = Format.(Set[IRange(12,25,1)]) = parse_exn "{12 .. 25}"
+  TEST = Format.(Set[IRange(12,25,1)]) = parse_exn "{12 ..25}"
+  TEST = Format.(Set[IRange(5,25,1)]) = parse_exn "{5.. 25}"
+  TEST = Format.(Set[IRange(3,6,3)] = parse_exn "{3..6..3}")
+  (* Simple sums *)
+  TEST = Format.(Plus["a";"b";"c"]) = parse_exn "{a,b,c}"
+  (* Character ranges *)
+  TEST = Format.(Times([Atom "hi"; CRange('a','d'); Plus["a";"e";"f"]])
+                 = parse_exn "hi{a..d}{a,e,f}")
+
+  TEST = Format.(Times[Atom "a"; Set[IRange(1,3,1)]; Atom "c"]) = parse_exn "a{1 .. 3}c"
+  TEST = (["{a}"; "{b}"; "{c}"] = expand_string_exn "{{a,b,c}}")
+  TEST = (["this{is}{not}a{test}"] = expand_string_exn "this{is}{not}a{test}")
+  TEST = (["{{{hi}}}"] = expand_string_exn "{{{hi}}}")
+
+  TEST = (["{{1}{2}}hi{{a}{b}}"] = expand_string_exn "{{1}{2}}hi{{a}{b}}")
+
+  TEST = (["{{1}{2}}hi{{a}{b}}"] = t_of_sexp String.t_of_sexp (List[Atom( "{{1}{2}}hi{{a}{b}}")]))
+  TEST = (["1";"2";"5";"6";"7"] = t_of_sexp String.t_of_sexp (List[Atom("{1..2}"); Atom("{5..7}")]))
+
+  TEST = (["Afoo7"; "Afoo8"; "Afoo9"; "bfoo7"; "bfoo8"; "bfoo9"] =
+      expand_string_exn "{A,b}foo{7..9}")
+
+  TEST = (["1"; "3"; "5"] = expand_string_exn "{1..5..2}")
+  TEST = (["1"; "3"; "5"] = expand_string_exn "{1..6..2}")
+  TEST = (["a1"; "a2"; "b1"; "b2"; "c1"; "c2"] = expand_string_exn "{a..c}{1..2}")
+
+  TEST = (["{ a }b5{4}"; "{ a }b1{4}"; "{ a }b2{4}"; "{ a }b1{4}";
+           "{ a }b7{4}"; "{ a }c5{4}"; "{ a }c1{4}"; "{ a }c2{4}";
+           "{ a }c1{4}"; "{ a }c7{4}"]
+          = expand_string_exn  "{ a }{   b  .. c  }{  5 , 1 .. 2 , 1 ..  2   .. 2   , 7  }{4}")
+
+  TEST = roundtrip ["foo1a"; "foo2a"; "foo3a"; "foo3b"; "foo4b"; "foo5c"; "foo7c";
+                    "foo7d"; "foo9d"; "foo11d"]
+  TEST = roundtrip ["foo1a"; "foo2a"; "foo3b"]
+  TEST = roundtrip["a1b1"; "a2b1"; "a1b2"; "a2b2"]
+
+  (* Brace matching *)
+  TEST = roundtrip["{{{}}{}{{}}{}}{{}{}}"]
+  (* Keyboard-mashing*)
+  TEST = roundtrip["1212k1"; "121k2"; "12k"; "12k1"; "12k12"; "12k12121k2"; "1k1"; "1k2";
+                   "1kk"; "2"; "21k"; "21k2"; "2k"; "2k1"; "2k12"; "2k12121k2"; "2k121k";
+                   "2k12k1"; "2k12k121"; "2k12k12k"; "k"; "k1"; "k21k212"; "k2k121k212k";
+                   "k2k12k1"]
+  (* Longish range *)
+  TEST = (["a{1..100}b"] = compress (List.init 100 ~f:(fun i -> sprintf "a%db" (i+1))))
+  TEST = (["{1..100}b"] = compress (List.init 100 ~f:(fun i -> sprintf "%db" (i+1))))
+  TEST = (["a{1..100}"] = compress (List.init 100 ~f:(fun i -> sprintf "a%d" (i+1))))
+  TEST = (["{1..100}"] = compress (List.init 100 ~f:(fun i -> sprintf "%d" (i+1))))
+  (* Compress suffixes *)
+  TEST = (["a{1..2}{foo,bar}"] = compress ["a1foo"; "a1bar"; "a2foo"; "a2bar"])
+  (* Don't compress not-suffices - one buggy implementation turns this into {1..2}a{1..2} *)
+  TEST = (["1a1"; "2a2"] = compress ["1a1"; "2a2"])
+  (* Same test but considering that we compress suffixes *)
+  TEST = roundtrip ["a1a"; "a2b"]
+  TEST = roundtrip ["a1a"; "b1b"]
+  TEST = roundtrip ["a1a"; "b2a"]
+  (* Similar test, but some things should actually get compressed *)
+  TEST = roundtrip ["a1a"; "a1b"; "aa1a"; "aa2a"; "a2b"]
+  (* Order shouldn't matter for compression *)
+  TEST = (compress ["a1"; "a3"; "a5"; "a7"]) = (compress ["a5"; "a1"; "a7"; "a3"])
+  (* If  you accidentally sort the numbers as strings they could end up in lexicographic
+   * order and finding runs would fail. So test numbers whose lexicographic order
+   * differs from numeric order *)
+  TEST = ["{500..1500..500}"] = compress ["1500"; "500"; "1000"]
+
+  TEST = die (fun () -> expand_string_exn "{1..1}")
+  TEST = die (fun () -> expand_string_exn "{2..1}")
+  TEST = die (fun () -> expand_string_exn "{foo}{")
+  TEST = die (fun () -> expand_string_exn "}{1..3}")
+  TEST = die (fun () -> expand_string_exn "{{1}{2}}}}{{{a}")
+  TEST = die (fun () -> expand_string_exn "{1..5..0}")
+  TEST = die (fun () -> expand_string_exn "{z..a}")
+  TEST = die (fun () -> expand_string_exn "{a..a}")
+  TEST = die (fun () -> expand_string_exn "{1..23,a}")
+  TEST = die (fun () -> expand_string_exn "{a,1..23}")
+  TEST = die (fun () -> t_of_sexp String.t_of_sexp (Atom "hi"))
+  TEST = die (fun () -> t_of_sexp String.t_of_sexp (List [Atom "hi"; List []]))
+
+
+end
+
+TEST_MODULE "sexp_parens" = struct
+  type t = (int * int option) Comprehension.t with sexp
+
+  let sexp_roundtrip t =
+    t = t_of_sexp (sexp_of_t t)
+
+  (* These elements have sexps that differ only by a suffix which contains
+   * parens. If you compress these strings naively you'll get an invalid sexp,
+   * and parsing it will fail *)
+  TEST = sexp_roundtrip [(100, Some 200); (100, None)]
+end
+
