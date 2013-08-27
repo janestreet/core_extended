@@ -113,11 +113,33 @@ let create_field  ~desc ~type_desc ~name =
   write_to_report_buffer (New_field (field, desc, type_desc, name));
   field
 
+
 let add_datum field num =
   write_to_report_buffer (Int_datum (field, num, Cycles.now()))
 
 let add_datum_float field num =
   write_to_report_buffer (Float_datum (field, num, Cycles.now()))
+
+module Delta = struct
+  type t = {
+    field : field;
+    mutable first_int : int;
+    mutable first_float : float;
+  }
+
+  let create field = {
+    field; first_int = 0; first_float = 0.0;
+  }
+
+  let set t n = t.first_int <- n
+  let add_delta t n = add_datum t.field (n - t.first_int)
+  let add_delta_and_set t n = add_delta t n; set t n
+
+  let set_float t n = t.first_float <- n
+  let add_delta_float t n = add_datum_float t.field (n -. t.first_float)
+  let add_delta_and_set_float t n = add_delta_float t n; set_float t n
+end
+
 
 let adjust_if_required () =
   let report = Lazy.force report in
