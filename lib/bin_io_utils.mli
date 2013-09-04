@@ -1,7 +1,7 @@
 open Core.Std
 
 val load :
-  ?pos : Int64.t -> ?len : Int64.t -> string -> 'a Bin_prot.Read_ml.reader -> 'a
+  ?pos : Int64.t -> ?len : Int64.t -> string -> 'a Bin_prot.Read.reader -> 'a
 
 val save :
   ?header : bool -> ?perm : Unix.file_perm -> string ->
