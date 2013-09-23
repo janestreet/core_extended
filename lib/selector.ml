@@ -39,12 +39,12 @@ module Stable = struct
     module Regexp = struct
       module V1 = struct
         module T = struct
-          (* This type is stable in spite of using the Pcre.regexp non-stable type
-            because bin_io and sexp conversion functions are explicitly defined below. *)
-          type t = string * Pcre.regexp
+          (* This type is stable in spite of using the Re2's non-stable type because
+             bin_io and sexp conversion functions are explicitly defined below. *)
+          type t = string * Re2.Regex.t
 
           let to_string (s, _) = s
-          let of_regexp s = s, Pcre.regexp s
+          let of_regexp s = s, Re2.Regex.create_exn s
           let of_string s = of_regexp s
         end
         include T
@@ -151,13 +151,13 @@ module String_selector = struct
 
     val of_regexp : string -> t
     val to_string : t -> string
-    val matches : t -> string -> bool
-    val to_regexp : t -> Pcre.regexp
+    val matches   : t -> string -> bool
+    val to_regexp : t -> Re2.Regex.t
   end = struct
     include Stable.String_selector.Regexp.Current
 
     let to_regexp (_, p) = p
-    let matches (_, rex) s = Pcre.pmatch ~rex s
+    let matches (_, rex) s = Re2.Regex.matches rex s
   end
 
   include Stable.String_selector.Current

@@ -211,9 +211,11 @@ module Mac_address = struct
   type t = string with sexp, bin_io
   let ( = ) = String.( = )
   let equal = ( = )
-  let rex = Pcre.regexp "[^a-f0-9]"
+  let rex = Re2.Regex.create_exn "[^a-f0-9]"
   let of_string s =
-    let addr = String.lowercase s |! Pcre.qreplace ~rex ~templ:"" in
+    let addr =
+      String.lowercase s |> Re2.Regex.rewrite_exn rex ~template:""
+    in
     let length = String.length addr in
     if length <> 12 then
       failwithf "MAC address '%s' has the wrong length: %d" s length ();

@@ -1,9 +1,9 @@
 open Core.Std
 
 
-let ansi_regexp = Memo.unit (fun () -> Pcre.regexp "\027\\[.*?m")
+let ansi_regexp = Memo.unit (fun () -> Re2.Regex.create_exn "\027\\[.*?m")
 let normal str =
-  Pcre.replace ~rex:(ansi_regexp ()) ~templ:"" str
+  Re2.Regex.rewrite_exn (ansi_regexp ()) ~template:"" str
 
 let ansi_code ~code = "\027[" ^ code ^ "m"
 

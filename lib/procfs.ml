@@ -789,11 +789,14 @@ module Net = struct
 
     (* add interfaces () to get a list of all interfaces on box *)
   let interfaces () =
-      In_channel.with_file "/proc/net/dev" ~f:In_channel.input_lines
-      |! List.tl_exn
-      |! List.tl_exn
-      |! List.map ~f:(fun x -> ((Pcre.extract ~pat:"(\\w+):" (String.lstrip x))).(1))
-
+    In_channel.with_file "/proc/net/dev" ~f:In_channel.input_lines
+    |> List.tl_exn
+    |> List.tl_exn
+    |> List.map ~f:(fun x ->
+      let rex = Re2.Regex.create_exn "(\\w+):" in
+      let matches = Re2.Regex.find_submatches_exn rex (String.lstrip x) in
+      matches.(1) |> Option.value ~default:""
+    )
   end
 
   module Route = struct

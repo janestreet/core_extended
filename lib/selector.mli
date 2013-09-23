@@ -51,7 +51,7 @@ module String_selector : sig
     val of_regexp : string -> t
     val matches : t -> string -> bool
     val to_string : t -> string
-    val to_regexp : t -> Pcre.regexp
+    val to_regexp : t -> Re2.Regex.t
   end
 
   type t =
@@ -74,7 +74,7 @@ module Stable : sig
 
   module Date_selector : sig
     module V1 : sig
-      type t = Date_selector.t with sexp, bin_io 
+      type t = Date_selector.t with sexp, bin_io
     end
   end
   module String_selector : sig

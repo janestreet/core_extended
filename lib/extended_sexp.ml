@@ -618,15 +618,16 @@ module Comprehension = struct
     String.of_char_list left, String.of_char_list right
 
   let extract_opt ~rex str =
-    try Some(Pcre.extract ~rex str)
-    with _ -> None
+    match Re2.Regex.find_submatches rex str with
+    | Error _ -> None
+    | Ok ar -> Some (Array.map ar ~f:(Option.value ~default:""))
 
   let rec parse_exn' str =
     let open Format in
     let find_crange cs =
       let str = String.of_char_list cs in
       (* Matches str {a .. z} and returns |str, a, z| *)
-      let r = Pcre.regexp "^{ *([a-zA-Z]) *\\.\\. *([a-zA-Z]) *}$" in
+      let r = Re2.Regex.create_exn "^{ *([a-zA-Z]) *\\.\\. *([a-zA-Z]) *}$" in
       Option.bind (extract_opt ~rex:r str) (fun matches ->
         let str1, str2 = matches.(1), matches.(2) in
         match String.length str1, String.length str2 with
@@ -642,7 +643,9 @@ module Comprehension = struct
     let find_range cs =
       let str = String.of_char_list cs in
       (* Matches str {num1 .. num2 .. inc} and returns |str, num1, num2, inc| *)
-      let r_inc = Pcre.regexp "^ *([0-9]+) *\\.\\. *([0-9]+) *\\.\\. *([0-9]+) *$" in
+      let r_inc =
+        Re2.Regex.create_exn "^ *([0-9]+) *\\.\\. *([0-9]+) *\\.\\. *([0-9]+) *$"
+      in
       match extract_opt ~rex:r_inc str with
       | Some matches ->
         let min = Int.of_string matches.(1) in
@@ -653,7 +656,7 @@ module Comprehension = struct
         else IRange(min,max,inc)
       | None ->
         (* Matches str {num1 .. num2} and returns |str, num1, num2| *)
-        let r = Pcre.regexp "^ *([0-9]+) *\\.\\. *([0-9]*) *$" in
+        let r = Re2.Regex.create_exn "^ *([0-9]+) *\\.\\. *([0-9]*) *$" in
         match extract_opt ~rex:r str with
         | Some matches ->
             let min, max = Int.of_string matches.(1), Int.of_string matches.(2) in
@@ -671,7 +674,7 @@ module Comprehension = struct
       let str = String.of_char_list cs in
       (* Sets look like {5, 11.. 23, 16, 1 .. 5 .. 2}, so as long as the first
        * non-blank character is a digit we've found one*)
-      let r = Pcre.regexp "^{ *([0-9].*) *}$" in
+      let r = Re2.Regex.create_exn "^{ *([0-9].*) *}$" in
       Option.bind (extract_opt ~rex:r str) (fun matches ->
         let separated = matches.(1) in
         let strs = String.split ~on:',' separated in
@@ -820,7 +823,7 @@ module Comprehension = struct
       else collect_suff nums
     in
     let num, alph = List.partition_map strs ~f:(fun str ->
-      let r = Pcre.regexp "^([^0-9]*)([0-9]+)(.*)$" in
+      let r = Re2.Regex.create_exn "^([^0-9]*)([0-9]+)(.*)$" in
       match extract_opt ~rex:r str with
       | Some matches -> `Fst(matches.(1), Int.of_string matches.(2), matches.(3))
       | None -> `Snd (Format.Atom str))
