@@ -7,10 +7,15 @@ let home () =
   | Some home -> home
 
 let groups = Memo.unit
-  (fun () ->
-     Unix.getgroups () |! Array.to_list |!
-         List.map ~f:(fun gid ->
-                        (Unix.Group.getbygid_exn gid).Unix.Group.name))
+    (fun () ->
+       Unix.getgroups ()
+       |> Array.to_list
+       |> List.filter_map ~f:(fun gid ->
+           Option.map (Unix.Group.getbygid gid)
+             ~f:(fun g -> g.Unix.Group.name))
+       |> (function
+          | []     -> failwith "Expected at least one group."
+          | groups -> groups))
 
 let hostname = Unix.gethostname
 

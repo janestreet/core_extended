@@ -30,7 +30,7 @@ module Patience = struct
 
     let get_ith_pile t i dir =
       let get index offset =
-        Option.bind (index t) (fun index -> Dequeue.get t (index + offset))
+        Option.bind (index t) (fun index -> Dequeue.get_opt t (index + offset))
       in
       match dir with
       | `From_left  -> get Dequeue.front_index i
