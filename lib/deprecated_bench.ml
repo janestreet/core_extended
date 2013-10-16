@@ -128,13 +128,17 @@ let make_norm_cycles (_name_opt, size, results) =
 ;;
 
 let make_nanos (_name_opt, size, results) =
-  let module Cycles = Time_stamp_counter.Cycles in
-  if size > 0 then
-    let mean_cycles = (Result.mean results).Result.Stat.run_cycles in
-    let nanos = Cycles.to_ns (Cycles.of_int (mean_cycles / size)) in
-    Core.Int_conversions.insert_underscores (Int.to_string nanos)
-  else
+  let module Tsc_span = Time_stamp_counter.Span in
+  if size <= 0 then
     ""
+  else
+    let mean_cycles = (Result.mean results).Result.Stat.run_cycles in
+    let nanos =
+      Float.to_int
+        (Time.Span.to_ns
+           (Tsc_span.to_time_span (Tsc_span.of_int_exn (mean_cycles / size))))
+    in
+    Core.Int_conversions.insert_underscores (Int.to_string nanos)
 ;;
 
 let make_warn (_name_opt, _size, results) =
@@ -312,7 +316,7 @@ let time_cycles ~rdtscp =
 
 let bench_basic =
   let open Core.Std.Result.Monad_infix in
-  (Ok Posix_clock.Time_stamp_counter.rdtscp) >>= fun rdtscp ->
+  (Ok Posix_clock.Time_stamp_counter.rdtsc) >>= fun rdtscp ->
   Posix_clock.gettime           >>= fun gettime ->
   Posix_clock.mean_gettime_cost >>= fun mean_gettime_cost ->
   Posix_clock.min_interval      >>| fun min_interval ->

@@ -53,10 +53,10 @@ module Stored_data : sig
   type name = string with sexp, bin_io
   type t =
   | New_field   of int * string * type_desc * name
-  | Int_datum   of int * int   * Time_stamp_counter.Cycles.t
-  | Float_datum of int * float * Time_stamp_counter.Cycles.t
+  | Int_datum   of int * int   * Time_stamp_counter.t
+  | Float_datum of int * float * Time_stamp_counter.t
   with sexp, bin_io
 
-  val read_msg_and_snapshot : file:string -> string * Time_stamp_counter.Cycles.snapshot
+  val read_msg_and_snapshot : file:string -> string * Time_stamp_counter.Calibrator.t
   val fold : file:string -> init:'a -> f:('a -> t -> 'a) -> 'a
 end

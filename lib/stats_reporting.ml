@@ -1,5 +1,6 @@
 open Core.Std
-module Cycles = Time_stamp_counter.Cycles
+module Cycles = Time_stamp_counter
+module Snapshot = Time_stamp_counter.Calibrator
 
 module Basic_types = struct
   type field = int with sexp, bin_io
@@ -18,7 +19,7 @@ include Basic_types
 let debug = false
 
 type header = {
-  snapshot : Cycles.snapshot;
+  snapshot : Snapshot.t;
   mutable msg : string;
 } with bin_io
 
@@ -40,7 +41,7 @@ let field_counter_ref = ref 1
 
 (* lazy globals *)
 let lazy_header = lazy {
-  snapshot = Cycles.get_snapshot ();
+  snapshot = Snapshot.create ();
   msg = "";
 }
 
@@ -115,10 +116,10 @@ let create_field  ~desc ~type_desc ~name =
 
 
 let add_datum field num =
-  write_to_report_buffer (Int_datum (field, num, Cycles.now()))
+  write_to_report_buffer (Int_datum (field, num, Cycles.now ()))
 
 let add_datum_float field num =
-  write_to_report_buffer (Float_datum (field, num, Cycles.now()))
+  write_to_report_buffer (Float_datum (field, num, Cycles.now ()))
 
 module Delta = struct
   type t = {
