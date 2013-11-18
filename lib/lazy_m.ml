@@ -36,10 +36,11 @@ let is_val t =
   | Evaluating
   | Evaluated_to_exn _ -> false
 
-include (Monad.Make(struct
+include Monad.Make (struct
   type 'a t = 'a lazy_m
   let return x = of_val x
+  let map t ~f = of_fun (fun () -> f (force t))
   let bind m f = of_fun (fun () -> force (f (force m)))
-end):Monad.S with type 'a t := 'a t)
+end)
 
 

@@ -489,39 +489,6 @@ let load_sexp_conv_exn_sample ?strict ?buf ?(on_non_existence=`Exit) ?name
     end
 
 
-let load_sexp_with_includes ?max_depth ?buf filename =
-
-  let rec load ~visited ~max_depth filename =
-
-    let rec expand = function
-      | Sexp.Atom str :: l -> Sexp.Atom str :: expand l
-      | Sexp.List [Sexp.Atom ":include"; Sexp.Atom include_filename] :: l ->
-        let include_filename =
-          if Filename.is_absolute include_filename then
-            include_filename
-          else
-            Filename.concat (Filename.dirname filename) include_filename
-        in
-        if List.mem visited include_filename then
-          failwithf "include loop in %s" filename ()
-        else if max_depth = Some 0 then
-          failwithf "max depth reached on %s" filename ()
-        else
-          let visited = include_filename::visited in
-          let max_depth = Option.map max_depth ~f:((-) 1) in
-          load ~visited ~max_depth include_filename @ expand l
-      | Sexp.List l :: l' ->
-        Sexp.List (expand l) :: expand l'
-      | [] -> []
-    in
-    Sexp.load_sexps ?buf filename |> expand
-
-  in
-  match load ~visited:[] ~max_depth filename with
-  | [sexp] -> sexp
-  | _ -> failwithf "wrong number of sexps, expecting 1: %s" filename ()
-
-
 module Comprehension = struct
   module Format = struct
     type ispec =

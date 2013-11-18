@@ -14,6 +14,10 @@ module Error = struct
         | Error x -> f x
         | Ok _ as x -> x
 
+      let map x ~f = match x with
+        | Error x -> Error (f x)
+        | Ok _ as x -> x
+
       let return x = Error x
     end)
 end
@@ -24,7 +28,7 @@ module Exn = struct
   end
   include T
 
-  include (Monad.Make (struct
+  include Monad.Make (struct
     include T
 
     let return x = Ok x
@@ -34,7 +38,13 @@ module Exn = struct
       | Ok x -> f x
       | Error e -> Error e
     ;;
-  end):Monad.S with type 'a t := 'a t)
+
+    let map (t : 'a t) ~f =
+      match t with
+      | Ok x -> Ok (f x)
+      | Error e -> Error e
+    ;;
+  end)
 
   let ok = function
     | Ok a -> a

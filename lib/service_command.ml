@@ -102,45 +102,44 @@ let stop signal slot =
       in
       wait_loop ()
 
-
 let status_command t =
-  let module T = (val t : T) in let () = () in
-                                Command.basic ~summary:(sprintf "check status of daemon")
-                                  (T.slot_spec ())
-                                  (fun slot () ->
-                                    match check_lock_file slot with
-                                    | `Not_running -> printf "%s is not running\n%!" slot.name
-                                    | `Running_with_pid pid ->
-                                      if still_alive pid then
-                                        printf !"%s is running with pid %{Pid}\n%!" slot.name pid
-                                      else
-                                        printf !"%s is not running, even though we saw pid %{Pid} in its lockfile\n%!"
-                                          slot.name
-                                          pid)
+  let module T = (val t : T) in
+  Command.basic ~summary:(sprintf "check status of daemon")
+    (T.slot_spec ())
+    (fun slot () ->
+       match check_lock_file slot with
+       | `Not_running -> printf "%s is not running\n%!" slot.name
+       | `Running_with_pid pid ->
+         if still_alive pid then
+           printf !"%s is running with pid %{Pid}\n%!" slot.name pid
+         else
+           printf !"%s is not running, even though we saw pid %{Pid} in its lockfile\n%!"
+             slot.name
+             pid)
 
 let stop_command t =
-  let module T = (val t : T) in let () = () in
-                                Command.basic ~summary:"stop daemon"
-                                  Command.Spec.(empty +> stop_signal_flag ++ T.slot_spec ())
-                                  (fun signal slot ->
-                                    match stop signal slot with
-                                    | `Was_not_running | `Did_not_die -> exit 1
-                                    | `Died -> exit 0)
+  let module T = (val t : T) in
+  Command.basic ~summary:"stop daemon"
+    Command.Spec.(empty +> stop_signal_flag ++ T.slot_spec ())
+    (fun signal slot ->
+       match stop signal slot with
+       | `Was_not_running | `Did_not_die -> exit 1
+       | `Died -> exit 0)
 
 let start_command t =
-  let module T = (val t : T) in let () = () in
-                                Command.basic ~summary:"restart daemon"
-                                  Command.Spec.(T.slot_spec () ++ T.main_spec)
-                                  (fun slot -> start_daemon slot T.main)
+  let module T = (val t : T) in
+  Command.basic ~summary:"restart daemon"
+    Command.Spec.(T.slot_spec () ++ T.main_spec)
+    (fun slot -> start_daemon slot T.main)
 
 let restart_command t =
-  let module T = (val t : T) in let () = () in
-                                Command.basic ~summary:"restart daemon"
-                                  Command.Spec.(empty +> stop_signal_flag ++ T.slot_spec () ++ T.main_spec)
-                                  (fun signal slot ->
-                                    match stop signal slot with
-                                    | `Did_not_die -> exit 1
-                                    | `Was_not_running | `Died -> start_daemon slot T.main)
+  let module T = (val t : T) in
+  Command.basic ~summary:"restart daemon"
+    Command.Spec.(empty +> stop_signal_flag ++ T.slot_spec () ++ T.main_spec)
+    (fun signal slot ->
+       match stop signal slot with
+       | `Did_not_die -> exit 1
+       | `Was_not_running | `Died -> start_daemon slot T.main)
 
 let group t ~summary =
   Command.group ~summary [
