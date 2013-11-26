@@ -2,7 +2,7 @@ OASISFormat:      0.3
 OCamlVersion:     >= 4.00.0
 FindlibVersion:   >= 1.3.2
 Name:             core_extended
-Version:          109.52.00
+Version:          109.53.00
 Synopsis:         Jane Street Capital's standard library overlay
 Authors:          Jane Street Capital LLC <opensource@janestreet.com>
 Copyrights:       (C) 2008-2013 Jane Street Capital LLC <opensource@janestreet.com>
@@ -159,18 +159,23 @@ Library core_extended
                       pa_ounit,
                       pa_ounit.syntax,
                       pa_pipebang,
+                      pa_test,
+                      pa_test.syntax,
                       textutils,
                       re2,
                       res,
                       sexplib,
                       sexplib.syntax,
+                      sexplib_num,
                       unix,
                       threads
   XMETARequires:      sexplib,
+                      sexplib_num,
                       fieldslib,
                       bin_prot,
                       oUnit,
                       pa_ounit,
+                      pa_test,
                       core,
                       bigarray,
                       re2,

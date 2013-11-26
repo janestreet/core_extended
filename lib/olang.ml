@@ -8,8 +8,7 @@ type 'a t = [
   | `EQ of 'a * 'a
   | `NE of 'a * 'a
   | `One_of of 'a * 'a list
-] with bin_io, sexp
-
+] with bin_io, sexp, compare
 
 let t_of_sexp a_of_sexp sexp =
   let open Sexplib.Type in
@@ -23,6 +22,18 @@ let t_of_sexp a_of_sexp sexp =
   | List [x; Atom "one-of"; List xs]
     -> `One_of (a_of_sexp x, List.map xs ~f:a_of_sexp)
   | _ -> failwithf "bad predicate sexp: %s" (Sexp.to_string_hum sexp) ()
+
+let sexp_of_t sexp_of_a t =
+  let open Sexplib.Type in
+  match t with
+  | `GT (x, y) -> List [sexp_of_a x; Atom ">"; sexp_of_a y]
+  | `LT (x, y) -> List [sexp_of_a x; Atom "<"; sexp_of_a y]
+  | `GE (x, y) -> List [sexp_of_a x; Atom ">="; sexp_of_a y]
+  | `LE (x, y) -> List [sexp_of_a x; Atom "<="; sexp_of_a y]
+  | `EQ (x, y) -> List [sexp_of_a x; Atom "="; sexp_of_a y]
+  | `NE (x, y) -> List [sexp_of_a x; Atom "<>"; sexp_of_a y]
+  | `One_of (x, ys) ->
+    List [sexp_of_a x; Atom "one-of"; List (List.map ~f:sexp_of_a ys)]
 
 include struct
   open Int.Replace_polymorphic_compare
@@ -39,29 +50,40 @@ end
 TEST_MODULE = struct
 
   module Term0 = struct
-    type t = [ `C of float | `V of string ] with sexp, bin_io
+    type t = [ `C of float | `V of string ] with sexp, bin_io, compare
 
     let t_of_sexp = function
       | Sexp.Atom x -> (try `C (Float.of_string x) with _ -> `V x)
       | sexp -> t_of_sexp sexp
+
+    let sexp_of_t = function
+      | `C x -> Float.sexp_of_t x
+      | `V v -> String.sexp_of_t v
   end
 
   module Term = struct
     include (Flang : (module type of Flang) with type 'a t := 'a Flang.t)
     module X = Flang.Eval (Float)
     let eval = X.eval
-    type t = Term0.t Flang.t with sexp
+    type t = Term0.t Flang.t with sexp, compare
   end
+
+  let sexp_of_pred = sexp_of_t Term.sexp_of_t
+  let pred_of_sexp = t_of_sexp Term.t_of_sexp
 
   let env x = function
     | "x" -> Int.to_float x
     | _ -> assert false
 
   let eval_term ~x term =
+    let sexp_of_term = Term.sexp_of_t term in
+    <:test_eq< Term.t >> term (Term.t_of_sexp sexp_of_term)
+      ~message:"Term sexp roundtrip";
     let env = env x in
     Term.eval term ~f:(function `C v -> v | `V x -> env x)
 
   let eval_pred pred ~x =
+    (* Roundtrip is tested further down. *)
     let eval_term = eval_term ~x in
     eval pred ~compare:(fun t t' -> Float.compare (eval_term t) (eval_term t'))
 
@@ -76,27 +98,30 @@ TEST_MODULE = struct
      (x * x) + (const 2. * x) + const 1.)
 
   TEST_UNIT "sexp term" =
-    assert (Term.t_of_sexp sexp1 = term1);
-    assert (Term.t_of_sexp sexp2 = term2)
+    <:test_result< Term.t >> ~expected:term1 (Term.t_of_sexp sexp1);
+    <:test_result< Term.t >> ~expected:term2 (Term.t_of_sexp sexp2)
 
   TEST_UNIT "evaluate term" =
+    let test = <:test_result< Float.t >> ~equal:Float.(=.) in
     for x = 1 to 100 do
-      assert (eval_term term1 ~x =. Int.to_float ((x + 1) * (x + 1)));
-      assert (eval_term term2 ~x =. Int.to_float ((x + 1) * (x + 1)));
+      test ~expected:(Int.to_float ((x + 1) * (x + 1))) (eval_term term1 ~x);
+      test ~expected:(Int.to_float ((x + 1) * (x + 1))) (eval_term term2 ~x)
     done
 
   TEST_UNIT "evaluate predicate" =
     for x = 1 to 100 do
-      assert (eval_pred (`EQ (term1, term2)) ~x = true);
-      assert (eval_pred (`GT (term1, term2)) ~x = false);
+      <:test_pred< Term.t t * int >> (fun (p, x) -> eval_pred p ~x)
+        (`EQ (term1, term2), x);
+      <:test_pred< Term.t t * int >> (fun (p, x) -> not (eval_pred p ~x))
+        (`GT (term1, term2), x)
     done
 
   TEST_UNIT "predicate sexp" =
     let x = Term.base (`V "x") in
     let const value = Term.base (`C value) in
     List.iter ~f:(fun (s, expected) ->
-      let actual = t_of_sexp Term.t_of_sexp (Sexp.of_string s) in
-      assert (Polymorphic_compare.(=) actual expected))
+      let actual = <:of_sexp< Term.t t >> (Sexp.of_string s) in
+      <:test_result< Term.t t >> actual ~expected)
       [ "((x + 1) > 4)",
         `GT (Term.add x (const 1.), const 4.);
 
@@ -108,7 +133,12 @@ TEST_MODULE = struct
       ]
 
   let eval_pred_s pred ~x =
-    eval_pred (t_of_sexp Term.t_of_sexp (Sexp.of_string pred)) ~x
+    let sexp1 = Sexp.of_string pred in
+    let pred = pred_of_sexp sexp1 in
+    let sexp2 = sexp_of_pred pred in
+    <:test_result< Sexp.t >> ~expected:sexp1 sexp2
+      ~message:"Pred sexp roundtrip";
+    eval_pred pred ~x
 
   TEST = eval_pred_s "((x + 1) = 4)"               ~x:3
   TEST = eval_pred_s "((x * x) = 9)"               ~x:3

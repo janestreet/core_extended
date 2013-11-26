@@ -10,6 +10,6 @@ type 'a t = [
   | `EQ of 'a * 'a           (** sexp [(x = y)] *)
   | `NE of 'a * 'a           (** sexp [(x <> y)] *)
   | `One_of of 'a * 'a list  (** sexp [(x one-of (a b c))] *)
-] with bin_io, sexp
+] with bin_io, sexp, compare
 
 val eval : compare:('a -> 'a -> int) -> 'a t -> bool
