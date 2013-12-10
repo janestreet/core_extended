@@ -22,3 +22,10 @@ val status  : t -> Command.t
 val restart : t -> Command.t
 val group   : t -> summary:string -> Command.t
 
+(** [acquire_lock_exn slot] locks [slot].  This can be used from within another program to
+    ensure that no server is running while, e.g., an offline backup is run.
+
+    Due to the semantics of the underlying [Lock_file.create] call, this lock is only
+    released when the process exits.  To release earlier, delete the lock file manually.
+ **)
+val acquire_lock_exn : slot -> bool

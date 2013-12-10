@@ -16,7 +16,7 @@ open Pp.Infix
 let indent = 2
 
 let rec pp_hum' fmt = function
-  | Atom s -> Sexplib.Pre_sexp.pp_maybe_esc_str fmt s
+  | Atom s -> Format.pp_print_string fmt (Sexplib.Pre_sexp.mach_maybe_esc_str s)
   | List l when List.for_all ~f:is_atom l ->
     Format.pp_open_hovbox fmt 2;
     pp_hum_rest' fmt l
@@ -39,7 +39,7 @@ and pp_hum_rest' fmt l =
 
 
 let rec format = function
-  | Atom s -> Pp.text (Sexplib.Pre_sexp.maybe_esc_str s)
+  | Atom s -> Pp.text (Sexplib.Pre_sexp.mach_maybe_esc_str s)
   | List l when List.for_all ~f:is_atom l -> Pp.fgrp (par l)
   | List l -> Pp.agrp (par l)
 and par l =

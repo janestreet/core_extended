@@ -17,11 +17,12 @@ end
 type t = (module T)
 
 let check_lock_file {lock_file; name=_; redirect_stdout=_; redirect_stderr=_ } =
-  if Lock_file.is_locked lock_file then begin
-    let pid = Pid.t_of_sexp (Sexp.load_sexp lock_file) in
-    `Running_with_pid pid
-  end else
-    `Not_running
+  if Lock_file.is_locked lock_file
+  then `Running_with_pid (Pid.t_of_sexp (Sexp.load_sexp lock_file))
+  else `Not_running
+
+let acquire_lock_exn slot =
+  Lock_file.create ~close_on_exec:false ~unlink_on_exit:true slot.lock_file
 
 let still_alive pid =
   (* receiving [Signal.zero] is a no-op, but sending it gives info
@@ -42,18 +43,13 @@ let start_daemon slot main ~foreground =
   in
   (* lock file created after [daemonize_wait] so that *child* pid is written
       to the lock file rather than the parent pid *)
-  if Lock_file.create ~close_on_exec:false slot.lock_file
+  if acquire_lock_exn slot
     (* this writes our pid in the file *)
   then begin
     (* we release the daemon's parent *after* the lock file is created
       so that any error messages during lock file creation happen
       prior to severing the daemon's connection to std{out,err} *)
     release_parent ();
-    (* unix automatically handles unlocking the lock file, but it is
-      our responsibility to delete it *)
-    at_exit (fun () ->
-      print_endline "removing lockfile";
-      Unix.unlink slot.lock_file);
     main slot
   end else begin
     eprintf "lock file already held for %s. refusing to start.\n%!" slot.name;

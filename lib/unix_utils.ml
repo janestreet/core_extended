@@ -10,7 +10,7 @@ let physical_ram () =
 type ram_usage_limit = Unlimited | Absolute of int64 | Relative of float
 
 let set_ram_limit l =
-  RLimit.set RLimit.virtual_memory
+  RLimit.set (Or_error.ok_exn RLimit.virtual_memory)
     {
       RLimit.cur = RLimit.Limit l;
       RLimit.max = RLimit.Infinity;
