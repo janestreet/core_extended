@@ -1,9 +1,9 @@
+<lib{,_test}/*.ml{,i}>  : syntax_camlp4o
+"lib/console.ml"        : mlh, package(camlp4.macro)
+"lib/core_command.ml"   : mlh, package(camlp4.macro)
+"lib/extended_linux.ml" : mlh, package(camlp4.macro)
+"lib/malloc.ml"         : mlh, package(camlp4.macro)
+"lib/posix_clock.ml"    : mlh, package(camlp4.macro)
+"lib_test/test.ml"      : mlh, package(camlp4.macro)
 # OASIS_START
 # OASIS_STOP
-<lib{,_test}/*.ml{,i}>  : syntax_camlp4o
-"lib/console.ml"        : mlh, pkg_camlp4.macro
-"lib/core_command.ml"   : mlh, pkg_camlp4.macro
-"lib/extended_linux.ml" : mlh, pkg_camlp4.macro
-"lib/malloc.ml"         : mlh, pkg_camlp4.macro
-"lib/posix_clock.ml"    : mlh, pkg_camlp4.macro
-"lib_test/test.ml"      : mlh, pkg_camlp4.macro
