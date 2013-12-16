@@ -6,7 +6,7 @@
 "lib/posix_clock.ml"    : mlh, package(camlp4.macro)
 "lib_test/test.ml"      : mlh, package(camlp4.macro)
 # OASIS_START
-# DO NOT EDIT (digest: c5410c364d4428fb5d64eeeb9f015776)
+# DO NOT EDIT (digest: c631ed02d15f75c3c4d4e2728c2a03a6)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -68,6 +68,7 @@
 "lib/extra_fields.cmx": for-pack(Core_extended)
 "lib/fd_leak_check.cmx": for-pack(Core_extended)
 "lib/find.cmx": for-pack(Core_extended)
+"lib/flang.cmx": for-pack(Core_extended)
 "lib/fold_map.cmx": for-pack(Core_extended)
 "lib/generic.cmx": for-pack(Core_extended)
 "lib/invariant.cmx": for-pack(Core_extended)
@@ -85,6 +86,7 @@
 "lib/multi_map.cmx": for-pack(Core_extended)
 "lib/net_utils.cmx": for-pack(Core_extended)
 "lib/number.cmx": for-pack(Core_extended)
+"lib/olang.cmx": for-pack(Core_extended)
 "lib/packed_array.cmx": for-pack(Core_extended)
 "lib/packed_map.cmx": for-pack(Core_extended)
 "lib/patience_diff.cmx": for-pack(Core_extended)
