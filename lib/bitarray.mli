@@ -1,4 +1,4 @@
-(** This module implements efficient and compact arrays of boolean values. It stores it's
+(** This module implements efficient and compact arrays of boolean values. It stores its
     values in the bits of an integer, using multiple integers to allow for arrays larger
     than the machine word size. All operations are on immediates (no caml_modify), and are
     quite simple. Hence this data structure should be more efficient than an array of
