@@ -55,10 +55,10 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
     if len < 2
     then None
     else
-      Core.With_return.with_return (fun ret ->
+      with_return (fun r ->
         for i = 0 to len - 2 do
           if K.equal (fst (Array.unsafe_get arr i)) (fst (Array.unsafe_get arr (i+1)))
-          then ret.Core.With_return.return (Some (fst (Array.unsafe_get arr i)))
+          then r.return (Some (fst (Array.unsafe_get arr i)))
         done;
         None)
 

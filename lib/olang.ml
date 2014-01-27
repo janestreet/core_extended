@@ -98,14 +98,14 @@ TEST_MODULE = struct
      (x * x) + (const 2. * x) + const 1.)
 
   TEST_UNIT "sexp term" =
-    <:test_result< Term.t >> ~expected:term1 (Term.t_of_sexp sexp1);
-    <:test_result< Term.t >> ~expected:term2 (Term.t_of_sexp sexp2)
+    <:test_result< Term.t >> ~expect:term1 (Term.t_of_sexp sexp1);
+    <:test_result< Term.t >> ~expect:term2 (Term.t_of_sexp sexp2)
 
   TEST_UNIT "evaluate term" =
     let test = <:test_result< Float.t >> ~equal:Float.(=.) in
     for x = 1 to 100 do
-      test ~expected:(Int.to_float ((x + 1) * (x + 1))) (eval_term term1 ~x);
-      test ~expected:(Int.to_float ((x + 1) * (x + 1))) (eval_term term2 ~x)
+      test ~expect:(Int.to_float ((x + 1) * (x + 1))) (eval_term term1 ~x);
+      test ~expect:(Int.to_float ((x + 1) * (x + 1))) (eval_term term2 ~x)
     done
 
   TEST_UNIT "evaluate predicate" =
@@ -119,9 +119,9 @@ TEST_MODULE = struct
   TEST_UNIT "predicate sexp" =
     let x = Term.base (`V "x") in
     let const value = Term.base (`C value) in
-    List.iter ~f:(fun (s, expected) ->
+    List.iter ~f:(fun (s, expect) ->
       let actual = <:of_sexp< Term.t t >> (Sexp.of_string s) in
-      <:test_result< Term.t t >> actual ~expected)
+      <:test_result< Term.t t >> actual ~expect)
       [ "((x + 1) > 4)",
         `GT (Term.add x (const 1.), const 4.);
 
@@ -136,7 +136,7 @@ TEST_MODULE = struct
     let sexp1 = Sexp.of_string pred in
     let pred = pred_of_sexp sexp1 in
     let sexp2 = sexp_of_pred pred in
-    <:test_result< Sexp.t >> ~expected:sexp1 sexp2
+    <:test_result< Sexp.t >> ~expect:sexp1 sexp2
       ~message:"Pred sexp roundtrip";
     eval_pred pred ~x
 
