@@ -1,15 +1,15 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 1c2f4e36dec92f62b6e586ade9882bc4) *)
+(* DO NOT EDIT (digest: 6ac52c8e72bf83dddcf14673decad07a) *)
 This is the INSTALL file for the core_extended distribution.
 
 This package uses OASIS to generate its build system. See section OASIS for
-full information.
+full information. 
 
 Dependencies
 ============
 
 In order to compile this package, you will need:
-* ocaml (>= 4.00.0) for all, test test_runner, doc core_extended
+* ocaml (>= 4.00.0) for all, test test_runner
 * findlib (>= 1.3.2)
 * bin_prot for library core_extended
 * comparelib for library core_extended
