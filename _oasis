@@ -217,11 +217,3 @@ Test test_runner
   Command:            $test_runner --core-hello $core_hello --core-extended-hello $core_extended_hello
   WorkingDirectory:   lib_test
   TestTools:          core_hello,core_extended_hello
-
-Document "core_extended"
-  Title:                Jane street's core extended library
-  Type:                 ocamlbuild (0.3)
-  BuildTools+:          ocamldoc
-  XOCamlbuildPath:      lib
-  XOCamlbuildLibraries: core_extended
-
