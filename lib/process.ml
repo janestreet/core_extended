@@ -269,29 +269,66 @@ let process_io ~read ~write state =
         let callback = List.Assoc.find_exn state.out_callbacks fd in
         callback state.buf len)
 
-let available_fds state ~timeout =
-  let { Unix.Select_fds. read; write; _; } =
-    temp_failure_retry (fun () ->
-      Unix.select
-        ~read:state.out_fds
-        ~write:state.in_fds
-        ~except:[]
-        ~timeout ())
+let available_fds =
+  let use_select state ~timeout =
+    let { Unix.Select_fds. read; write; _; } =
+      temp_failure_retry (fun () ->
+        Unix.select
+          ~read:state.out_fds
+          ~write:state.in_fds
+          ~except:[]
+          ~timeout ())
+    in
+    read,write
   in
-  read,write
+  let use_epoll epoll_create = fun state ~timeout ->
+    let module Epoll = Linux_ext.Epoll in
+    let timeout =
+      match timeout with
+      | (`Immediately | `Never) as timeout -> timeout
+      | `After span -> `After (Time.Span.of_sec span)
+    in
+    let epoll_t =
+      let fds = List.map ~f:Unix.File_descr.to_int (state.in_fds @ state.out_fds) in
+      let max_ready_events = List.length fds in
+      let num_file_descrs = 1 + List.fold ~init:max_ready_events ~f:Int.max fds in
+      epoll_create ~num_file_descrs ~max_ready_events
+    in
+    List.iter state.in_fds  ~f:(fun fd -> Epoll.set epoll_t fd Epoll.Flags.out);
+    List.iter state.out_fds ~f:(fun fd -> Epoll.set epoll_t fd Epoll.Flags.in_);
+    let read, write =
+      match temp_failure_retry (fun () -> Epoll.wait epoll_t ~timeout) with
+      | `Timeout -> ([], [])
+      | `Ok -> Epoll.fold_ready epoll_t ~init:([], []) ~f:(fun (read, write) fd flags ->
+        let take_matching_flags acc fd flags ~wanted =
+          if Epoll.Flags.do_intersect wanted flags
+          then fd :: acc
+          else acc
+        in
+        let read = take_matching_flags read fd flags ~wanted:Epoll.Flags.in_ in
+        let write = take_matching_flags write fd flags ~wanted:Epoll.Flags.out in
+        (read, write))
+    in
+    Epoll.close epoll_t;
+    (read, write)
+  in
+  match Linux_ext.Epoll.create with
+  | Error _ -> use_select
+  | Ok epoll_create -> use_epoll epoll_create
+;;
 
 let create
-    ~keep_open
-    ~use_extra_path
-    ~working_dir
-    ~setuid
-    ~setgid
-    ~prog
-    ~args
-    ~stdoutf
-    ~stderrf
-    ~input_string
-    ~env =
+      ~keep_open
+      ~use_extra_path
+      ~working_dir
+      ~setuid
+      ~setgid
+      ~prog
+      ~args
+      ~stdoutf
+      ~stderrf
+      ~input_string
+      ~env =
   let full_prog = Shell__core.path_expand ?use_extra_path prog in
   let process_info =
     internal_create_process
@@ -409,3 +446,33 @@ let kill ?is_child ?wait_for ?signal pid =
     ?wait_for
     ?signal
     (Pid.to_int pid)
+
+TEST_MODULE = struct
+  let with_fds n ~f =
+    let restore_max_fds =
+      let module RLimit = Core.Std.Unix.RLimit in
+      let max_fds = RLimit.get RLimit.num_file_descriptors in
+      match max_fds.RLimit.cur with
+      | RLimit.Infinity -> None
+      | RLimit.Limit limit when Int64.(of_int Int.(2 * n) < limit) -> None
+      | RLimit.Limit _ ->
+        RLimit.set RLimit.num_file_descriptors
+          { max_fds with RLimit.cur = RLimit.Limit (Int64.of_int (2 * n)) };
+        Some max_fds
+    in
+    let fds = List.init n ~f:(fun _ -> Unix.openfile ~mode:[ Unix.O_RDONLY ] "/dev/null") in
+    let retval = Or_error.try_with f in
+    List.iter fds ~f:(fun fd -> Unix.close fd);
+    Option.iter restore_max_fds ~f:(fun max_fds ->
+      let module RLimit = Core.Std.Unix.RLimit in
+      RLimit.set RLimit.num_file_descriptors max_fds);
+    Or_error.ok_exn retval
+
+  let run_process () = ignore (run ~prog:"true" ~args:[] ())
+
+  TEST_UNIT = with_fds 10 ~f:run_process
+  TEST_UNIT = with_fds 1055 ~f:(fun () ->
+    <:test_eq< bool >>
+      (Result.is_ok Linux_ext.Epoll.create)
+      (Result.is_ok (Result.try_with run_process)))
+end

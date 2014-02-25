@@ -22,6 +22,9 @@ open Core.Std
    - [input] : a string to pipe through the program's standard in
    - [export] : a list of variable to export in the environement of the
    dispatched programm
+
+  WARNING: the input argument to this function should not be used because
+    it can deadlock if the input is too big (~160kb?)
 *)
 type 'a with_process_flags =
   ?use_extra_path:bool

@@ -85,9 +85,6 @@ val either : string -> ('a option -> 'b, 'a option -> 'a option -> 'b) t
     specified by [spec2] in the eventual main function. *)
 val (++) : ('m1, 'm2) t -> ('m2, 'm3) t -> ('m1, 'm3) t
 
-(* [either name ++ spec1 ++ spec2] ensures that at most one spec is supplied *)
-val either : string -> ('a option -> 'b, 'a option -> 'a option -> 'b) t
-
 (** [step] allows you to transform the way parameters are applied. For
     example, if you want labelled arguments, you can do:
 

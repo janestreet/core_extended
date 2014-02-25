@@ -3,6 +3,8 @@
     @author Markus Mottl <mmottl\@janestreet.com>
 *)
 
+open Core.Std
+
 (** {2 Interface specification of loggers} *)
 
 (** Type of logging functions *)
@@ -13,18 +15,18 @@ module type LOGGER = sig
   (** {3 Setting and accessing log levels} *)
 
   (** Set minimum log level *)
-  val set_lev : Syslog.lev -> unit
+  val set_level : Unix.Syslog.Level.t -> unit
 
   (** Get minimum log level *)
-  val get_lev : unit -> Syslog.lev
+  val get_level : unit -> Unix.Syslog.Level.t
 
   (** Test whether a log level may be logged. *)
-  val may_log : Syslog.lev -> bool
+  val may_log : Unix.Syslog.Level.t -> bool
 
 
   (** {3 Logging functions} *)
 
-  val generic : Syslog.lev -> 'a logger
+  val generic : Unix.Syslog.Level.t -> 'a logger
 
   val debug : 'a logger
   val info : 'a logger
@@ -38,7 +40,7 @@ end
 
 (** Specification for creating loggers *)
 module type SPEC = sig
-  val logger : Syslog.lev -> string -> unit
+  val logger : Unix.Syslog.Level.t -> string -> unit
 end
 
 (** Functor for creating loggers *)

@@ -106,6 +106,7 @@ module Packed_array = Packed_array
 module Packed_map = Packed_map
 module Flang = Flang
 module Olang = Olang
+module Set_lang = Set_lang
 module Pp = Pp
 module Printc = Printc
 module Process = Process
@@ -139,7 +140,6 @@ module Sys = struct
   include Core.Std.Sys
   include Extended_sys
 end
-module Syslog = Syslog
 module Sys_utils = Sys_utils
 module Tcp = Tcp
 module Time = struct
