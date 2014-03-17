@@ -28,7 +28,7 @@ let execute_finallys finallys =
   | None -> ()
   | Some exn -> raise exn
 
-(* CREATING A LAZY SEEQUENCE --------------------------------------------- *)
+(* CREATING A LAZY SEQUENCE --------------------------------------------- *)
 
 let init f =
   let rec loop n =

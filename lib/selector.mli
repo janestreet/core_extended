@@ -51,7 +51,7 @@ module String_selector : sig
     val of_regexp : string -> t
     val matches : t -> string -> bool
     val to_string : t -> string
-    val to_regexp : t -> Re2.Regex.t
+    val to_regexp : t -> Re2.Std.Re2.t
   end
 
   type t =

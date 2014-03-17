@@ -211,10 +211,10 @@ module Mac_address = struct
   type t = string with sexp, bin_io
   let ( = ) = String.( = )
   let equal = ( = )
-  let rex = Re2.Regex.create_exn "[^a-f0-9]"
+  let rex = Re2.Std.Re2.create_exn "[^a-f0-9]"
   let of_string s =
     let addr =
-      String.lowercase s |> Re2.Regex.rewrite_exn rex ~template:""
+      String.lowercase s |> Re2.Std.Re2.rewrite_exn rex ~template:""
     in
     let length = String.length addr in
     if length <> 12 then

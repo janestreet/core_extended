@@ -70,13 +70,13 @@ let ip_of_name name =
 let getbyname_ip () = ip_of_name (Unix.gethostname ())
 
 let ifconfig_ip_rex =
-  Re2.Regex.create_exn
+  Re2.Std.Re2.create_exn
     "inet addr:([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})"
 
 let ifconfig_ips () =
   Shell.run_lines "/sbin/ifconfig" []
   |> List.filter_map ~f:(fun line ->
-    match Re2.Regex.find_submatches ifconfig_ip_rex line with
+    match Re2.Std.Re2.find_submatches ifconfig_ip_rex line with
     | Ok [|_; Some ip|] -> Some ip
     | Ok _ | Error _ -> None)
   |> String.Set.of_list
