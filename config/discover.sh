@@ -39,6 +39,10 @@ $OCAMLC -ccopt -E $OCAML_CFLAGS -c $SRC | grep '^"OUT:[^"]*"$' | sed 's/"OUT:\([
 
 echo "DEFINE ARCH_$ARCH" >> $OUT
 
+if [ "$ARCH" = amd64 ]; then
+    echo "DEFINE ARCH_x86_64" >> $OUT
+fi
+
 case "`ocamlc -version`" in
     4*)
         echo "DEFINE OCAML_4" >> $OUT

@@ -1,7 +1,8 @@
 open Core.Std
 
-module type Field = sig
-  type t
+module type Ordered_field = sig
+  type t with compare, sexp
+  val zero : t
   val ( + ) : t -> t -> t
   val ( - ) : t -> t -> t
   val ( * ) : t -> t -> t
@@ -14,6 +15,9 @@ type 'a t = [
   | `Sub  of 'a t * 'a t
   | `Mult of 'a t * 'a t
   | `Div  of 'a t * 'a t
+  | `Abs of 'a t
+  | `Min of 'a t * 'a t
+  | `Max of 'a t * 'a t
 ] with sexp, bin_io, compare
 
 let base a   = `Base a
@@ -21,6 +25,9 @@ let add  x y = `Add (x, y)
 let sub  x y = `Sub  (x, y)
 let mult x y = `Mult (x, y)
 let div  x y = `Div  (x, y)
+let abs x    = `Abs x
+let min x y  = `Min (x, y)
+let max x y  = `Max (x, y)
 
 let add_list xs =
   match xs with
@@ -45,6 +52,12 @@ let t_of_sexp a_of_sexp sexp =
       add_list (List.map ~f:t_of_sexp xs)
     | List (Atom c :: xs) when is_constructor "mult" c ->
       mult_list (List.map ~f:t_of_sexp xs)
+    | List [Atom c; x] when is_constructor "abs" c ->
+      `Abs (t_of_sexp x)
+    | List [Atom c; x; y] when is_constructor "min"  c ->
+      `Min  (t_of_sexp x, t_of_sexp y)
+    | List [Atom c; x; y] when is_constructor "max"  c ->
+      `Max  (t_of_sexp x, t_of_sexp y)
     | List [x; Atom "/"; y] -> div  (t_of_sexp x) (t_of_sexp y)
     | List [x; Atom "-"; y] -> sub  (t_of_sexp x) (t_of_sexp y)
     | List [x; Atom "+"; y] -> add  (t_of_sexp x) (t_of_sexp y)
@@ -61,10 +74,27 @@ let sexp_of_t sexp_of_a t =
     | `Sub (x, y) -> List [sexp_of_t x; Atom "-"; sexp_of_t y]
     | `Mult (x, y) -> List [sexp_of_t x; Atom "*"; sexp_of_t y]
     | `Div (x, y) -> List [sexp_of_t x; Atom "/"; sexp_of_t y]
+    | `Min (x, y) -> List [Atom "min"; sexp_of_t x; sexp_of_t y]
+    | `Max (x, y) -> List [Atom "max"; sexp_of_t x; sexp_of_t y]
+    | `Abs x -> List [Atom "abs"; sexp_of_t x]
   in
   sexp_of_t t
 
-module Eval (F : Field) = struct
+let rec atoms_aux t acc =
+  match t with
+  | `Base x -> x :: acc
+  | `Abs x -> atoms_aux x acc
+  | `Add (x, y) | `Sub (x, y) | `Mult (x, y) | `Div (x, y) | `Min (x, y) | `Max (x, y) ->
+    atoms_aux x (atoms_aux y acc)
+
+let atoms t = atoms_aux t []
+
+module Eval (F : Ordered_field) = struct
+  module F = struct
+    include F
+    include Comparable.Make (F)
+  end
+
   let eval t ~f =
     let rec eval = function
       | `Base x      -> f x
@@ -72,6 +102,11 @@ module Eval (F : Field) = struct
       | `Sub  (x, y) -> F.( - ) (eval x) (eval y)
       | `Mult (x, y) -> F.( * ) (eval x) (eval y)
       | `Div  (x, y) -> F.( / ) (eval x) (eval y)
+      | `Min  (x, y) -> F.min   (eval x) (eval y)
+      | `Max  (x, y) -> F.max   (eval x) (eval y)
+      | `Abs x ->
+        let x = eval x in
+        if F.(x >= zero) then x else F.(zero - x)
     in
     eval t
 end

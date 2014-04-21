@@ -95,7 +95,6 @@ module List = struct
 end
 module List_zipper = List_zipper
 module Logger = Logger
-module Loggers = Loggers
 module Memo = struct
   include Core.Std.Memo
   include Extended_memo

@@ -65,7 +65,7 @@ val multimerge_unique : 'a list list -> 'a list
 (**
    Takes a list of [`key*`value lists] and returns a
    header * table_body body that is obtained by splitting the lists and
-   re-oddering the terms (so that they all have the same header).
+   re-ordering the terms (so that they all have the same header).
 
    If [null_value] is not specified and the rows have different keys
    the function will raise an exception.

@@ -66,6 +66,11 @@ TEST_MODULE = struct
     module X = Flang.Eval (Float)
     let eval = X.eval
     type t = Term0.t Flang.t with sexp, compare
+
+    let x = base (`V "x")
+    let const value = base (`C value)
+    let ( + )   = add
+    let ( * )   = mult
   end
 
   let sexp_of_pred = sexp_of_t Term.sexp_of_t
@@ -88,24 +93,34 @@ TEST_MODULE = struct
     eval pred ~compare:(fun t t' -> Float.compare (eval_term t) (eval_term t'))
 
   let sexp1 = Sexp.of_string "((x + 1) * (x + 1))"
-  let sexp2 = Sexp.of_string "(((x * x) + (2 * x)) + 1)"
-  let term1, term2 =
-    let x = Term.base (`V "x") in
-    let const value = Term.base (`C value) in
-    let ( + )   = Term.add in
-    let ( * )   = Term.mult in
-    ((x + const 1.) * (x + const 1.),
-     (x * x) + (const 2. * x) + const 1.)
+  let term1 = Term.((x + const 1.) * (x + const 1.))
 
-  TEST_UNIT "sexp term" =
-    <:test_result< Term.t >> ~expect:term1 (Term.t_of_sexp sexp1);
+  let sexp2 = Sexp.of_string "(((x * x) + (2 * x)) + 1)"
+  let term2 = Term.((x * x) + (const 2. * x) + const 1.)
+
+  let sexp3 = Sexp.of_string "(min x (max x (abs x)))"
+  let term3 = Term.(min x (max x (abs x)))
+
+  TEST_UNIT "sexp term1" =
+    <:test_result< Term.t >> ~expect:term1 (Term.t_of_sexp sexp1)
+
+  TEST_UNIT "sexp term2" =
     <:test_result< Term.t >> ~expect:term2 (Term.t_of_sexp sexp2)
 
-  TEST_UNIT "evaluate term" =
+  TEST_UNIT "sexp term3" =
+    <:test_result< Term.t >> ~expect:term3 (Term.t_of_sexp sexp3)
+
+  TEST_UNIT "evaluate arithmetic" =
     let test = <:test_result< Float.t >> ~equal:Float.(=.) in
     for x = 1 to 100 do
       test ~expect:(Int.to_float ((x + 1) * (x + 1))) (eval_term term1 ~x);
       test ~expect:(Int.to_float ((x + 1) * (x + 1))) (eval_term term2 ~x)
+    done
+
+  TEST_UNIT "evaluate min-max" =
+    let test = <:test_result< Float.t >> ~equal:Float.(=.) in
+    for x = -100 to 100 do
+      test ~expect:(Int.to_float x) (eval_term term3 ~x)
     done
 
   TEST_UNIT "evaluate predicate" =
