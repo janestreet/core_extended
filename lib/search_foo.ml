@@ -42,7 +42,7 @@ let max_len ~key strings =
     Otherwise, i is returned such that (f i > 0) and (f (i-1) < 0).
     Unless it's all > 0 or all < 0.
     If it's all > 0, then the first i is returned.
-    If it's all < 0 , then raise Not_found
+    If it's all < 0, then returns None
 *)
 let bsearch_internal ~f ~low ~high =
   let rec loop ~f ~low ~high =
