@@ -1,3 +1,7 @@
+## 111.13.00
+
+- Moved `Patience_diff` out of `Core_extended` into its own library.
+
 ## 111.11.00
 
 - For `Flang`, added ordering to fields, and added `abs`, `min`, and
