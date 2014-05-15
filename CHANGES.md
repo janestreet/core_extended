@@ -14,8 +14,8 @@
   and difference.
 - In `Process`, use `epoll` rather than `select` when possible,
 
-		This prevents errors when selecting on file descriptors numbered
-		greater than `FD_SETSIZE` (1024).
+    This prevents errors when selecting on file descriptors numbered
+    greater than `FD_SETSIZE` (1024).
 
 - Removed `Syslog` module. There is now `Unix.Syslog` in core instead;
   the APIs are not compatible, but they are similar.
