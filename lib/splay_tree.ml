@@ -1,36 +1,74 @@
 open Core.Std
 
 module type Key = sig
-  type t
+  type t with sexp
   include Comparable with type t := t
 end
 
-module type T = sig
-  type 'a t
-  type key
+module type S = sig
+  type 'a t with sexp
+  type key with sexp
   val empty : 'a t
   val is_empty : 'a t -> bool
-  val concat : 'a t -> 'a t -> 'a t
-  val sandwich : 'a t -> key -> 'a -> 'a t -> 'a t
-  val splay : 'a t -> key -> 'a t * 'a option * 'a t
-  val splay' : 'a t -> key -> 'a t * (key * 'a) option * 'a t
-  val delete_min : 'a t -> (key * 'a * 'a t) option
-  val delete_max : 'a t -> (key * 'a * 'a t) option
-end
-
-module type S = sig
-  include T
+  val length : 'a t -> int
+  val keys : 'a t -> key list
+  val data : 'a t -> 'a list
+  val to_alist : 'a t -> (key * 'a) list
   val mem : 'a t -> key -> 'a t * bool
   val find : 'a t -> key -> 'a t * 'a option
-  val set : 'a t -> key -> 'a -> 'a t
+  val set : 'a t -> key:key -> data:'a -> 'a t
   val delete : 'a t -> key -> 'a t
+  val delete_min : 'a t -> (key * 'a * 'a t) option
+  val delete_max : 'a t -> (key * 'a * 'a t) option
+  val delete_after  : 'a t -> key -> (key * 'a * 'a t) option
+  val delete_before : 'a t -> key -> (key * 'a * 'a t) option
+  val map : 'a t -> f:('a -> 'b) -> 'b t
+  val map_range
+    :  'a t
+    -> min_key:key
+    -> max_key:key
+    -> f:((key * 'a) list -> (key * 'a) list)
+    -> 'a t
+  val split : 'a t -> key -> 'a t * 'a option * 'a t
 end
 
-module Kernel (Key : Key) : (T with type key = Key.t) = struct
+module Make (Key : Key) : (S with type key = Key.t) = struct
 
-  type key = Key.t
+  type key = Key.t with sexp
 
-  type 'a t = Empty | Node of 'a t * key * 'a * 'a t (* binary search tree *)
+  (* [Kernel] ensures that no Node can be constructed with an incorrect size *)
+  module Kernel : sig
+
+    type size (* tree size *)
+
+    type 'a t = private
+      | Empty
+      | Node of 'a t * key * 'a * 'a t * size
+    with sexp
+
+    val length : 'a t -> int
+    val node   : 'a t -> key -> 'a -> 'a t -> 'a t
+    val empty  : 'a t
+  end = struct
+
+    type size = int with sexp
+
+    type 'a t =
+      | Empty
+      | Node of 'a t * key * 'a * 'a t * size
+    with sexp
+
+    let length = function
+      | Empty -> 0
+      | Node (_left, _key, _value, _right, size) -> size
+
+    let node left key value right =
+      Node (left, key, value, right, length left + length right + 1)
+
+    let empty = Empty
+  end
+
+  include Kernel
 
   (* zipper type representing the context of a sub-[t] within a larger [t] *)
   type 'a ctx =
@@ -44,10 +82,35 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
      It serves only to indicate what a context /means/. *)
   let rec plug t = function
     | Top -> t
-    | Fst (ctx, k, v, r) -> plug (Node (t, k, v, r)) ctx
-    | Snd (l, k, v, ctx) -> plug (Node (l, k, v, t)) ctx
+    | Fst (ctx, k, v, r) -> plug (node t k v r) ctx
+    | Snd (l, k, v, ctx) -> plug (node l k v t) ctx
 
   let _ = plug
+
+  let fold_right t ~init ~f =
+    let rec loop acc = function
+      | [] -> acc
+      | `Elem (key, data) :: to_visit ->
+        loop (f ~key ~data acc) to_visit
+      | `Tree Empty :: to_visit ->
+        loop acc to_visit
+      | `Tree (Node (l, key, data, r, _)) :: to_visit ->
+        loop acc (`Tree r :: `Elem (key, data) :: `Tree l :: to_visit)
+    in
+    loop init [`Tree t]
+
+  (* this is in CPS so that it is tail-recursive *)
+  let rec map_cps : 'r 'a 'b. 'a t -> f:('a -> 'b) -> ('b t -> 'r) -> 'r =
+    fun t ~f k ->
+      match t with
+      | Empty -> k empty
+      | Node (l, key, data, r, _ ) ->
+        map_cps l ~f (fun l ->
+          map_cps r ~f (fun r ->
+            k (node l key (f data) r)
+          ))
+
+  let map t ~f = map_cps t ~f Fn.id
 
   (* [find_in_ctx t x] finds the subtree of [t] where the binary-search-tree property
      would have the key [x] sit.  It also returns the context of this subtree.
@@ -57,7 +120,7 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
     let rec loop ctx this =
       match this with
       | Empty -> (ctx, this)
-      | Node (l, y, yv, r) ->
+      | Node (l, y, yv, r, _) ->
         let cmp = Key.compare x y in
         if cmp < 0 then
           loop (Fst (ctx, y, yv, r)) l
@@ -91,7 +154,7 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
              / \            / \
             a   b          b   c
         *)
-        (a, Node (b, y, yv, c))
+        (a, node b y yv c)
     | Snd (a, y, yv, Top) ->
         let b = l in
         let c = r in
@@ -102,7 +165,7 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
                  / \        / \
                 b   c      a   b
         *)
-        (Node (a, y, yv, b), c)
+        (node a y yv b, c)
     | Fst (Fst (ctx, z, zv, d), y, yv, c) ->
         let a = l in
         let b = r in
@@ -115,7 +178,7 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
            / \                / \
           a   b              c   d
         *)
-        zip a (Node (b, y, yv, Node (c, z, zv, d))) ctx
+        zip a (node b y yv (node c z zv d)) ctx
     | Snd (b, y, yv, Snd (a, z, zv, ctx)) ->
         let c = l in
         let d = r in
@@ -128,7 +191,7 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
                / \        / \
               c   d      a   b
         *)
-        zip (Node (Node (a, z, zv, b), y, yv, c)) d ctx
+        zip (node (node a z zv b) y yv c) d ctx
     | ( Snd (a, y, yv, Fst (ctx, z, zv, d))
       | Fst (Snd (a, y, yv, ctx), z, zv, d) )
       ->
@@ -143,31 +206,29 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
                / \       a   b c   d         / \
               b   c                         b   c
         *)
-        zip (Node (a, y, yv, b)) (Node(c, z, zv, d)) ctx
+        zip (node a y yv b) (node c z zv d) ctx
 
   let splay' t x =
     let result v (l, r) = (l, v, r) in
     match find_in_ctx t x with
-    | (ctx, Node (l, k, xv, r)) -> result (Some (k, xv)) (zip l r ctx)
-    | (ctx, Empty) -> result None (zip Empty Empty ctx)
+    | (ctx, Node (l, k, xv, r, _)) -> result (Some (k, xv)) (zip l r ctx)
+    | (ctx, Empty) -> result None (zip empty empty ctx)
 
   let splay t x =
     let (l, kv, r) = splay' t x in
     (l, Option.map ~f:snd kv, r)
 
-  let empty = Empty
-
   let is_empty = function
     | Empty -> true
     | Node _ -> false
 
-  let sandwich l x xv r = Node (l, x, xv, r)
+  let set t k v = match splay t k with (l, _, r) -> node l k v r
 
   let find_rightmost t =
     let rec loop ctx t =
       match t with
       | Empty -> ctx
-      | Node (l, y, yv, r) -> loop (Snd (l, y, yv, ctx)) r
+      | Node (l, y, yv, r, _) -> loop (Snd (l, y, yv, ctx)) r
     in
     loop Top t
 
@@ -175,7 +236,7 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
     let rec loop t ctx =
       match t with
       | Empty -> ctx
-      | Node (l, y, yv, r) -> loop l (Fst (ctx, y, yv, r))
+      | Node (l, y, yv, r, _) -> loop l (Fst (ctx, y, yv, r))
     in
     loop t Top
 
@@ -186,7 +247,7 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
       (* find_leftmost only accumulates Top and Fst constructors *)
       assert false
     | Fst (ctx, x, xv, r) ->
-      match zip Empty r ctx with
+      match zip empty r ctx with
       | (Empty, r) -> Some (x, xv, r)
       | _ ->
         (* when [ctx] contains only Top and Fst constructors, as it
@@ -201,7 +262,7 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
       (* find_rightmost only accumulates Top and Snd constructors *)
       assert false
     | Snd (l, x, xv, ctx) ->
-      match zip l Empty ctx with
+      match zip l empty ctx with
       | (l, Empty) ->
         (* order reversed here to give the same type as [delete_min] *)
         Some (x, xv, l)
@@ -214,26 +275,63 @@ module Kernel (Key : Key) : (T with type key = Key.t) = struct
   let concat l r =
     match delete_min r with
     | None -> l
-    | Some (x, xv, r) -> sandwich l x xv r
+    | Some (x, xv, r) -> node l x xv r
 
-end
+  let data     t = fold_right t ~init:[] ~f:(fun ~key:_ ~data   acc ->       data  :: acc)
+  let keys     t = fold_right t ~init:[] ~f:(fun ~key   ~data:_ acc ->  key        :: acc)
+  let to_alist t = fold_right t ~init:[] ~f:(fun ~key   ~data   acc -> (key, data) :: acc)
 
-module Make (Key : Key) : (S with type key = Key.t) = struct
-
-  include Kernel (Key)
-
-  let set t x xv = match splay t x with (l, _, r) -> sandwich l x xv r
   let delete t x = match splay t x with (l, _, r) -> concat l r
 
   let mem t x =
     match splay t x with
     | (l, None, r) -> (concat l r, false)
-    | (l, Some xv, r) -> (sandwich l x xv r, true)
+    | (l, Some xv, r) -> (node l x xv r, true)
 
   let find t x =
     match splay t x with
     | (l, None, r) -> (concat l r, None)
-    | (l, Some xv, r) -> (sandwich l x xv r, Some xv)
+    | (l, Some xv, r) -> (node l x xv r, Some xv)
 
+  let splay_just_before t k =
+    let (before, at, after) = splay t k in
+    Option.map (delete_max before) ~f:(fun (k, v, before) ->
+      let after = Option.fold at ~init:after ~f:(fun t v -> set t k v) in
+      (before, k, v, after))
+
+  let splay_just_after t k =
+    let (before, at, after) = splay t k in
+    Option.map (delete_min after) ~f:(fun (k, v, after) ->
+      let before = Option.fold at ~init:before ~f:(fun t v -> set t k v) in
+      (before, k, v, after))
+
+  let delete_before t k =
+    Option.map (splay_just_before t k)
+      ~f:(fun (before, k, v, after) -> (k, v, concat before after))
+
+  let delete_after t k =
+    Option.map (splay_just_after t k)
+      ~f:(fun (before, k, v, after) -> (k, v, concat before after))
+
+  let map_range t ~min_key ~max_key ~f =
+    let (old_range, t) =
+      let (before, t) =
+        match splay t min_key with
+        | (before, None,         after) -> (before, after)
+        | (before, Some min_val, after) -> (before, set after min_key min_val)
+      in
+      let (t, after) =
+        match splay t max_key with
+        | (before, None,         after) -> (before,                     after)
+        | (before, Some max_val, after) -> (set before max_key max_val, after)
+      in
+      (to_alist t, concat before after)
+    in
+    let new_range = f old_range in
+    List.fold new_range ~init:t ~f:(fun t (key, data) -> set t key data)
+
+  let set t ~key ~data = set t key data
+
+  let split = splay
 end
 

@@ -1,3 +1,15 @@
+## 111.17.00
+
+- Added some functions to `Splay_tree`:
+  * `length`
+  * `keys`
+  * `data`
+  * `to_alist`
+  * `delete_{after,before}`
+  * `map`
+  * `map_range`
+  * `split`.
+
 ## 111.13.00
 
 - Moved `Patience_diff` out of `Core_extended` into its own library.

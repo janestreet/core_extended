@@ -313,6 +313,7 @@ module Identity_basic = struct
   let bind x f = f x
   let return x = x
   let map x ~f = f x
+  let map = `Custom map
 end
 
 module Identity = struct

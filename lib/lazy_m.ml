@@ -41,6 +41,7 @@ include Monad.Make (struct
   let return x = of_val x
   let map t ~f = of_fun (fun () -> f (force t))
   let bind m f = of_fun (fun () -> force (f (force m)))
+  let map = `Custom map
 end)
 
 

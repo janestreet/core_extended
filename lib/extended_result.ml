@@ -18,6 +18,8 @@ module Error = struct
         | Error x -> Error (f x)
         | Ok _ as x -> x
 
+      let map = `Custom map
+
       let return x = Error x
     end)
 end
@@ -44,6 +46,8 @@ module Exn = struct
       | Ok x -> Ok (f x)
       | Error e -> Error e
     ;;
+
+    let map = `Custom map
   end)
 
   let ok = function

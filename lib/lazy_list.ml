@@ -5,11 +5,16 @@ type 'a node =
   | Cons of 'a * 'a lazy_list
 and 'a lazy_list = 'a node Lazy_m.t
 
+let rec map t ~f = Lazy_m.map t ~f:(function
+  | Empty -> Empty
+  | Cons (x, xs) -> Cons (f x, map xs ~f))
+;;
+
 module Base : sig
   type 'a t = 'a lazy_list
   val empty : unit -> 'a t
   val return : 'a -> 'a t
-  val map : 'a t -> f:('a -> 'b) -> 'b t
+  val map : [> `Custom of ('a t -> f:('a -> 'b) -> 'b t) ]
   val append : 'a t -> 'a t -> 'a t
   val concat : 'a t t -> 'a t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
@@ -19,11 +24,6 @@ end = struct
   let empty () = Lazy_m.of_val Empty
 
   let return x = Lazy_m.of_val (Cons(x, Lazy_m.of_val Empty))
-
-  let rec map t ~f = Lazy_m.map t ~f:(function
-    | Empty -> Empty
-    | Cons (x, xs) -> Cons (f x, map xs ~f))
-  ;;
 
   let rec append t1 t2 = Lazy_m.map t1 ~f:(function
     | Empty -> Lazy_m.force t2
@@ -37,6 +37,8 @@ end = struct
 
   let bind m f = concat (map ~f m)
 
+  let map = `Custom map
+
 end
 
 type 'a t = 'a Base.t
@@ -44,7 +46,6 @@ type 'a t = 'a Base.t
 include (Monad.Make(Base):Monad.S with type 'a t := 'a t)
 
 let empty = Base.empty
-let map = Base.map
 let append = Base.append
 let concat = Base.concat
 
