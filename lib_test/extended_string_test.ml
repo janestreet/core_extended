@@ -1,7 +1,6 @@
-open Core.Std
 open Core_extended.Std
 open OUnit
-open Quickcheck
+open Core_extended.Quickcheck
 
 let dup gen () = let x = gen () in x,x
 

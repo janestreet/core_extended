@@ -6,7 +6,7 @@ type size = [ `Kb of int64 | `Mb of int64 | `Unlimited ]
 type 'messagetype t
 type default_t = message t
 
-(** 
+(**
   - max_size - the maximum size of each log file (default 50Mb)
   - mode - mode to open the files in
   - max_archives - maximum number of archives to keep (default 4)
@@ -16,20 +16,20 @@ type default_t = message t
              logged.  If filter returns false the message is dropped.
   - message_to_string - called to convert your message type to a string for logging
 *)
-val create : ?max_size:size -> 
-  ?mode:Unix.file_perm -> 
-  ?max_archives:[`Max of int | `Unlimited] -> 
+val create : ?max_size:size ->
+  ?mode:Unix.file_perm ->
+  ?max_archives:[`Max of int | `Unlimited] ->
   ?full_callback:(string Squeue.t -> unit) ->
   ?filter:('messagetype -> bool) ->
-  message_to_string:('messagetype -> string) -> 
+  message_to_string:('messagetype -> string) ->
   string -> 'messagetype t
-  
-(** creates a log using the default message type and a filter that drops 
-  `Debug messages *)  
-val create_default : ?max_size:size -> 
-  ?mode:Unix.file_perm -> 
-  ?max_archives:[`Max of int | `Unlimited] -> 
-  ?full_callback:(string Squeue.t -> unit) -> 
+
+(** creates a log using the default message type and a filter that drops
+  `Debug messages *)
+val create_default : ?max_size:size ->
+  ?mode:Unix.file_perm ->
+  ?max_archives:[`Max of int | `Unlimited] ->
+  ?full_callback:(string Squeue.t -> unit) ->
   string -> message t
 
 (** logs a message to log *)

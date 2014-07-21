@@ -28,7 +28,7 @@ type report = {
   mutable used : int;
   mutable previous : (Bigstring.t * int) list;
   mutable total_previous : int;
-  mutable memory_limit : int;
+  mutable memory_limit : int option;
   mutable file_name: string;
 }
 
@@ -51,7 +51,7 @@ let report = lazy {
   previous = [];
   total_previous = 0;
   file_name = "";
-  memory_limit = 0;
+  memory_limit = None;
 }
 
 let determine_file =
@@ -86,14 +86,23 @@ let expand_report_buffer () =
   let report = Lazy.force report in
   let current_size = Bigstring.length report.data in
   let new_total = report.total_previous + current_size in
-  if report.memory_limit > 0 &&  new_total >= report.memory_limit then begin
+  let should_write =
+    match report.memory_limit with
+    | Some memory_limit -> new_total >= memory_limit
+    | None -> false
+  in
+  if should_write then begin
     write_report_to_file ();
     report.previous <- [];
     report.total_previous <- 0;
     report.used <- 0; (* re-use the data buffer *)
   end
   else begin
-    let next_alloc = Int.min initial_report_buffer_size report.memory_limit in
+    let next_alloc =
+      match report.memory_limit with
+      | Some memory_limit -> Int.min initial_report_buffer_size memory_limit
+      | None -> initial_report_buffer_size
+    in
     report.previous <- (report.data, report.used) :: report.previous;
     report.total_previous <- new_total;
     report.data <- Bigstring.create next_alloc;
@@ -155,7 +164,7 @@ let adjust_internal_buffers_if_required () =
     expand_report_buffer ()
   end
 
-let init ~msg ?(memory_limit=0) ?(file_name="stats.data") () =
+let init ~msg ?memory_limit ?(file_name="stats.data") () =
   let header = Lazy.force lazy_header in
   let report = Lazy.force report in
   let write_header () =

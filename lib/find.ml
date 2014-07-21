@@ -143,22 +143,22 @@ let rec next t =
   in
   let handle_dirs (output_fn, path, stats) =
     let info = output_fn, stats in
-    if Option.apply ~f:t.options.O.skip_dir info = Some true then
-      None
+    if (match t.options.O.skip_dir with None -> false | Some f -> f info)
+    then None
     else
-    (* if this is a directory we need to decide if we will be traversing into it
-      later... *)
-    let visit () =
-      t.to_visit <- (path, (t.depth + 1)) :: t.to_visit
-    in
-    if stats.Unix.st_kind = Unix.S_DIR then
-      begin
-        match t.options.O.max_depth with
-        | None -> visit ()
-        | Some max_depth ->
+      (* if this is a directory we need to decide if we will be traversing into it
+         later... *)
+      let visit () =
+        t.to_visit <- (path, (t.depth + 1)) :: t.to_visit
+      in
+      if stats.Unix.st_kind = Unix.S_DIR then
+        begin
+          match t.options.O.max_depth with
+          | None -> visit ()
+          | Some max_depth ->
             if t.depth < max_depth then visit () else ()
-      end;
-    Some info
+        end;
+      Some info
   in
   let filter file =
     if t.depth < t.options.O.min_depth then

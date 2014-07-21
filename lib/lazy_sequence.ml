@@ -228,7 +228,6 @@ let foldi t ~init ~f =
   in
   wrap_finallys finallys (fun () -> foldi t 0 ~init ~f)
 
-
 let find_map t ~f =
   let finallys = ref [] in
   let rec find_map t ~f =
@@ -276,6 +275,9 @@ let mem ?(equal = (=)) t elt = exists t ~f:(fun x -> equal x elt)
 let length t = fold t ~init:0 ~f:(fun acc _ -> acc + 1)
 
 let count t ~f = fold t ~init:0 ~f:(fun acc x -> if f x then acc + 1 else acc)
+let sum m t ~f = Container.fold_sum m fold t ~f
+let min_elt t ~cmp = Container.fold_min fold t ~cmp
+let max_elt t ~cmp = Container.fold_max fold t ~cmp
 
 let to_list t = List.rev (fold t ~init:[] ~f:(fun acc x -> x :: acc))
 
