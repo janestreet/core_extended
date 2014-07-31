@@ -1,3 +1,8 @@
+## 111.25.00
+
+- Moved `Quickcheck` from `core`.
+- Added [Int.gcd].
+
 ## 111.17.00
 
 - Added some functions to `Splay_tree`:
