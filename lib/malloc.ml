@@ -38,9 +38,9 @@ let malloc_stats = Ok malloc_stats
 
 ELSE
 
-let mallinfo     = unimplemented "Malloc.mallinfo"
-let mallopt      = unimplemented "Malloc.mallopt"
-let malloc_trim  = unimplemented "Malloc.malloc_trim"
-let malloc_stats = unimplemented "Malloc.malloc_stats"
+let mallinfo     = Or_error.unimplemented "Malloc.mallinfo"
+let mallopt      = Or_error.unimplemented "Malloc.mallopt"
+let malloc_trim  = Or_error.unimplemented "Malloc.malloc_trim"
+let malloc_stats = Or_error.unimplemented "Malloc.malloc_stats"
 
 ENDIF

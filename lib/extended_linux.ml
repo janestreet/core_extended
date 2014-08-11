@@ -180,19 +180,19 @@ let statfs = Ok statfs
 
 ELSE
 
-let setresuid = unimplemented "Extended_linux.setresuid"
-let getresuid = unimplemented "Extended_linux.getresuid"
+let setresuid = Or_error.unimplemented "Extended_linux.setresuid"
+let getresuid = Or_error.unimplemented "Extended_linux.getresuid"
 
 module Splice = struct
   type flag = MOVE | NONBLOCK | MORE | GIFT with sexp, bin_io
   type flags = flag array
 
   let make_flags = Fn.id
-  let splice   = unimplemented "Extended_linux.Splice.splice"
-  let tee      = unimplemented "Extended_linux.Splice.tee"
-  let vmsplice = unimplemented "Extended_linux.Splice.vmsplice"
+  let splice   = Or_error.unimplemented "Extended_linux.Splice.splice"
+  let tee      = Or_error.unimplemented "Extended_linux.Splice.tee"
+  let vmsplice = Or_error.unimplemented "Extended_linux.Splice.vmsplice"
 end
 
-let statfs = unimplemented "Extended_linux.statfs"
+let statfs = Or_error.unimplemented "Extended_linux.statfs"
 
 ENDIF

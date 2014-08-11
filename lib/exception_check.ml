@@ -17,7 +17,7 @@ let create ?(listen_port = 65100) exns =
   List.iter exns ~f:(fun (c, exn) ->
     match Hashtbl.find ctx.known_exceptions c with
     | Some _ -> raise (Invalid_argument (sprintf "duplicate exception definition: %s" c))
-    | None -> Hashtbl.replace ctx.known_exceptions ~key:c ~data:exn);
+    | None -> Hashtbl.set ctx.known_exceptions ~key:c ~data:exn);
   let (_: Thread.t) =
     let module U = Unix in
     let clients = ref [] in
@@ -49,7 +49,7 @@ let create ?(listen_port = 65100) exns =
                 match Hashtbl.find ctx.known_exceptions line with
                 | None -> ()
                 | Some exn ->
-                    Hashtbl.replace ctx.scheduled_exceptions ~key:line ~data:exn)
+                    Hashtbl.set ctx.scheduled_exceptions ~key:line ~data:exn)
             with _ -> remove ())
         with U.Unix_error ((U.EAGAIN | U.EINTR | U.EWOULDBLOCK), _, _) -> ()
       done)

@@ -137,7 +137,7 @@ let rec next t =
       match Hashtbl.find t.already_seen uid with
       | Some () -> None
       | None ->
-        Hashtbl.replace t.already_seen ~key:uid ~data:();
+        Hashtbl.set t.already_seen ~key:uid ~data:();
         Some info
     end
   in

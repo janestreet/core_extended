@@ -1,3 +1,13 @@
+## 111.28.00
+
+- Implemented `Int.gcd` using binary GCD in C, for improved performance.
+- Added `Bin_io_utils.Serialized`, which stores a value in memory as its
+  bin-io representation.
+
+    Writing such a value just blits the value.
+- Moved `Text_block` from `Core_extended` into `Textutils`.
+- Added modules `Hashtbl2` and `Hashtbl2_pair`.
+
 ## 111.25.00
 
 - Moved `Quickcheck` from `core`.
