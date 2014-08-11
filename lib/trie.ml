@@ -78,9 +78,9 @@ module Make(T : Key) = struct
       | None ->
         let reified_t = !t in
         let next      = Part.Table.create () in
-        Part.Table.replace reified_t ~key:part ~data:(false, Node next);
+        Part.Table.set reified_t ~key:part ~data:(false, Node next);
         set_terminator := (fun () ->
-          Part.Table.replace reified_t ~key:part ~data:(true, Node next));
+          Part.Table.set reified_t ~key:part ~data:(true, Node next));
         t := next);
     !set_terminator ();
   ;;
@@ -117,7 +117,7 @@ module Make(T : Key) = struct
               match Part.Table.find reified_t part with
               | None -> assert false
               | Some (_,Node next) ->
-                Part.Table.replace !t ~key:part ~data:(false,Node next));
+                Part.Table.set !t ~key:part ~data:(false,Node next));
             t := next
           end);
       !clear_terminator ())

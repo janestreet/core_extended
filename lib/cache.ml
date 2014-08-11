@@ -169,10 +169,10 @@ module Strategy = struct
       match Hashtbl.find lru.table x with
       | Some old_el ->
           Doubly_linked.remove lru.list old_el;
-          Hashtbl.replace lru.table ~key:x ~data:el;
+          Hashtbl.set lru.table ~key:x ~data:el;
           []
       | None ->
-          Hashtbl.replace lru.table ~key:x ~data:el;
+          Hashtbl.set lru.table ~key:x ~data:el;
           lru.size <- lru.size + 1;
           kill_extra lru
 

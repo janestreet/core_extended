@@ -2,7 +2,7 @@ OASISFormat:      0.3
 OCamlVersion:     >= 4.00.0
 FindlibVersion:   >= 1.3.2
 Name:             core_extended
-Version:          111.25.00
+Version:          111.28.00
 Synopsis:         Jane Street Capital's standard library overlay
 Authors:          Jane Street Capital LLC <opensource@janestreet.com>
 Copyrights:       (C) 2008-2013 Jane Street Capital LLC <opensource@janestreet.com>
@@ -85,6 +85,8 @@ Library core_extended
                       Flang,
                       Fold_map,
                       Generic,
+                      Hashtbl2,
+                      Hashtbl2_pair,
                       Invariant,
                       Invocation,
                       Iter,
@@ -133,12 +135,12 @@ Library core_extended
                       String_zipper,
                       Sys_utils,
                       Tcp,
-                      Text_block,
                       Timed_function,
                       Trie,
                       Unix_utils,
                       Update_queue
-  CSources:           extended_linux_stubs.c,
+  CSources:           extended_int_stubs.c,
+                      extended_linux_stubs.c,
                       extended_unix_stubs.c,
                       fork_exec.c,
                       fork_exec.h,
@@ -157,6 +159,7 @@ Library core_extended
                       custom_printf.syntax,
                       fieldslib,
                       fieldslib.syntax,
+                      pa_bench.syntax,
                       pa_ounit,
                       pa_ounit.syntax,
                       pa_pipebang,
@@ -174,6 +177,7 @@ Library core_extended
                       fieldslib,
                       bin_prot,
                       oUnit,
+                      pa_bench,
                       pa_ounit,
                       pa_test,
                       core,

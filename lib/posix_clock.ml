@@ -66,11 +66,11 @@ let mean_gettime_cost = Ok mean_gettime_cost
 
 ELSE
 
-let getres            = unimplemented "Posix_clock.getres"
-let gettime           = unimplemented "Posix_clock.gettime"
-(* let nanosleep      = unimplemented "Posix_clock.nanosleep" *)
-let min_interval      = unimplemented "Posix_clock.min_interval"
-let mean_gettime_cost = unimplemented "Posix_clock.mean_gettime_cost"
+let getres            = Or_error.unimplemented "Posix_clock.getres"
+let gettime           = Or_error.unimplemented "Posix_clock.gettime"
+(* let nanosleep      = Or_error.unimplemented "Posix_clock.nanosleep" *)
+let min_interval      = Or_error.unimplemented "Posix_clock.min_interval"
+let mean_gettime_cost = Or_error.unimplemented "Posix_clock.mean_gettime_cost"
 
 ENDIF
 
