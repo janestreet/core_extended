@@ -14,7 +14,8 @@ let s_rev s =
 
 (* Same as [Int_conversions.prettify_string] but introduces the underscores
    counting from the left*)
-let rpretty s =  s_rev (Core.Int_conversions.insert_underscores (s_rev s))
+let rpretty s =
+  s_rev (Core.Int_conversions.insert_underscores (s_rev s))
 
 let to_string_hum f =
   let s = Float.to_string f in

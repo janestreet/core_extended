@@ -1,3 +1,22 @@
+## 112.01.00
+
+- Added `Float_ref` module, which is like `float ref` but faster for
+  sets due to bypassing the write barrier.
+
+  Benchmark results on Sandy Bridge:
+
+  | [float\_ref.ml:] float ref set  |    2\_886.94ns |   8.00w |            |
+  | [float\_ref.ml:] Float\_ref.set |       355.76ns |   6.00w |            |
+  | [float\_ref.ml:] float ref get  |       415.52ns |   6.00w |            |
+  | [float\_ref.ml:] Float_ref.get  |       416.19ns |   6.00w |            |
+- Added `Bin_io_utils.Wrapped.t`, which defines an `'a t with bin_io`
+  that supports size-prefixed serialization and deserialization.
+
+  `Wrapped` has two useful submodules, `Opaque` and `Ignored`, for
+  efficient handling of size-prefixed bin-io values in cases where
+  serialization can be bypassed.  See the comments in the module for
+  more details.
+
 ## 111.28.00
 
 - Implemented `Int.gcd` using binary GCD in C, for improved performance.

@@ -42,6 +42,7 @@ module Float = struct
   include Core.Float
   include Extended_float
 end
+module Float_ref = Float_ref
 module Gc = struct
   include Core.Std.Gc
   include Extended_gc

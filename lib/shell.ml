@@ -209,6 +209,12 @@ module Process = struct
     flush
   }
 
+  let callback_with_stderr ~add ~add_err ~flush () = {
+    add_stdout = (fun s len -> add s len;`Continue);
+    add_stderr = (fun s len -> add_err s len; `Continue);
+    flush
+  }
+
   let content () =
     let buffer = Buffer.create 16 in
     {

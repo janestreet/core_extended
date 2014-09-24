@@ -174,9 +174,20 @@ module Serialized = struct
     { Bin_prot.Type_class.read = bin_read_t_with_value bin_read_a
     ; vtag_read = __bin_read_t__ vtag_read }
 
+  let bin_writer_t_with_value (_ : 'a Bin_prot.Type_class.writer) =
+    { Bin_prot.Type_class.size = (fun x -> bin_size_t (fst x))
+    ; write = (fun buf ~pos t -> bin_write_t buf ~pos (fst t))
+    }
+
   let bin_t { Bin_prot.Type_class. writer = bin_writer_a; reader = bin_reader_a } =
     { Bin_prot.Type_class. writer = bin_writer_t bin_writer_a
     ; reader = bin_reader_t bin_reader_a }
+
+  let bin_t_with_value
+    { Bin_prot.Type_class. writer = bin_writer_a; reader = bin_reader_a } =
+    { Bin_prot.Type_class.writer = bin_writer_t_with_value bin_writer_a
+    ; reader = bin_reader_t_with_value bin_reader_a
+    }
 
   module Make (B : Binable) = struct
     type t = string
@@ -193,6 +204,8 @@ module Serialized = struct
     let bin_t = bin_t B.bin_t
 
     let bin_reader_t_with_value = bin_reader_t_with_value B.bin_reader_t
+
+    let bin_t_with_value = bin_t_with_value B.bin_t
   end
 
   let bin_size_t _ = bin_size_t
@@ -301,5 +314,243 @@ module Serialized = struct
         ; `C, 4
         ]
     end)
+  end
+end
+
+module Wrapped = struct
+  let bin_write_int64 = Bin_prot.Write.bin_write_int_64bit
+  let bin_read_int64 = Bin_prot.Read.bin_read_int_64bit
+
+  module Opaque = struct
+    type t = Bigstring.t sexp_opaque with sexp
+
+    (* Can't use Bigstring.{read,write}_bin_prot here, because that will:
+       1. Write the 8-byte size header
+       2. Then serialize the bigstring, which does:
+          2a. Write a one-byte length of the bigstring;
+          2b. Write the bigstring contents itself.
+       This is almost what we want, but we need to avoid (2a).
+    *)
+
+    let bin_size_t t =
+      8 (* size of 64 bit int *) + (Bigstring.length t)
+
+    let bin_write_t buf ~pos t =
+      let pos = bin_write_int64 buf ~pos (Bigstring.length t) in
+      Bigstring.blit
+        ~src:t ~src_pos:0
+        ~dst:buf ~dst_pos:pos
+        ~len:(Bigstring.length t);
+      pos + (Bigstring.length t)
+
+    let bin_read_t buf ~pos_ref =
+      let size = bin_read_int64 buf ~pos_ref in
+      let t = Bigstring.create size in
+      Bigstring.blit
+        ~src:buf ~src_pos:(!pos_ref)
+        ~dst:t ~dst_pos:0
+        ~len:size;
+      pos_ref := !pos_ref + size;
+      t
+
+    let __bin_read_t__ _ ~pos_ref =
+      Bin_prot.Common.raise_variant_wrong_type
+        "Core_extended.Bin_io_utils.Wrapped.Opaque.t"
+        !pos_ref
+    ;;
+
+    let bin_writer_t =
+      { Bin_prot.Type_class.size = bin_size_t
+      ; write = bin_write_t }
+
+    let bin_reader_t =
+      { Bin_prot.Type_class.read = bin_read_t
+      ; vtag_read = __bin_read_t__ }
+
+    let bin_t =
+      { Bin_prot.Type_class. writer = bin_writer_t
+      ; reader = bin_reader_t }
+  end
+
+  module Ignored = struct
+    (* The representation of an ignored value is just the size of the value it was created
+       from (i.e., the number of bytes that were ignored from the buffer we were reading
+       -- we exclude the 8 byte size header from which the size was read). *)
+    type t = int with sexp
+
+    (* dhouse: could use Bigstring.{read,write}_bin_prot here, but we don't just to stay
+       consistent with Opaque.t and Wrapped.t. (And also we'd need special code in
+       bin_read_t anyway, since we just want to read the size and then increment
+       pos_ref. *)
+
+    let bin_size_t size =
+      8 + size
+
+    let bin_write_t _buf ~pos:_ (_ : t) =
+      failwith
+        "Core_extended.Bin_io_utils.Wrapped.Ignored.bin_write_t: not supported, \
+         perhaps you want [Wrapped.Opaque.t]?"
+
+    let bin_read_t buf ~pos_ref =
+      let size = bin_read_int64 buf ~pos_ref in
+      pos_ref := !pos_ref + size;
+      size
+
+    let __bin_read_t__ _ ~pos_ref =
+      Bin_prot.Common.raise_variant_wrong_type
+        "Core_extended.Bin_io_utils.Wrapped.Ignored.t"
+        !pos_ref
+    ;;
+
+    let bin_writer_t =
+      { Bin_prot.Type_class.size = bin_size_t
+      ; write = bin_write_t }
+
+    let bin_reader_t =
+      { Bin_prot.Type_class.read = bin_read_t
+      ; vtag_read = __bin_read_t__ }
+
+    let bin_t =
+      { Bin_prot.Type_class. writer = bin_writer_t
+      ; reader = bin_reader_t }
+  end
+
+  type 'a t = 'a with sexp
+
+  let bin_size_t bin_size_a a =
+    Bigstring.bin_prot_size_header_length + bin_size_a a
+
+
+  let bin_write_t bin_write_a =
+    fun buf ~pos a ->
+      let start_a = pos + 8 in
+      let end_a = bin_write_a buf ~pos:start_a a in
+      let size = end_a - start_a in
+      let written = bin_write_int64 buf ~pos size in
+      assert (written = start_a);
+      end_a
+
+  let bin_read_t bin_read_a =
+    fun buf ~pos_ref ->
+      let expected_size = bin_read_int64 buf ~pos_ref in
+      let start_a = !pos_ref in
+      let a = bin_read_a buf ~pos_ref in
+      let end_a = !pos_ref in
+      assert (end_a - start_a = expected_size);
+      a
+
+  let __bin_read_t__ _ _ ~pos_ref =
+    Bin_prot.Common.raise_variant_wrong_type
+      "Core_extended.Bin_io_utils.Wrapped.t"
+      !pos_ref
+  ;;
+
+  let bin_writer_t { Bin_prot.Type_class. size = bin_size_a; write = bin_write_a } =
+    { Bin_prot.Type_class.size = bin_size_t bin_size_a
+    ; write = bin_write_t bin_write_a }
+
+  let bin_reader_t
+        { Bin_prot.Type_class. read = bin_read_a; vtag_read = __bin_read_a__ } =
+    { Bin_prot.Type_class.read = bin_read_t bin_read_a
+    ; vtag_read = __bin_read_t__ __bin_read_a__ }
+
+  let bin_t { Bin_prot.Type_class. writer = bin_writer_a; reader = bin_reader_a } =
+    { Bin_prot.Type_class. writer = bin_writer_t bin_writer_a
+    ; reader = bin_reader_t bin_reader_a }
+
+  let to_opaque t bin_writer =
+    Bin_prot.Utils.bin_dump bin_writer t
+
+  let of_opaque_exn (buffer : Opaque.t) bin_reader =
+    bin_reader.Bin_prot.Type_class.read buffer ~pos_ref:(ref 0)
+
+  TEST_MODULE = struct
+    module Mystery = struct
+      type t =
+        { name : string
+        ; age : int
+        ; favorite_colors : string list
+        } with sexp, bin_io
+
+      let value =
+        { name = "Drew"
+        ; age = 25
+        ; favorite_colors = [ "Blue"; "Yellow" ]
+        }
+    end
+
+    module T = struct
+      type 'a t =
+        { header : string
+        ; mystery : 'a
+        ; footer : string
+        } with sexp, bin_io
+
+      let value mystery =
+        { header = "header"
+        ; mystery
+        ; footer = "footer"
+        }
+    end
+
+    (* Some Rumsfeldian tests follow... *)
+    module Known = struct
+      type nonrec t = Mystery.t t T.t with sexp, bin_io
+
+      let value = T.value Mystery.value
+    end
+
+    module Unknown = struct
+      type t = Opaque.t T.t with sexp, bin_io
+
+      let value = T.value (to_opaque Mystery.value Mystery.bin_writer_t)
+    end
+
+    let convert bin_writer bin_reader value =
+      let buffer = Bin_prot.Utils.bin_dump bin_writer value in
+      bin_reader.Bin_prot.Type_class.read buffer ~pos_ref:(ref 0)
+
+    let roundtrip { Bin_prot.Type_class. reader; writer } value =
+      assert (convert writer reader value = value)
+
+    TEST_UNIT = roundtrip Known.bin_t Known.value
+    TEST_UNIT = roundtrip Unknown.bin_t Unknown.value
+
+    TEST_UNIT "opaque and wrapped serialize the same way" =
+      let known_buffer = Bin_prot.Utils.bin_dump Known.bin_writer_t Known.value in
+      let unknown_buffer = Bin_prot.Utils.bin_dump Unknown.bin_writer_t Unknown.value in
+      <:test_pred<string * string>>
+        (fun (a, b) -> String.(=) a b)
+        (Bigstring.to_string known_buffer, Bigstring.to_string unknown_buffer)
+
+    TEST_UNIT "serialized wrapped deserializes to the expected opaque" =
+      let unknown_from_known =
+        convert Known.bin_writer_t Unknown.bin_reader_t Known.value
+      in
+      assert (Unknown.value = unknown_from_known)
+
+    TEST_UNIT "serialized opaque deserializes to the expected wrapped" =
+      let known_from_unknown =
+        convert Unknown.bin_writer_t Known.bin_reader_t Unknown.value
+      in
+      assert (Known.value = known_from_unknown)
+
+    module Dropped = struct
+      type t = Ignored.t T.t with sexp, bin_io
+    end
+
+    TEST_UNIT =
+      let buffer = Bin_prot.Utils.bin_dump Known.bin_writer_t Known.value in
+      let value = Dropped.bin_reader_t.Bin_prot.Type_class.read buffer ~pos_ref:(ref 0) in
+      let ignored = value.mystery in
+      (* The value deserialized with [Dropped] agrees with the value serialized by
+         [Known], except for the ignored bit. *)
+      assert ({ Known.value with mystery = ignored} = value );
+      (* [Dropped] remembered the size of the ignored data. *)
+      assert (Dropped.bin_size_t value = Known.bin_size_t Known.value);
+      (* [Dropped] can't be serialized. *)
+      assert (Option.is_none (Option.try_with (fun () ->
+        ignore (Bin_prot.Utils.bin_dump Dropped.bin_writer_t value))))
+    ;;
   end
 end
