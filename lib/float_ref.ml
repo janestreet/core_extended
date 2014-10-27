@@ -1,6 +1,6 @@
 open Core.Std
 
-type t = { mutable v : float }
+type t = { mutable v : float } with bin_io, sexp
 
 let create v = { v }
 let set t v = t.v <- v

@@ -1,3 +1,18 @@
+## 112.06.00
+
+- Sped up `String.is_substring` by replacing the OCaml implementation
+with a call to libc `memmem`.
+
+    `memmem` runs in 20% of the time, incurs minimal GC pressure, is
+    portable among UNIXen that we target, AND it's clearer than the ML
+    version.
+
+- Made `Float_ref` support `bin_io` and `sexp`.
+- Removed `gettid`, which is now available in `Core.Unix`.
+- Added `Fast_int_div` module, which speeds up integer division by
+  a fixed divisor.
+- Moved `Sexp.of_sexp_allow_extra_fields` to core_kernel.
+
 ## 112.01.00
 
 - Added `Float_ref` module, which is like `float ref` but faster for

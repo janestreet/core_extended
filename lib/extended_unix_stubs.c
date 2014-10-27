@@ -72,12 +72,6 @@ CAMLprim value statvfs_stub (value v_path)
   CAMLreturn(v_stat);
 }
 
-/* copy of the ocaml's stdlib wrapper for getpid */
-CAMLprim value extended_ml_gettid(value v_unit __unused)
-{
-  return Val_int(syscall(SYS_gettid));
-}
-
 CAMLprim value getloadavg_stub (value v_unit __unused)
 {
   CAMLparam0();

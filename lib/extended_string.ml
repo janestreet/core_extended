@@ -413,7 +413,7 @@ let word_wrap
       res
 
 (* Knuth-Morris-Pratt string matching. *)
-let is_substring  ~substring t =
+let is_substring_pure_ml  ~substring t =
   let kmp_prefix len ~substring =
     let prefix = Array.create ~len:len 0 in
     let rec f ~k ~q =
@@ -461,6 +461,37 @@ let is_substring  ~substring t =
   in
   f ~q:0 ~i:1
 
+
+external is_substring_c_version : string -> string -> bool = "core_extended_is_substring" "noalloc"
+
+let is_substring ~substring:needle haystack =
+  (* Hacks for backward compatibility with the ML version that used to be here *)
+  if String.length needle = 0 then begin
+    if String.length haystack = 0 then false
+    else invalid_arg "index out of bounds"
+  end else
+    is_substring_c_version haystack needle
+
+TEST = is_substring ~substring:"foo" "foo"
+TEST = not (is_substring ~substring:"" "")
+TEST =
+  (* For bug compatibility with the ML version that used to be here *)
+  try
+    ignore (is_substring ~substring:"" "foo");
+    assert false (* should not be reachable *)
+  with Invalid_argument _ ->
+    true
+TEST = not (is_substring ~substring:"foo" "")
+TEST = is_substring ~substring:"bar" "foobarbaz"
+TEST = not (is_substring ~substring:"Z" "z")
+TEST = not (is_substring ~substring:"store" "video stapler")
+TEST = not (is_substring ~substring:"sandwich" "apple")
+TEST = is_substring ~substring:"z" "abc\x00z"
+
+BENCH "is_substring C version" =
+  assert (is_substring ~substring:"xyz" "abcdefghijklmnopqrstuvwxyz");
+BENCH "is_substring ML version" =
+  assert (is_substring_pure_ml ~substring:"xyz" "abcdefghijklmnopqrstuvwxyz")
 
 let edit_distance_matrix ?transpose s1 s2 =
   let transpose = Option.is_some transpose in
