@@ -61,8 +61,6 @@ val seteuid : int -> unit
 
 val setreuid : uid:int -> euid:int -> unit
 
-val gettid : unit -> int
-
 (** Network to host order long, like C. *)
 external ntohl : Int32.t -> Int32.t = "extended_ml_ntohl"
 

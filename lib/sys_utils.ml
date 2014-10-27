@@ -262,7 +262,7 @@ module Lsb_release = struct
       release        : string; (* e.g. "5.7", "6.3" on CentOs, 'testing' on debian*)
       codename       : string; (* e.g. "Final", "Lucid", etc. *)
     }
-  with sexp, fields
+  with sexp, fields, bin_io
 
   let query () =
     let q flag =

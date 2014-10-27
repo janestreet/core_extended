@@ -106,7 +106,6 @@ let fork_exec
 
 external seteuid : int -> unit = "extended_ml_seteuid"
 external setreuid : uid:int -> euid:int -> unit = "extended_ml_setreuid"
-external gettid : unit -> int = "extended_ml_gettid"
 
 external htonl : Int32.t -> Int32.t = "extended_ml_htonl"
 external ntohl : Int32.t -> Int32.t = "extended_ml_ntohl"

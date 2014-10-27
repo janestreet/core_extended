@@ -31,6 +31,7 @@ module Exn = struct
   include Extended_exn
 end
 module Extra_fields = Extra_fields
+module Fast_int_div = Fast_int_div
 module Fd_leak_check = Fd_leak_check
 module Filename = struct
   include Core.Std.Filename

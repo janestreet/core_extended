@@ -289,15 +289,6 @@ let summarize sexp ~sub_sexp ~size =
   | `depth d ->
       Summarize.summarize_sexp sexp sub_sexp d
 
-let of_sexp_allow_extra_fields of_sexp sexp =
-  let rcef = Sexplib.Conv.record_check_extra_fields in
-  let prev = !rcef in
-  protect ~finally:(fun () -> rcef := prev)
-    ~f:(fun () ->
-      rcef := false;
-      of_sexp sexp
-    )
-
 exception Filter_record_failed of Sexp.t * string list * exn with sexp
 exception Invalid_field of Sexp.t with sexp
 exception No_matching_fields with sexp

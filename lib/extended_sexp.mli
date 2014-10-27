@@ -51,10 +51,6 @@ val print_diff : ?oc:out_channel -> original:Sexp.t -> updated:Sexp.t -> unit ->
    100 or so. *)
 val summarize : Sexp.t -> sub_sexp:Sexp.t -> size:[ `depth of int | `string of int ] -> Sexp.t
 
-(** [of_sexp_allow_extra_fields of_sexp sexp] uses [of_sexp] to convert [sexp] to a
-    value, but will not fail if there any extra fields in a record.  *)
-val of_sexp_allow_extra_fields : (Sexp.t -> 'a) -> Sexp.t -> 'a
-
 (** {3 Transforming sexp parsers} *)
 
 (* [filter_record t_of_sexp field_names] will return a new [t_of_sexp] function
