@@ -1,7 +1,7 @@
 (*pp camlp4o -I `ocamlfind query sexplib` -I `ocamlfind query type_conv` -I `ocamlfind query bin_prot` pa_type_conv.cmo pa_sexp_conv.cmo pa_bin_prot.cmo *)
 
 open Core.Std
-module Map_intf = Core.Core_map_intf
+module Map_intf = Core_kernel.Core_map_intf
 
 (* We use functors to factor out the common signature parts between the gen and
    specialised implementations. We expend them in the mli to keep things

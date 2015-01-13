@@ -209,9 +209,9 @@ let unescaped ?strict s =
 
 let unescaped_res ?strict s =
   try
-    Core.Result.Ok (unescaped' ?strict s)
+    Result.Ok (unescaped' ?strict s)
   with Unescape_error (_,pos,message) ->
-    Core.Result.Error (pos,message)
+    Result.Error (pos,message)
 
 
 let squeeze str =
@@ -412,86 +412,32 @@ let word_wrap
       blit_loop body_len t;
       res
 
-(* Knuth-Morris-Pratt string matching. *)
-let is_substring_pure_ml  ~substring t =
-  let kmp_prefix len ~substring =
-    let prefix = Array.create ~len:len 0 in
-    let rec f ~k ~q =
-      if q > len then prefix
-      else (
-        let k =
-          let rec g k =
-            if k <= 0 || ((String.get substring k) = (String.get substring (q - 1))) then k
-            else g (prefix.(k - 1))
-          in
-          g k
-        in
-        let k =
-          if (String.get substring k) = (String.get substring (q - 1))
-          then k + 1 else k
-        in
-        assert (q - 1 >= 0 && q - 1 < len);
-        Array.set prefix (q - 1) k;
-        f ~k ~q:(q + 1)
-      )
-    in
-    f ~k:0 ~q:2
-  in
-  let n = String.length t in
-  let m = String.length substring in
-  let prefix = kmp_prefix m ~substring in
-  let rec f ~q ~i =
-    if i > n then false
-    else
-    let q = (
-      let q =
-        let rec g q =
-          if q <= 0 || ((String.get substring q) = (String.get t (i - 1)))
-          then q
-          else g (prefix.(q - 1))
-        in
-        g q
-      in
-      if String.get substring q = String.get t (i - 1) then q + 1
-      else q
-    )
-    in
-    if q = m then true
-    else f ~q ~i:(i + 1)
-  in
-  f ~q:0 ~i:1
-
-
-external is_substring_c_version : string -> string -> bool = "core_extended_is_substring" "noalloc"
-
-let is_substring ~substring:needle haystack =
-  (* Hacks for backward compatibility with the ML version that used to be here *)
+let is_substring_deprecated ~substring:needle haystack =
+  (* 2014-10-29 mbac: a recent release of Core introduced a fast and less surprising
+     version of KMP.  Everyone should use that.  This function is simply here to maintain
+     bug compatibiltiy with the original pure-ML version of f is_substring that used to be
+     here. *)
   if String.length needle = 0 then begin
     if String.length haystack = 0 then false
     else invalid_arg "index out of bounds"
   end else
-    is_substring_c_version haystack needle
+    Core.Std.String.is_substring ~substring:needle haystack
 
-TEST = is_substring ~substring:"foo" "foo"
-TEST = not (is_substring ~substring:"" "")
+TEST = is_substring_deprecated ~substring:"foo" "foo"
+TEST = not (is_substring_deprecated ~substring:"" "")
 TEST =
   (* For bug compatibility with the ML version that used to be here *)
   try
-    ignore (is_substring ~substring:"" "foo");
+    ignore (is_substring_deprecated ~substring:"" "foo");
     assert false (* should not be reachable *)
   with Invalid_argument _ ->
     true
-TEST = not (is_substring ~substring:"foo" "")
-TEST = is_substring ~substring:"bar" "foobarbaz"
-TEST = not (is_substring ~substring:"Z" "z")
-TEST = not (is_substring ~substring:"store" "video stapler")
-TEST = not (is_substring ~substring:"sandwich" "apple")
-TEST = is_substring ~substring:"z" "abc\x00z"
-
-BENCH "is_substring C version" =
-  assert (is_substring ~substring:"xyz" "abcdefghijklmnopqrstuvwxyz");
-BENCH "is_substring ML version" =
-  assert (is_substring_pure_ml ~substring:"xyz" "abcdefghijklmnopqrstuvwxyz")
+TEST = not (is_substring_deprecated ~substring:"foo" "")
+TEST = is_substring_deprecated ~substring:"bar" "foobarbaz"
+TEST = not (is_substring_deprecated ~substring:"Z" "z")
+TEST = not (is_substring_deprecated ~substring:"store" "video stapler")
+TEST = not (is_substring_deprecated ~substring:"sandwich" "apple")
+TEST = is_substring_deprecated ~substring:"z" "abc\x00z"
 
 let edit_distance_matrix ?transpose s1 s2 =
   let transpose = Option.is_some transpose in

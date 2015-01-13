@@ -40,7 +40,7 @@ end
 module Find = Find
 module Fold_map = Fold_map
 module Float = struct
-  include Core.Float
+  include Core.Std.Float
   include Extended_float
 end
 module Float_ref = Float_ref

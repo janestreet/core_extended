@@ -115,14 +115,14 @@ let make_promoted (_name_opt, _size, results) =
 ;;
 
 let make_cycles (_name_opt, _size, results) =
-  Core.Int_conversions.insert_underscores
+  Int_conversions.insert_underscores
     (Int.to_string (Result.mean results).Result.Stat.run_cycles)
 ;;
 
 let make_norm_cycles (_name_opt, size, results) =
   if size > 0 then
     let mean_cycles = (Result.mean results).Result.Stat.run_cycles in
-    Core.Int_conversions.insert_underscores (Int.to_string (mean_cycles / size))
+    Int_conversions.insert_underscores (Int.to_string (mean_cycles / size))
   else
     ""
 ;;
@@ -138,7 +138,7 @@ let make_nanos (_name_opt, size, results) =
         (Time.Span.to_ns
            (Tsc_span.to_time_span (Tsc_span.of_int_exn (mean_cycles / size))))
     in
-    Core.Int_conversions.insert_underscores (Int.to_string nanos)
+    Int_conversions.insert_underscores (Int.to_string nanos)
 ;;
 
 let make_warn (_name_opt, _size, results) =

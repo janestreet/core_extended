@@ -1,5 +1,7 @@
 (** Extensions to [Core.Core_String]. *)
 
+open Core.Std
+
 (** [collate s1 s2] sorts string in an order that's usaully more suited for human
     consumption by treating ints specially, e.g. it will output:
     [["rfc1.txt";"rfc822.txt";"rfc2086.txt"]].
@@ -30,17 +32,16 @@ val unescaped : ?strict:bool -> string -> string
    Same as [unescaped] but instead of raising [Failure _] returns an error
    message with the position in the string in case of failure.
 *)
-val unescaped_res : ?strict:bool -> string -> (string,(int*string)) Core.Result.t
+val unescaped_res : ?strict:bool -> string -> (string,(int*string)) Result.t
 
 (** [squeeze str] reduces all sequences of spaces, newlines, tables, and
  * carriage returns to single spaces.
  *)
 val squeeze : string -> string
 
-(** [is_substring ~substring t] returns [true] if substring is a substring
- * of t.
- *)
-val is_substring : substring:string -> string -> bool
+(** Use Core.Std.String.is_substring instead of this function.
+    This wrapper is here (for now) to maintain bug compatibility. *)
+val is_substring_deprecated : substring:string -> string -> bool
 
 (** [pad_left ~char s len]
     Returns [s] padded to the length [len] by adding characters [char] to the

@@ -47,7 +47,7 @@ let get_num_open_fds () =
         assert false)
       ~finally:Unix.closedir;
   with End_of_file -> !cnt
-  | Unix.Unix_error(Unix.EMFILE,_,_) -> rlimit_nofile ()
+     | Unix.Unix_error (EMFILE,_,_) -> rlimit_nofile ()
 
 let report_open_files_num num_open_fds =
   eprintf "Running emergency file descriptor dump:\n%!";
@@ -82,7 +82,7 @@ let report_open_files () =
 let report_on_exn exn =
   let module U = Unix in
   match exn with
-  | U.Unix_error ((U.EMFILE | U.ENFILE), _, _) -> report_open_files ()
+  | U.Unix_error ((EMFILE | ENFILE), _, _) -> report_open_files ()
   | _ -> ()
 
 let run_check_at_exit = ref false

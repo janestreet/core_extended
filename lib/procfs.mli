@@ -254,8 +254,9 @@ val with_uid : int -> Process.t list
 val pgrep : (Process.t -> bool) -> Process.t list
 
 (** [pkill ~signal f] sends the signal to all processes for which f returns true. It
-   returns the list of processes that were signaled, and the resulting errors if any. *)
-val pkill : signal:Signal.t -> (Process.t -> bool) -> (Pid.t * (unit, Unix.error) Result.t) list
+    returns the list of processes that were signaled, and the resulting errors if any. *)
+val pkill
+  : signal:Signal.t -> (Process.t -> bool) -> (Pid.t * (unit, Unix.Error.t) Result.t) list
 
 (** [with_username_exn user] calls with_uid after looking up the user's uid *)
 val with_username_exn : string -> Process.t list

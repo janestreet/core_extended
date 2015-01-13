@@ -397,7 +397,6 @@ end = struct
           let arr1 = Array.create ~len (Tuple2.get1 arr.(0)) in
           let arr2 = Array.create ~len (Tuple2.get2 arr.(0)) in
           for i = len - 1 downto 1 do
-            Thread.yield ();
             arr1.(i) <- Tuple2.get1 arr.(i);
             arr2.(i) <- Tuple2.get2 arr.(i);
           done;
@@ -467,12 +466,10 @@ end) = Make(struct
 
   let of_array arr =
     let buf_size = Array.fold arr ~init:0 ~f:(fun acc elt ->
-      Thread.yield ();
       acc + B.bin_size_t elt) in
     let buf = Bigstring.create buf_size  in
     let posarr = Array.create ~len:(Array.length arr) 0 in
     ignore (Array.foldi arr ~init:0 ~f:(fun ix pos elt ->
-      Thread.yield ();
       Array.unsafe_set posarr ix pos;
       B.bin_write_t buf ~pos elt));
     posarr, buf
@@ -505,7 +502,6 @@ module Of_packed_array(P : S) = struct
     let of_array arr =
       let len = Array.length arr in
       let buf_size = Array.fold arr ~init:0 ~f:(fun acc elt ->
-        Thread.yield ();
         acc + P.length elt) in
       let slices = Array.create ~len (0, 0) in
       let buf =
@@ -524,11 +520,9 @@ module Of_packed_array(P : S) = struct
         end
       in
       ignore (Array.foldi arr ~init:0 ~f:(fun ix pos elt ->
-        Thread.yield ();
         let old_pos = pos in
         let pos =
           P.fold elt ~init:pos ~f:(fun pos elt ->
-            Thread.yield ();
             Array.unsafe_set buf pos elt;
             pos+1)
         in

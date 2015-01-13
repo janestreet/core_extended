@@ -22,9 +22,11 @@ module type S = sig
   val of_aarray        : (key * value) array -> t
   val of_sorted_aarray : (key * value) array -> t
   val of_hashtbl       : (key, value) Hashtbl.t -> t
-  val find             : t -> key -> value option
-  val mem              : t -> key -> bool
-  val iter             : t -> f:(key:key -> data:value -> unit) -> unit
+
+  val find : t -> key -> value option
+  val mem  : t -> key -> bool
+  val iter : t -> f:(key:key -> data:value -> unit) -> unit
+  val fold : t -> init:'acc -> f:(key:key -> data:value -> 'acc -> 'acc) -> 'acc
 end
 
 (* TODO How should we handle duplicate keys? *)
@@ -90,7 +92,7 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
   let sort ~cmp a =
     let get = Array.unsafe_get in
     let set = Array.unsafe_set in
-    let maxson l i =
+    let maxchild l i =
       let i31 = i+i+i+1 in
       let x = ref i31 in
       if i31+2 < l then begin
@@ -103,7 +105,7 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
         else if i31 < l then i31 else raise (Bottom i)
     in
     let rec trickledown l i e =
-      let j = maxson l i in
+      let j = maxchild l i in
       if cmp (get a j) e > 0 then begin
         set a i (get a j);
         trickledown l j e;
@@ -113,17 +115,17 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
     in
     let trickle l i e = try trickledown l i e with Bottom i -> set a i e in
     let rec bubbledown l i =
-      let j = maxson l i in
+      let j = maxchild l i in
       set a i (get a j);
       bubbledown l j
     in
     let bubble l i = try bubbledown l i with Bottom i -> i in
     let rec trickleup i e =
-      let father = (i - 1) / 3 in
-      assert (i <> father);
-      if cmp (get a father) e < 0 then begin
-        set a i (get a father);
-        if father > 0 then trickleup father e else set a 0 e;
+      let parent = (i - 1) / 3 in
+      assert (i <> parent);
+      if cmp (get a parent) e < 0 then begin
+        set a i (get a parent);
+        if parent > 0 then trickleup parent e else set a 0 e;
       end else begin
         set a i e;
       end;
@@ -134,7 +136,6 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
       let e = (get a i) in
       set a i (get a 0);
       trickleup (bubble i 0) e;
-      Thread.yield ();
     done;
     if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e);
   ;;
@@ -152,7 +153,6 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
     in
     let ix = ref 0 in
     Hashtbl.iter tbl ~f:(fun ~key ~data ->
-      Thread.yield ();
       let i = !ix in
       Array.unsafe_set arr i (key, data);
       ix := i + 1);
@@ -189,6 +189,8 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
     Option.is_some (binary_search keys k)
 
   let iter t ~f = T.iter t ~f:(fun (key, data) -> f ~key ~data)
+
+  let fold t ~init ~f = T.fold t ~init ~f:(fun acc (key, data) -> f ~key ~data acc)
 end
 
 TEST_MODULE "string->int" = struct

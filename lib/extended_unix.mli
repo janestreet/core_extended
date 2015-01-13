@@ -134,6 +134,8 @@ module Mac_address : sig
   val to_string : t -> string
   (* To cisco representation "xxxx.xxxx.xxxx" *)
   val to_string_cisco : t -> string
+
+  include Hashable.S with type t := t
 end
 
 module Quota : sig

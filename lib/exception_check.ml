@@ -51,7 +51,7 @@ let create ?(listen_port = 65100) exns =
                 | Some exn ->
                     Hashtbl.set ctx.scheduled_exceptions ~key:line ~data:exn)
             with _ -> remove ())
-        with U.Unix_error ((U.EAGAIN | U.EINTR | U.EWOULDBLOCK), _, _) -> ()
+        with U.Unix_error ((EAGAIN | EINTR | EWOULDBLOCK), _, _) -> ()
       done)
       ()
   in

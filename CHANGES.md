@@ -1,3 +1,14 @@
+## 112.17.00
+
+- Added functions to `Low_level_debug` to get a sexp or string
+  representation of any type.
+
+  This could  be handy when debugging polymorphic code.
+- Renamed `String.is_substring` to `is_substring_deprecated`.  Use
+  `Core.String.is_substring` instead.
+- Fixed a bug in `Bin_io_utils.save`.
+- Made `Unix.Mac_address` match `Hashable.S`.
+
 ## 112.06.00
 
 - Sped up `String.is_substring` by replacing the OCaml implementation

@@ -33,7 +33,7 @@ open Core.Std
 
 type ('perm, 'state) t
 
-val create : ?init:'state -> unit -> (_, 'state) t
+val create : ?init:'state -> unit -> ([< _ perms], 'state) t
 val init : (read_write, 'state) t -> 'state -> unit
 
 val enqueue : (read_write, 'state) t -> ('state -> 'state) -> unit
@@ -44,6 +44,6 @@ val watch : (_, 'state) t -> f:('state -> unit) -> unit
 
 (* This function will register a watcher with the input [t].  That means the return value
    will not be garbage-collected at least as long as the input [t] is not garbage-collected. *)
-val map : (_, 'state1) t -> f:('state1 -> 'state2) -> (read_only,'state2) t
+val map : (_, 'state1) t -> f:('state1 -> 'state2) -> (read,'state2) t
 
-val read_only : (_,'state) t -> (read_only, 'state) t
+val read_only : ([> read ], 'state) t -> (read, 'state) t

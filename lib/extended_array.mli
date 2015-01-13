@@ -11,14 +11,14 @@ val random_split : ?random_state:Random.State.t -> 'a array -> p:float -> 'a arr
 val random_sub   : ?random_state:Random.State.t -> 'a array -> p:float -> 'a array
 
 module Access_control : sig
-  type ('a,+'z) any with sexp, bin_io
+  type ('a,-'z) any with sexp, bin_io
   module Immutable : sig
     type 'a t = ('a, immutable) any
     include Sexpable.S1 with type 'a t := 'a t
     include Binable.S1 with type 'a t := 'a t
   end
   module Read_only : sig
-    type 'a t = ('a, read_only) any
+    type 'a t = ('a, read) any
     include Sexpable.S1 with type 'a t := 'a t
     include Binable.S1 with type 'a t := 'a t
   end
@@ -31,30 +31,39 @@ module Access_control : sig
   include Sexpable.S1 with type 'a t := 'a t
   include Binable.S1 with type 'a t := 'a t
 
-  val create : len:int -> 'a -> ('a,_) any
-  val init : int -> f:(int -> 'a) -> ('a,_) any
+  val create : len:int -> 'a -> ('a, [< _ perms]) any
+  val init : int -> f:(int -> 'a) -> ('a, [< _ perms]) any
   val of_array : 'a array -> 'a Read_write.t
-  val of_array_copy : 'a array -> ('a,_) any
-  val to_array_copy : ('a,_) any -> 'a array
-  val get : ('a,_) any -> int -> 'a
+  val of_array_copy : 'a array -> ('a, [< _ perms]) any
+  val to_array_copy : ('a,[> read]) any -> 'a array
+  val get : ('a,[> read]) any -> int -> 'a
   val set : 'a Read_write.t -> int -> 'a -> unit
 
-  val append: ('a,_) any -> ('a,_) any -> ('a,_) any
-  val copy : ('a,_) any -> ('a,_) any
-  val map : f:('a -> 'b) -> ('a,_) any -> ('b,_) any
-  val mapi : f:(int -> 'a -> 'b) -> ('a,_) any -> ('b,_) any
-  val iteri : f:(int -> 'a -> unit) -> ('a,_) any -> unit
-  val filter_opt : ('a option,_) any -> ('a,_) any
-  val filter_map : ('a,_) any -> f:('a -> 'b option) -> ('b,_) any
-  val filter_mapi : ('a,_) any -> f:(int -> 'a -> 'b option) -> ('b,_) any
-  val map2_exn : ('a,_) any -> ('b,_) any -> f:('a -> 'b -> 'c) -> ('c,_) any
-  val findi : ('a,_) any -> f:(int -> 'a -> bool) -> (int * 'a) option
-  val blito : (('a, _) any, 'a Read_write.t) Blit.blito
+  val append: ('a, [> read]) any -> ('a, [> read]) any -> ('a, [< _ perms]) any
+  val copy : ('a, [> read]) any -> ('a, [< _ perms]) any
+  val map : f:('a -> 'b) -> ('a, [> read]) any -> ('b, [< _ perms]) any
+  val mapi : f:(int -> 'a -> 'b) -> ('a, [> read]) any -> ('b, [< _ perms]) any
+  val iteri : f:(int -> 'a -> unit) -> ('a, [> read]) any -> unit
+  val filter_opt : ('a option, [> read]) any -> ('a, [< _ perms]) any
+  val filter_map : ('a, [> read]) any -> f:('a -> 'b option) -> ('b, [< _ perms]) any
+  val filter_mapi
+    :  ('a, [> read]) any
+    -> f:(int -> 'a -> 'b option)
+    -> ('b, [< _ perms]) any
+
+  val map2_exn
+    :  ('a, [> read]) any
+    -> ('b, [> read]) any
+    -> f:('a -> 'b -> 'c)
+    -> ('c, [< _ perms]) any
+
+  val findi : ('a, [> read]) any -> f:(int -> 'a -> bool) -> (int * 'a) option
+  val blito : (('a, [> read]) any, 'a Read_write.t) Blit.blito
 
   val permute : ?random_state:Random.State.t -> _ Read_write.t -> unit
   val fill : 'a Read_write.t -> pos:int -> len:int -> 'a -> unit
-  val of_list : 'a list -> ('a,_) any
+  val of_list : 'a list -> ('a, [< _ perms]) any
 
-  include Container.S1_phantom
+  include Container.S1_phantom_permissions
     with type ('a, 'phantom) t := ('a, 'phantom) any
 end

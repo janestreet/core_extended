@@ -207,39 +207,46 @@ TEST = Inet_port.of_int 872342 = None
 module Mac_address = struct
   (* An efficient internal representation would be something like a 6 byte array,
      but let's use a hex string to get this off the ground. *)
-  type t = string with sexp, bin_io
-  let ( = ) = String.( = )
-  let equal = ( = )
-  let rex = Re2.Std.Re2.create_exn "[^a-f0-9]"
-  let of_string s =
-    let addr =
-      String.lowercase s |> Re2.Std.Re2.rewrite_exn rex ~template:""
-    in
-    let length = String.length addr in
-    if length <> 12 then
-      failwithf "MAC address '%s' has the wrong length: %d" s length ();
-    addr
+  module T = struct
+    type t = string with sexp, bin_io, compare
+    let ( = ) = String.( = )
+    let equal = ( = )
+    let rex = Re2.Std.Re2.create_exn "[^a-f0-9]"
+    let of_string s =
+      let addr =
+        String.lowercase s |> Re2.Std.Re2.rewrite_exn rex ~template:""
+      in
+      let length = String.length addr in
+      if length <> 12 then
+        failwithf "MAC address '%s' has the wrong length: %d" s length ();
+      addr
 
-  let to_string t =
-    let rec loop acc = function
-      | a::b::rest ->
-        let x = String.of_char_list [a; b] in
-        loop (x :: acc) rest
-      | [] -> List.rev acc |! String.concat ~sep:":"
-      | _ -> assert false
-    in
-    loop [] (String.to_list t)
+    let to_string t =
+      let rec loop acc = function
+        | a::b::rest ->
+          let x = String.of_char_list [a; b] in
+          loop (x :: acc) rest
+        | [] -> List.rev acc |! String.concat ~sep:":"
+        | _ -> assert false
+      in
+      loop [] (String.to_list t)
 
-  let to_string_cisco t =
-    let lst = String.to_list t in
-    let a = List.take lst 4 |! String.of_char_list
-    and b = List.take (List.drop lst 4) 4 |! String.of_char_list
-    and c = List.drop lst 8 |! String.of_char_list in
-    String.concat ~sep:"." [a; b; c]
-  let t_of_sexp sexp = String.t_of_sexp sexp |! of_string
-  let sexp_of_t t = to_string t |! String.sexp_of_t
+    let to_string_cisco t =
+      let lst = String.to_list t in
+      let a = List.take lst 4 |! String.of_char_list
+      and b = List.take (List.drop lst 4) 4 |! String.of_char_list
+      and c = List.drop lst 8 |! String.of_char_list in
+      String.concat ~sep:"." [a; b; c]
+    let t_of_sexp sexp = String.t_of_sexp sexp |! of_string
+    let sexp_of_t t = to_string t |! String.sexp_of_t
+    let hash = String.hash
 
-  let _flag = Command.Spec.Arg_type.create of_string
+    let _flag = Command.Spec.Arg_type.create of_string
+  end
+
+  include T
+
+  include Hashable.Make(T)
 end
 
 TEST = Mac_address.to_string (Mac_address.of_string "00:1d:09:68:82:0f") = "00:1d:09:68:82:0f"

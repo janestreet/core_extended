@@ -38,7 +38,7 @@ val kill :
   ?is_child:bool ->
   ?wait_for:Time.Span.t ->
   ?signal:Signal.t ->
-  Core.Pid.t
+  Pid.t
   -> unit
 
 val run :

@@ -28,9 +28,10 @@ module type S = sig
   val of_sorted_aarray : (key * value) array -> t
   val of_hashtbl       : (key, value) Hashtbl.t -> t
 
-  val find             : t -> key -> value option
-  val mem              : t -> key -> bool
-  val iter             : t -> f:(key:key -> data:value -> unit) -> unit
+  val find : t -> key -> value option
+  val mem  : t -> key -> bool
+  val iter : t -> f:(key:key -> data:value -> unit) -> unit
+  val fold : t -> init:'acc -> f:(key:key -> data:value -> 'acc -> 'acc) -> 'acc
 end
 
 module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t

@@ -22,8 +22,7 @@ let is_executable path =
     stat.Unix.st_kind = Unix.S_REG (* Is file *)
     && (stat.Unix.st_perm land 0o111 > 0) (* Is executable*)
   with
-  | Unix.Unix_error
-      ((Unix.ENOENT|Unix.ENOTDIR), _, _) -> false (* File not found *)
+  | Unix.Unix_error ((ENOENT | ENOTDIR), _, _) -> false (* File not found *)
 
 let path_lookup ?use_extra_path bin =
   let rec loop = function

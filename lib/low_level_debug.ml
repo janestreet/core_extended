@@ -47,3 +47,43 @@ let stop_upon_sigsegv () = stop_upon_sigsegv ()
 let stop_upon_sigpipe () = stop_upon_sigpipe ()
 let stop_upon_exit () = stop_upon_exit ()
 let stop_me_now () = stop_me_now ()
+
+
+let rec (obj_to_sexp_ : Obj.t -> Sexp.t) = fun x ->
+  if Obj.is_int x
+  then Int.sexp_of_t (Obj.obj x : int)
+  else if Obj.is_block x
+  then begin
+    let tag = Obj.tag x in
+    (* no-scan tags *)
+    if tag = Obj.string_tag            then String.sexp_of_t (Obj.obj x: string)
+    else if tag = Obj.double_tag       then Float.sexp_of_t (Obj.obj x : float)
+    else if tag = Obj.double_array_tag then <:sexp_of<float array>> (Obj.obj x : float array)
+    else if tag = Obj.abstract_tag     then Sexp.Atom "<abstract>"
+    else if tag = Obj.custom_tag       then Sexp.Atom "<custom>"
+    else if tag = Obj.final_tag        then Sexp.Atom "<finalized>"
+    else if tag = Obj.int_tag          then Sexp.Atom "<int>"
+    else if tag = Obj.out_of_heap_tag  then Sexp.Atom "<out_of_heap>"
+    else if tag = Obj.unaligned_tag    then Sexp.Atom "<unaligned>"
+    (* scannable tags that we don't look further into *)
+    else if tag = Obj.closure_tag      then Sexp.Atom "<function>"
+    else if tag = Obj.object_tag       then Sexp.Atom "<object>"
+    else if tag = Obj.lazy_tag         then Sexp.Atom "<lazy>"
+    else if tag = Obj.infix_tag        then Sexp.Atom "<infix>"
+    else if tag = Obj.forward_tag      then Sexp.Atom "<forward>"
+    (* Any other scannable tag we dig into recursively *)
+    else if tag >= 0 && tag < Obj.no_scan_tag
+    then begin
+      let size = Obj.size x in
+      Sexp.List (List.init size ~f:(fun i -> obj_to_sexp_ (Obj.field x i)))
+    end
+    else Sexp.Atom "<unknown>"
+  end
+  else Sexp.Atom "<external pointer>"
+;;
+
+let obj_to_sexp x =
+  obj_to_sexp_ (Obj.repr x)
+
+let obj_to_string x =
+  Sexp.to_string (obj_to_sexp x)

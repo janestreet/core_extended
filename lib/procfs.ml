@@ -350,9 +350,9 @@ module Process = struct
         Some (f (sprintf !"/proc/%{Pid}/%s" pid fn))
       with
       | Sys_error _ -> None
-      | Unix.Unix_error (Unix.EACCES, _, _) -> None
-      | Unix.Unix_error (Unix.ENOENT, _, _) -> None
-      | Unix.Unix_error (Unix.EINVAL, _, _) -> None
+      | Unix.Unix_error (EACCES, _, _) -> None
+      | Unix.Unix_error (ENOENT, _, _) -> None
+      | Unix.Unix_error (EINVAL, _, _) -> None
     in
     let slurp_file fn = slurp string_of_file fn in
     let slurp_link fn = slurp Unix.readlink fn in

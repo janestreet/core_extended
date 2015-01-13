@@ -29,7 +29,7 @@ module Access_control = struct
     type 'a t = ('a,immutable) any with sexp, bin_io
   end
   module Read_only = struct
-    type 'a t = ('a,read_only) any with sexp, bin_io
+    type 'a t = ('a,read) any with sexp, bin_io
   end
   module Read_write = struct
     type 'a t = ('a,read_write) any with sexp, bin_io

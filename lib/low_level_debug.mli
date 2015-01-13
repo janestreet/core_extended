@@ -63,3 +63,15 @@ val start_canary_thread :
   max_wait:Time.Span.t
   -> check_interval:Time.Span.t
   -> unit
+
+
+(** Obtain a sexp representation of any type. Note that this will likely infinite-loop and
+    overflow the stack for any value whose structure is circularly recursive. *)
+val obj_to_sexp: 'a -> Sexp.t
+
+(** Obtain a string representation of any type. Note that this will likely infinite-loop
+    and overflow the stack for any value whose structure is circularly recursive. *)
+val obj_to_string: 'a -> string
+
+
+

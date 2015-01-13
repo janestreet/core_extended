@@ -1,18 +1,18 @@
 open Core.Std
 
 module Extended_date = struct
-  let format ?(ofday=Time.Ofday.start_of_day) s t = 
-    Time.format (Time.of_local_date_ofday t ofday) s
+  let format ?(ofday=Time.Ofday.start_of_day) s t =
+    Time.format (Time.of_date_ofday t ofday ~zone:Time.Zone.local) s
 end
 
 module Extended_span = struct
   let to_string_hum (t : Time.Span.t) =
-    let sign_str = 
+    let sign_str =
       match Float.sign (t :> float) with
       | Float.Sign.Neg -> "-"
       | Float.Sign.Zero | Float.Sign.Pos -> ""
     in
-    let rest = 
+    let rest =
       match Float.classify (t :> float) with
       | Float.Class.Subnormal | Float.Class.Zero -> "0:00:00.000"
       | Float.Class.Infinite -> "inf"

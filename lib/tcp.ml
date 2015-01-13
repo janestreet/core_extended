@@ -11,7 +11,7 @@ let with_connection ?(timeout=(Time.Span.of_float 30.)) ~host ~port ~f () =
         try
           Unix.connect sd ~addr:(Unix.get_sockaddr host port)
         with
-        | Unix.Unix_error (Unix.EINPROGRESS, _, _) -> ()
+        | Unix.Unix_error (EINPROGRESS, _, _) -> ()
         | e -> raise e
       end;
       let sfds =

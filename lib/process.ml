@@ -4,8 +4,7 @@ module Sys  = Caml.Sys
 let rec temp_failure_retry f =
   try
     f ()
-  with Unix.Unix_error (Unix.EINTR, _, _) ->
-    temp_failure_retry f
+  with Unix.Unix_error (EINTR, _, _) -> temp_failure_retry f
 
 
 let close_non_intr fd =
@@ -177,7 +176,7 @@ let wait_for_exit ?(is_child=false) span pid =
            exists) *)
         Caml.Unix.kill pid 0; (* Non interuptible *)
         true
-      with Unix.Unix_error (Unix.ESRCH,_,_) -> false
+      with Unix.Unix_error (ESRCH,_,_) -> false
   in
   let rec loop () =
     if Time.(>) (Time.now ()) end_time then
@@ -203,7 +202,7 @@ let kill
     begin
       try
         Caml.Unix.kill Caml.Sys.sigkill pid
-      with Unix.Unix_error (Unix.ESRCH,_,_) -> ()
+      with Unix.Unix_error (ESRCH,_,_) -> ()
     end;
     if not (wait_for_exit wait_for pid) then begin
       failwithf "Process.kill failed to kill %i \
@@ -252,8 +251,7 @@ let process_io ~read ~write state =
                  state.in_fds <- List.filter ~f:((<>) fd) state.in_fds
                else
                  close_pooled state fd
-           with Unix.Unix_error (Unix.EPIPE,_,_) ->
-             close_pooled state fd));
+           with Unix.Unix_error (EPIPE, _, _) -> close_pooled state fd));
   List.iter read
     ~f:(fun fd ->
       let len =

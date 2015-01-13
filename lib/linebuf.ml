@@ -84,7 +84,7 @@ let create ?(pos = Pos_int.zero) ?(close_on_eof=false)
 let close lbuf =
   if not lbuf.closed then
     (try In_channel.close lbuf.file with
-    | Unix.Unix_error (Unix.EBADF,_, _) -> ());
+    | Unix.Unix_error (EBADF,_, _) -> ());
   lbuf.closed <- true
 
 let is_closed t = t.closed
@@ -120,7 +120,7 @@ let reopen_if_deleted lbuf =
     end else
       `Same_file
   with
-    Unix.Unix_error (Unix.ENOENT, _, _) -> `No_such_file
+    Unix.Unix_error (ENOENT, _, _) -> `No_such_file
   | exn -> `Error ("reopen_if_deleted: stat failed", exn)
 
 exception Null_found with sexp;;

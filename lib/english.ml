@@ -34,12 +34,13 @@ let failure which s =
 let add_years d i = Date.add_months d (12 * i)
 
 let parse_date dt =
+  let zone = Time.Zone.local in
   let dt' = String.lowercase dt in
   let failure () = failure `date dt in
   match dt' with
-  | "today" -> Date.today ()
-  | "yesterday" -> Date.add_days (Date.today ()) (-1)
-  | "tomorrow" -> Date.add_days (Date.today ()) 1
+  | "today" -> Date.today ~zone
+  | "yesterday" -> Date.add_days (Date.today ~zone) (-1)
+  | "tomorrow" -> Date.add_days (Date.today ~zone) 1
   | _ ->
     try
       Date.of_string dt
@@ -48,17 +49,17 @@ let parse_date dt =
       try
         match String.split_on_chars dt' ~on:[ ' '; '\t'; '\n'; '\r'; '_' ] with
         | [num; "days"]
-        | [num; "days";     "hence"] -> Date.add_days     (Date.today ()) (parse_int num)
+        | [num; "days";     "hence"] -> Date.add_days     (Date.today ~zone) (parse_int num)
         | [num; "weekdays"]
-        | [num; "weekdays"; "hence"] -> Date.add_weekdays (Date.today ()) (parse_int num)
+        | [num; "weekdays"; "hence"] -> Date.add_weekdays (Date.today ~zone) (parse_int num)
         | [num; "months"]
-        | [num; "months";   "hence"] -> Date.add_months   (Date.today ()) (parse_int num)
+        | [num; "months";   "hence"] -> Date.add_months   (Date.today ~zone) (parse_int num)
         | [num; "years"]
-        | [num; "years";    "hence"] -> add_years         (Date.today ()) (parse_int num)
-        | [num; "days";     "ago"] ->   Date.add_days     (Date.today ()) ( -(parse_int num))
-        | [num; "weekdays"; "ago"] ->   Date.add_weekdays (Date.today ()) ( -(parse_int num))
-        | [num; "months";   "ago"] ->   Date.add_months   (Date.today ()) ( -(parse_int num))
-        | [num; "years";    "ago"] ->   add_years         (Date.today ()) ( -(parse_int num))
+        | [num; "years";    "hence"] -> add_years         (Date.today ~zone) (parse_int num)
+        | [num; "days";     "ago"] ->   Date.add_days     (Date.today ~zone) ( -(parse_int num))
+        | [num; "weekdays"; "ago"] ->   Date.add_weekdays (Date.today ~zone) ( -(parse_int num))
+        | [num; "months";   "ago"] ->   Date.add_months   (Date.today ~zone) ( -(parse_int num))
+        | [num; "years";    "ago"] ->   add_years         (Date.today ~zone) ( -(parse_int num))
         | _ ->
           failure ()
       with
