@@ -3,7 +3,7 @@
 #ifdef JSC_LINUX_EXT
 
 #include <malloc.h>
-#include <ocaml_utils.h>
+#include "ocaml_utils.h"
 
 CAMLprim value malloc_mallinfo_stub(value __unused v_unit)
 {

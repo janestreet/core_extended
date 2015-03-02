@@ -10,7 +10,7 @@
 #include <sys/epoll.h>
 #include <sys/vfs.h>
 
-#include <ocaml_utils.h>
+#include "ocaml_utils.h"
 #include <unix_utils.h>
 
 /* resuid */

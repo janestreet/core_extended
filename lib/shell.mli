@@ -12,16 +12,21 @@ open Core.Std
    It comes with a list of arguments whose default value can be tweaked by
    set_defaults.
 
-   - [use_extra_path] : if we fail to find the command in the path then
-   we look for it [extra_path]
-   - [timeout] : the command will raise [Failed] if the program doesn't
-     do any IO for this period of time
-   - [working_dir] : run the command in this directory
-   - [verbose] : prints the output of the command
-   - [echo] : print out the command before running it
-   - [input] : a string to pipe through the program's standard in
-   - [export] : a list of variable to export in the environement of the
-   dispatched programm
+   - [use_extra_path] : if we fail to find the command in the path then we look for it
+                        [extra_path]
+   - [timeout]        : the command will raise [Failed] if the program doesn't
+                        do any IO for this period of time
+   - [working_dir]    : run the command in this directory
+   - [verbose]        : prints the output of the command
+   - [echo]           : print out the command before running it
+   - [input]          : a string to pipe through the program's standard in
+   - [export]         : a list of variable to export in the environement of the
+                        dispatched program
+   - [preserve_euid]  : pass the '-p' option to bash when running the command; this should
+                        disable the default bash behavior of replacing the effective user
+                        ID with the current value of the real user ID, useful in programs
+                        where privileges are escalated and de-escalated using seteuid(2)
+
 
   WARNING: the input argument to this function should not be used because
     it can deadlock if the input is too big (~160kb?)
@@ -206,11 +211,13 @@ module Process : sig
   val to_string        : t -> string
   val status_to_string : status -> string
 
-  val set_defaults :
-    ?timeout:Time.Span.t option ->
-    ?verbose:bool ->
-    ?echo:bool ->
-    unit -> unit
+  val set_defaults
+    :  ?timeout:Time.Span.t option
+    -> ?verbose:bool
+    -> ?echo:bool
+    -> ?preserve_euid:bool
+    -> unit
+    -> unit
 
   val format_failed : result -> string
 

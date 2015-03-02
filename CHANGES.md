@@ -1,3 +1,11 @@
+## 112.24.00
+
+- Added to `Shell.set_defaults` a `?preserve_euid:bool` argument, which causes
+  `Shell` to use `bash -p`.
+- Removed `Array.Access_control`, now that there is
+  `Core.Std.Array.Permissioned`.
+- Removed `Fast_int_div`.
+
 ## 112.17.00
 
 - Added functions to `Low_level_debug` to get a sexp or string

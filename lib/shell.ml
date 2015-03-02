@@ -58,12 +58,14 @@ module Process = struct
     let timeout = ref None
     let verbose = ref false
     let echo = ref false
+    let preserve_euid = ref false
   end
 
-  let set_defaults ?timeout ?verbose ?echo () =
+  let set_defaults ?timeout ?verbose ?echo ?preserve_euid () =
     Option.iter ~f:(fun v -> Defaults.verbose := v) verbose;
     Option.iter ~f:(fun v -> Defaults.timeout := v) timeout;
-    Option.iter ~f:(fun v -> Defaults.echo := v)    echo
+    Option.iter ~f:(fun v -> Defaults.echo := v) echo;
+    Option.iter ~f:(fun v -> Defaults.preserve_euid := v) preserve_euid
 
 
   let cmd program arguments = {
@@ -72,9 +74,10 @@ module Process = struct
   }
 
   let shell s =
+    let addtl_args = if !Defaults.preserve_euid then [ "-p" ] else [] in
     {
       program   = "/bin/bash";
-      arguments = [ "-c" ; s ]
+      arguments = addtl_args @ [ "-c" ; s ]
     }
 
   (* avoid asking for the password at all costs. *)
@@ -336,7 +339,7 @@ let test =
 let k_shell_command k f fmt =
   ksprintf (fun command -> k f (Process.shell command)) fmt
 
-let sh_gen reader=
+let sh_gen reader =
   Process.run_k (k_shell_command (fun f cmd -> f cmd reader))
 
 let sh       ?expect = sh_gen Process.discard ?expect

@@ -15,7 +15,7 @@
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
-#include <ocaml_utils.h>
+#include "ocaml_utils.h"
 
 static void signal_handler(int sig)
 {

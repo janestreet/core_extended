@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include <ocaml_utils.h>
+#include "ocaml_utils.h"
 
 
 /* Replacement for broken stat functions */
