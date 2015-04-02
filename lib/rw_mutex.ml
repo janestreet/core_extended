@@ -1,7 +1,7 @@
 (* This is a complete rewrite of David Mentré's Rw_mutex-module (part of
    his ocaml_thread_synchro-library):
 
-   Copyright 2004 Jane Street Capital (author: Markus Mottl)
+   Copyright 2004 Jane Street Group, LLC (author: Markus Mottl)
    Copyright 2001 David Mentré
 
    All rights reserved.  This file is distributed under the terms of
