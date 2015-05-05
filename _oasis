@@ -28,12 +28,12 @@ Flag "posix-timers"
   Default$:    flag(posix_timers_possible)
 
 PreConfCommand:  config/detect.sh
-PostConfCommand: config/discover.sh $ocamlc lib/config.mlh lib/config.h
+PostConfCommand: config/discover.sh $ocamlc src/config.mlh src/config.h
 
-PreDistCleanCommand: $rm lib/config.mlh lib/config.h
+PreDistCleanCommand: $rm src/config.mlh src/config.h
 
 Library core_extended
-  Path:               lib
+  Path:               src
   FindlibName:        core_extended
   Pack:               true
   Modules:            Alternating_primary_backup_assignment,
@@ -151,7 +151,7 @@ Library core_extended
                       posix_clock_stubs.c,
                       ocaml_utils.h,
                       config.h
-  CCOpt+:             -Ilib
+  CCOpt+:             -Isrc
   BuildDepends:       bigarray,
                       bin_prot,
                       bin_prot.syntax,
@@ -191,7 +191,7 @@ Library core_extended
                       threads
 
 Executable core_extended_hello
-  Path:               lib_test
+  Path:               test
   MainIs:             core_extended_hello.ml
   Build$:             flag(tests)
   Custom:             true
@@ -200,7 +200,7 @@ Executable core_extended_hello
   BuildDepends:       core_extended
 
 Executable core_hello
-  Path:               lib_test
+  Path:               test
   MainIs:             core_hello.ml
   Build$:             flag(tests)
   Custom:             true
@@ -209,7 +209,7 @@ Executable core_hello
   BuildDepends:       core,threads
 
 Executable test_runner
-  Path:               lib_test
+  Path:               test
   MainIs:             test_runner.ml
   Build$:             flag(tests)
   Custom:             true
@@ -220,5 +220,5 @@ Executable test_runner
 Test test_runner
   Run$:               flag(tests)
   Command:            $test_runner --core-hello $core_hello --core-extended-hello $core_extended_hello
-  WorkingDirectory:   lib_test
+  WorkingDirectory:   test
   TestTools:          core_hello,core_extended_hello

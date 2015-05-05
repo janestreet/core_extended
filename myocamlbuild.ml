@@ -3,13 +3,13 @@
 
 let dispatch = function
   | After_rules ->
-    dep  ["ocaml"; "ocamldep"; "mlh"] ["lib/config.mlh"];
+    dep  ["ocaml"; "ocamldep"; "mlh"] ["src/config.mlh"];
 
-    flag ["mlh"; "ocaml"; "ocamldep"] (S[A"-ppopt"; A"-Ilib/"]);
-    flag ["mlh"; "ocaml"; "compile"]  (S[A"-ppopt"; A"-Ilib/"]);
-    flag ["mlh"; "ocaml"; "doc"]      (S[A"-ppopt"; A"-Ilib/"]);
+    flag ["mlh"; "ocaml"; "ocamldep"] (S[A"-ppopt"; A"-Isrc/"]);
+    flag ["mlh"; "ocaml"; "compile"]  (S[A"-ppopt"; A"-Isrc/"]);
+    flag ["mlh"; "ocaml"; "doc"]      (S[A"-ppopt"; A"-Isrc/"]);
 
-    flag ["c"; "compile"] & S[A"-I"; A"lib"; A"-package"; A"core"; A"-thread"];
+    flag ["c"; "compile"] & S[A"-I"; A"src"; A"-package"; A"core"; A"-thread"];
 
     List.iter
       (fun tag ->
