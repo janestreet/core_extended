@@ -54,11 +54,7 @@ module Make_verified (Spec : Verified_spec) = struct
     | Ok () -> n
     | Error msg -> Sexplib.Conv.of_sexp_error (get_err_str msg n) sexp
 
-  include Bin_prot.Utils.Make_binable (struct
-    module Binable = struct
-      type t = Spec.t with bin_io
-    end
-
+  include Binable.Of_binable (Spec) (struct
     let to_binable n = n
     let of_binable = verify
 

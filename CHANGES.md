@@ -1,3 +1,18 @@
+## 112.35.00
+
+- Removed the `Stats_reporting` module.
+- Renamed `Quickcheck` module to `Quickcheck_deprecated`. It's replaced
+  by Janecheck, which for now is a separate library in the core_extended
+  package, but will soon be merged into core.
+- Moved the `Selector` module to its own library. This is for internal
+  reasons related for code review; it is included as a library within the
+  core_extended package for now, but may move to another home in the
+  future.
+- Added `Extended_unix.terminal_width : int Lazy.t`.
+- Added `Interval_map` module.
+- Added to `Sendmail.send` additional optional arguments:
+  `?message_id:string`, `?in_reply_to:string`.
+
 ## 112.24.00
 
 - Added to `Shell.set_defaults` a `?preserve_euid:bool` argument, which causes

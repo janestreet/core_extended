@@ -19,7 +19,7 @@ let with_connection ?(timeout=(Time.Span.of_float 30.)) ~host ~port ~f () =
           ~read:[]
           ~write:[sd]
           ~except:[sd]
-          ~timeout:(`After (Time.Span.to_float timeout))
+          ~timeout:(`After (Time_ns.Span.of_span timeout))
           ()
       in
       begin match sfds.Unix.Select_fds.except with

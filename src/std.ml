@@ -69,6 +69,7 @@ module Int64 = struct
   include Core.Std.Int64
   include Extended_int64
 end
+module Interval_map = Interval_map
 module Invocation = Invocation
 module Lazy_sequence = Lazy_sequence
 module Low_level_debug = Low_level_debug
@@ -156,6 +157,5 @@ end
 module Unix_utils = Unix_utils
 module Update_queue = Update_queue
 module Splay_tree = Splay_tree
-module Stats_reporting = Stats_reporting
 
 

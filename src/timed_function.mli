@@ -11,7 +11,8 @@ exception Timeout
     The function passed must not raise an exception not have any weird
     side effects.
 *)
-val run : timeout:float
+val run
+  :  timeout:Time.Span.t
   -> f:('a -> 'b)
   -> sexp_of:('b -> Sexp.t)
   -> of_sexp:(Sexp.t -> 'b)

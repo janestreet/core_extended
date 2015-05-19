@@ -57,6 +57,8 @@ let send
     ?(bcc=[])
     ?(reply_to=[])
     ?content_type
+    ?message_id
+    ?in_reply_to
     ~recipients
     body =
   let nl = match mta () with
@@ -76,6 +78,8 @@ let send
   list "Cc" cc;
   list "Bcc" bcc;
   list "Reply-to" reply_to;
+  option "Message-ID" message_id;
+  option "In-Reply-To" in_reply_to;
   Printf.bprintf buf "%s%s" nl body;
   let input = Buffer.contents buf in
   Shell.run ~input "/usr/sbin/sendmail" ["-t";"-oi"]

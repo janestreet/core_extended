@@ -412,3 +412,23 @@ module Mount_entry = struct
       else
         overlay map t)
 end
+
+let terminal_width =
+  lazy begin
+    try
+      (* When both stdout and stderr are not terminals, tput outputs 80 rather than the
+         number of columns, so we can't use [Process.run].  Instead, we use
+         [open_process_in] so that stderr is still the terminal.  But, we don't want
+         tput's error messages to be sent to stderr and seen by the user, so we first
+         run tput with no output to see if it succeeds, and only then do we run it with
+         stderr not redirected. *)
+      Exn.protectx (Core.Std.Unix.open_process_in
+                      "/usr/bin/tput cols &> /dev/null && /usr/bin/tput cols")
+        ~f:(fun in_channel ->
+          In_channel.input_line in_channel
+          |> Option.value_exn
+          |> Int.of_string)
+        ~finally:In_channel.close
+    with _ -> 90
+  end
+;;

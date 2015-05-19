@@ -284,7 +284,7 @@ let available_fds =
     let timeout =
       match timeout with
       | (`Immediately | `Never) as timeout -> timeout
-      | `After span -> `After (Time.Span.of_sec span)
+      | `After span -> `After span
     in
     let epoll_t =
       let fds = List.map ~f:Unix.File_descr.to_int (state.in_fds @ state.out_fds) in
@@ -361,7 +361,7 @@ let rec finish_reading state =
     finish_reading state
 
 let rec run_loop ~start_time ~timeout state =
-  let read,write = available_fds state ~timeout:(`After 0.1) in
+  let read,write = available_fds state ~timeout:(`After (Time_ns.Span.of_sec 0.1)) in
   begin
     try
       process_io state ~read ~write

@@ -5,3 +5,5 @@ _build/
 /*.docdir
 /*.native
 /*.byte
+src/config.h
+src/config.mlh

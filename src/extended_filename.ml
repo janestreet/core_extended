@@ -176,7 +176,7 @@ let basename_compare map f1 f2 =
 let filename_compare map v1 v2 =
   let v1 = explode v1
   and v2 = explode v2 in
-  List.compare ~cmp:(basename_compare map) v1 v2
+  List.compare (basename_compare map) v1 v2
 
 let parent p = normalize (concat p parent_dir_name)
 

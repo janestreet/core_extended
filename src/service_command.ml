@@ -16,7 +16,7 @@ end
 
 type t = (module T)
 
-let check_lock_file {lock_file; name=_; redirect_stdout=_; redirect_stderr=_ } =
+let check_lock_file { lock_file; name=_; redirect_stdout=_; redirect_stderr=_ } =
   if Lock_file.is_locked lock_file
   then `Running_with_pid (Pid.t_of_sexp (Sexp.load_sexp lock_file))
   else `Not_running
@@ -60,7 +60,7 @@ let start_daemon slot main ~foreground =
       eprintf "locking process not running.\n%!";
       eprintf "if safe, remove %s and try again.\n%!" slot.lock_file
     | `Running_with_pid pid ->
-      eprintf "locking process %d still running.\n%!" (Pid.to_int pid);
+      eprintf "locking process %d may still be running.\n%!" (Pid.to_int pid);
       eprintf "if desired, kill and try again.\n%!"
     end;
     exit 1

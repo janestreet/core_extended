@@ -117,7 +117,7 @@ let equal =
   loop
 ;;
 
-let rec compare ~cmp t1 t2 =
+let rec compare cmp t1 t2 =
   match t1 with
   | [] ->
     begin match t2 with
@@ -129,7 +129,7 @@ let rec compare ~cmp t1 t2 =
     | [] -> 1
     | y :: ys ->
       match cmp x y with
-      | 0 -> compare ~cmp xs ys
+      | 0 -> compare cmp xs ys
       | res -> res
     end
 ;;

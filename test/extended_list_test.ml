@@ -35,7 +35,7 @@ let test = "Extended_list" >::: [
     ("7" >:: fun () -> assert_equal     [0; 7] [0; 7]);
   ]);
   ("compare" >:::
-    let compare xs ys = L.compare ~cmp:Int.compare xs ys in
+    let compare xs ys = L.compare Int.compare xs ys in
     let assert_eq xs ys = assert (compare xs ys = 0) in
     let assert_lt xs ys = assert (compare xs ys < 0) in
     let assert_gt xs ys = assert (compare xs ys > 0) in

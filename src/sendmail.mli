@@ -1,4 +1,3 @@
-
 val send :
   ?sender:string
   -> ?subject:string
@@ -6,6 +5,8 @@ val send :
   -> ?bcc:string list
   -> ?reply_to:string list
   -> ?content_type:string
+  -> ?message_id:string
+  -> ?in_reply_to:string
   -> recipients:string list
   -> string
   -> unit

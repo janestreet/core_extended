@@ -7,10 +7,6 @@ open Core.Std
    in the sexp parsers exposed below, the following magic will be available:
    - constructors that take lists can be written as atoms for singletons
    - specific notes as detailed below
-
-   There is an extension to this exposed in Sqml that has an additional to_expr method for
-   converting these to SQL expressions.  It also has additional selectors for Sqml
-   specific types.
 *)
 
 module type Selector = sig

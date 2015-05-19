@@ -185,3 +185,5 @@ module Mount_entry : sig
 
   val visible_filesystem : t list -> t String.Map.t
 end
+
+val terminal_width : int Lazy.t

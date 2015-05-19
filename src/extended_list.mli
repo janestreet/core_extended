@@ -87,4 +87,4 @@ val square_unique : ?null:'v ->
   'k list * 'v list list
 
 val equal : equal:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-val compare : cmp:('a -> 'b -> int) -> 'a list -> 'b list -> int
+val compare : ('a -> 'b -> int) -> 'a list -> 'b list -> int

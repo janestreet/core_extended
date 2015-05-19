@@ -1,5 +1,5 @@
 open OUnit;;
-INCLUDE "../lib/config.mlh"
+INCLUDE "../../core/src/config.mlh"
 
 let all =
   let tests = [

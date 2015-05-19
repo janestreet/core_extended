@@ -1,6 +1,6 @@
 open Core_extended.Std
 open OUnit
-open Core_extended.Quickcheck
+open Core_extended.Quickcheck_deprecated
 
 let dup gen () = let x = gen () in x,x
 

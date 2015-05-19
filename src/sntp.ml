@@ -79,7 +79,7 @@ module Internal = struct
             ~read:[s]
             ~write:[]
             ~except:[]
-            ~timeout:(`After (TS.to_float timeout)) ()
+            ~timeout:(`After (Time_ns.Span.of_span timeout)) ()
         in
         match sfds.Unix.Select_fds.read with
         | [] -> None

@@ -75,15 +75,13 @@ module Make (B : Basic) = struct
     in
     loop 0 init
 
-  include (Bin_prot.Utils.Make_binable(struct
-    module Binable = struct type t = elt array with bin_io end
-
-    type t_ = t
-    type t  = t_
-
-    let to_binable = to_array
-    let of_binable = of_array
-  end) : Binable.S with type t := t)
+  include (Binable.Of_binable
+             (struct type t = elt array with bin_io end)
+             (struct
+               type nonrec t = t
+               let to_binable = to_array
+               let of_binable = of_array
+             end) : Binable.S with type t := t)
 
   let t_of_sexp sexp = of_array (<:of_sexp< elt array >> sexp)
   let sexp_of_t t = <:sexp_of< elt array >> (to_array t)
@@ -428,7 +426,7 @@ TEST_MODULE "int*float" = struct
 
   module Test = Test(struct
     type elt = int * float
-    include (Tuple.Comparable(Core_int)(Core_float) : Comparable.S with type t := elt)
+    include Tuple.Comparable(Core_int)(Core_float)
     module S = (T : S with type elt := elt)
     let test_list () = List.init 100 ~f:(fun i -> i, Core_float.of_int i)
   end)
@@ -552,11 +550,11 @@ end
 TEST_MODULE "packed array of packed arrays of strings" = struct
   module T = struct
     type elt = String.t
-    include (Comparable.Make(struct
+    include Comparable.Make(struct
       type t = String.t with sexp
       let compare a b =
-        List.compare (String.to_list a) (String.to_list b) ~cmp:Core_string.compare
-    end) : Comparable.S with type t := elt)
+        List.compare Core_string.compare (String.to_list a) (String.to_list b)
+    end)
     module S = Of_packed_array(String)
 
     let test_list () =
