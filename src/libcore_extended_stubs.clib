@@ -1,0 +1,11 @@
+# OASIS_START
+# DO NOT EDIT (digest: c5db530f05317d396eca7ab1db5c9d98)
+extended_int_stubs.o
+extended_linux_stubs.o
+extended_unix_stubs.o
+fork_exec.o
+linebuf_stubs.o
+low_level_debug_stubs.o
+malloc_stubs.o
+posix_clock_stubs.o
+# OASIS_STOP
