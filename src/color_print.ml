@@ -1,9 +1,17 @@
 open Core.Std
 
-
 let ansi_regexp = Memo.unit (fun () -> Re2.Std.Re2.create_exn "\027\\[.*?m")
+
+let ansi_capture_regexp = Memo.unit (fun () -> Re2.Std.Re2.create_exn "(\027\\[.*?m)")
+let normal_capture_regexp = Memo.unit (fun () -> Re2.Std.Re2.create_exn "(\027\\[0m)")
+
 let normal str =
   Re2.Std.Re2.rewrite_exn (ansi_regexp ()) ~template:"" str
+
+let add_after_ansi str ~code =
+  Re2.Std.Re2.rewrite_exn (ansi_capture_regexp ()) ~template:("\\1" ^ code) str
+let add_after_normal str ~code =
+  Re2.Std.Re2.rewrite_exn (normal_capture_regexp ()) ~template:("\\1" ^ code) str
 
 let ansi_code ~code = "\027[" ^ code ^ "m"
 
@@ -70,21 +78,26 @@ let color_code ~(color:color) =
   rgbint_code ~r ~g ~b
 
 
-let wrap str ~code = code ^ (normal str) ^ normal_code
+let wrap ?(override=false) str ~code =
+  code
+  ^ (if override
+     then add_after_ansi str ~code
+     else add_after_normal str ~code)
+  ^ normal_code
 
-let bold      str = wrap str ~code:bold_code
-let underline str = wrap str ~code:underline_code
-let red       str = wrap str ~code:red_code
-let green     str = wrap str ~code:green_code
-let yellow    str = wrap str ~code:yellow_code
-let blue      str = wrap str ~code:blue_code
-let magenta   str = wrap str ~code:magenta_code
-let cyan      str = wrap str ~code:cyan_code
-let inverse   str = wrap str ~code:inverse_code
+let bold      ?override str = wrap ?override str ~code:bold_code
+let underline ?override str = wrap ?override str ~code:underline_code
+let red       ?override str = wrap ?override str ~code:red_code
+let green     ?override str = wrap ?override str ~code:green_code
+let yellow    ?override str = wrap ?override str ~code:yellow_code
+let blue      ?override str = wrap ?override str ~code:blue_code
+let magenta   ?override str = wrap ?override str ~code:magenta_code
+let cyan      ?override str = wrap ?override str ~code:cyan_code
+let inverse   ?override str = wrap ?override str ~code:inverse_code
 
-let gray  str ~brightness = wrap str ~code:(gray_code ~brightness)
-let rgb   str ~r ~g ~b    = wrap str ~code:(rgb_code ~r ~g ~b)
-let color str ~color      = wrap str ~code:(color_code ~color)
+let gray  ?override str ~brightness = wrap ?override str ~code:(gray_code ~brightness)
+let rgb   ?override str ~r ~g ~b    = wrap ?override str ~code:(rgb_code ~r ~g ~b)
+let color ?override str ~color      = wrap ?override str ~code:(color_code ~color)
 
 (* Note that this always flushes after the terminating normal_code.
    This is probably not necessary, but it helps ensure that the code that turns
@@ -106,3 +119,20 @@ let cyanprintf      fmt = wrap_print ~code:cyan_code      fmt
 let grayprintf ~brightness fmt = wrap_print ~code:(gray_code ~brightness) fmt
 let rgbprintf ~r ~g ~b     fmt = wrap_print ~code:(rgb_code ~r ~g ~b)     fmt
 let colorprintf ~color     fmt = wrap_print ~code:(color_code ~color)     fmt
+
+let wrap_sprint ?override ~code fmt =
+  Printf.ksprintf (fun str -> wrap ?override str ~code) fmt
+
+let bold_sprintf      ?override fmt = wrap_sprint ?override ~code:bold_code      fmt
+let underline_sprintf ?override fmt = wrap_sprint ?override ~code:underline_code fmt
+let inverse_sprintf   ?override fmt = wrap_sprint ?override ~code:inverse_code   fmt
+let red_sprintf       ?override fmt = wrap_sprint ?override ~code:red_code       fmt
+let yellow_sprintf    ?override fmt = wrap_sprint ?override ~code:yellow_code    fmt
+let green_sprintf     ?override fmt = wrap_sprint ?override ~code:green_code     fmt
+let blue_sprintf      ?override fmt = wrap_sprint ?override ~code:blue_code      fmt
+let magenta_sprintf   ?override fmt = wrap_sprint ?override ~code:magenta_code   fmt
+let cyan_sprintf      ?override fmt = wrap_sprint ?override ~code:cyan_code      fmt
+
+let gray_sprintf ?override ~brightness fmt = wrap_sprint ?override ~code:(gray_code ~brightness) fmt
+let rgb_sprintf ?override ~r ~g ~b     fmt = wrap_sprint ?override ~code:(rgb_code ~r ~g ~b)     fmt
+let color_sprintf ?override ~color     fmt = wrap_sprint ?override ~code:(color_code ~color)     fmt

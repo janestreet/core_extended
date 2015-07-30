@@ -1,6 +1,3 @@
-(* rdouglass: this file used to be called search.ml.  However, search is one of those
-magic values that omake cares about, so using it as a file name causes dependency
-deadlock.  Feel free to come up with a better name than search_foo *)
 open Core.Std
 
 type comparison = int

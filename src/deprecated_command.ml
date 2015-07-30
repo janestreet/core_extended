@@ -1050,14 +1050,14 @@ type 'a with_run_flags
   -> t
   -> 'a
 
-let (run : unit with_run_flags)
+let run : unit with_run_flags = fun
     ?version ?build_info
     ?argv
     ?(allow_unknown_flags=false)
     ?(allow_underscores=true)
     ?(hash_bang_expand=false)
     ?post_parse
-    t =
+    t ->
   match t with
   | Core (c, _) -> Command.run ?version ?build_info ?argv c
   | Group _ as t ->

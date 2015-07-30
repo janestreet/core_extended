@@ -53,16 +53,6 @@ val summarize : Sexp.t -> sub_sexp:Sexp.t -> size:[ `depth of int | `string of i
 
 (** {3 Transforming sexp parsers} *)
 
-(* [filter_record t_of_sexp field_names] will return a new [t_of_sexp] function
-   which will take sexps representing records and ignore all fields not
-   mentioned in [field_names] (which can be given by [Fields.names]).
-
-   The motivation for this is to let config files (based on a record type) to
-   gain new fields and still work with old code. The old code will ignore the
-   new fields and still be able to parse the old config type from the new sexp.
-*)
-val filter_record : (Sexp.t -> 'a) -> string list -> (Sexp.t -> 'a)
-
 module Records_table : sig
   (* Given 2 types:
      type t1 = {

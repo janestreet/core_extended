@@ -1,3 +1,16 @@
+## 113.00.00
+
+- Added to `Interval_map` a more complete set of operations.
+
+- Removed `Core_extended.Sexp.filter_record`, which has been superseded by
+  `Core.Std.Sexp.of_sexp_allow_extra_fields`.
+
+- Added to `Interval_map` an `Interval` module, with the type of intervals used
+  in an interval map.
+
+- In `Color_print`, added `sprintf` functions, and changed formatting to
+  compose properly.
+
 ## 112.35.00
 
 - Removed the `Stats_reporting` module.

@@ -272,16 +272,13 @@ let is_empty t = not (exists t ~f:(fun _ -> true))
 
 let mem ?(equal = (=)) t elt = exists t ~f:(fun x -> equal x elt)
 
-let length t = fold t ~init:0 ~f:(fun acc _ -> acc + 1)
-
-let count t ~f = fold t ~init:0 ~f:(fun acc x -> if f x then acc + 1 else acc)
-let sum m t ~f = Container.fold_sum m fold t ~f
-let min_elt t ~cmp = Container.fold_min fold t ~cmp
-let max_elt t ~cmp = Container.fold_max fold t ~cmp
-
-let to_list t = List.rev (fold t ~init:[] ~f:(fun acc x -> x :: acc))
-
-let to_array t = Array.of_list (to_list t)
+let length t = Container.length ~fold t
+let count t ~f = Container.count ~fold t ~f
+let sum m t ~f = Container.sum m ~fold t ~f
+let min_elt t ~cmp = Container.min_elt ~fold t ~cmp
+let max_elt t ~cmp = Container.max_elt ~fold t ~cmp
+let to_list t = Container.to_list ~fold t
+let to_array t = Container.to_array ~fold t
 
 let force t = of_list (to_list t)
 

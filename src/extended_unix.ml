@@ -395,7 +395,7 @@ module Mount_entry = struct
     let overlay map t =
       let remove_prefix = add_slash (directory t) in
       let rec loop map =
-        match String.Map.next_key map remove_prefix with
+        match String.Map.closest_key map `Greater_than remove_prefix with
         | None ->
           map
         | Some (key, _) ->

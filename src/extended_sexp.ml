@@ -289,27 +289,6 @@ let summarize sexp ~sub_sexp ~size =
   | `depth d ->
       Summarize.summarize_sexp sexp sub_sexp d
 
-exception Filter_record_failed of Sexp.t * string list * exn with sexp
-exception Invalid_field of Sexp.t with sexp
-exception No_matching_fields with sexp
-exception Not_a_list_of_fields with sexp
-
-let filter_record_sexp sexp field_names =
-  let fail exn = raise (Of_sexp_error (exn, sexp)) in
-  match sexp with
-  | Sexp.List fields ->
-    let l =
-      List.filter fields ~f:(function
-        | Sexp.List (Sexp.Atom name :: _) -> List.mem field_names name
-        | field -> fail (Invalid_field field))
-    in
-    if List.is_empty l then
-      fail No_matching_fields
-    else
-      Sexp.List l
-  | _ -> fail Not_a_list_of_fields
-;;
-
 let of_generated_sexp of_sexp ~original_sexp ~generated_sexp =
   try of_sexp generated_sexp with
   | Of_sexp_error (exn, error_sexp) ->
@@ -320,13 +299,6 @@ let of_generated_sexp of_sexp ~original_sexp ~generated_sexp =
         error_sexp
     in
     raise (Of_sexp_error (exn, error_sexp))
-;;
-
-let filter_record t_of_sexp names =
-  fun sexp ->
-    of_generated_sexp t_of_sexp
-      ~original_sexp:sexp
-      ~generated_sexp:(filter_record_sexp sexp names)
 ;;
 
 module Make_explicit_sexp_option (T: sig

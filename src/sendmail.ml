@@ -59,6 +59,7 @@ let send
     ?content_type
     ?message_id
     ?in_reply_to
+    ?auto_generated
     ~recipients
     body =
   let nl = match mta () with
@@ -66,10 +67,17 @@ let send
     | Ssmtp -> "\n" (* ssmtp really is a piece of junk... *)
   in
   let buf = Buffer.create (String.length body * 2) in
-  let option key = Option.iter ~f:(fun v -> header key v buf nl)
-  and list key = function
+  let option key = Option.iter ~f:(fun v -> header key v buf nl) in
+  let list key = function
     | [] -> ()
     | l -> header key (String.concat ~sep:("," ^ nl ^ "   ") l) buf nl
+  in
+  (* Both the [Auto-Submitted] and [Precedence] headers are used to indicate an
+     auto-generated email. To improve the odds of working with an unknown mail server,
+     send both headers. *)
+  let auto_generated_headers () =
+    header "Auto-Submitted" "auto-generated" buf nl;
+    header "Precedence" "bulk" buf nl
   in
   option "From" sender;
   list "To" recipients;
@@ -80,6 +88,7 @@ let send
   list "Reply-to" reply_to;
   option "Message-ID" message_id;
   option "In-Reply-To" in_reply_to;
+  Option.iter auto_generated ~f:auto_generated_headers;
   Printf.bprintf buf "%s%s" nl body;
   let input = Buffer.contents buf in
   Shell.run ~input "/usr/sbin/sendmail" ["-t";"-oi"]

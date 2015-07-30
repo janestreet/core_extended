@@ -20,8 +20,8 @@ val import_from_sys : ?default:string -> key:string -> t -> t
    [ add_to_path ~where:`Back [("PATH", "/bin:/usr/bin")] "PATH" "/usr/local/bin"
    = [("PATH", "/bin:/usr/bin:/usr/local/bin")] ]
 
-   [ add_to_path ~where:`Front [("PATH", "/bin:/usr/bin")] "PATH" "/home/rprije/bin"
-   = [("PATH", "/home/rprije/bin:/bin:/usr/bin")] ] *)
+   [ add_to_path ~where:`Front [("PATH", "/bin:/usr/bin")] "PATH" "/home/foo/bin"
+   = [("PATH", "/home/foo/bin:/bin:/usr/bin")] ] *)
 val append_to_path : ?where:[`Front|`Back] -> key:string -> data:string -> t -> t
 
 (* Converts the Env.t into a value suitable for passing to Unix.exec and friends *)
