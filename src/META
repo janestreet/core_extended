@@ -1,0 +1,23 @@
+# OASIS_START
+# DO NOT EDIT (digest: 90daab87fb8e81f1bc8dad28e512a001)
+version = "113.00.00"
+description = "Jane Street Capital's standard library overlay"
+requires =
+"bigarray bin_prot core custom_printf fieldslib oUnit pa_bench pa_ounit pa_test re2 sexplib sexplib_num textutils threads unix "
+archive(byte) = "core_extended.cma"
+archive(byte, plugin) = "core_extended.cma"
+archive(native) = "core_extended.cmxa"
+archive(native, plugin) = "core_extended.cmxs"
+exists_if = "core_extended.cma"
+package "selector" (
+ version = "113.00.00"
+ description = "Jane Street Capital's standard library overlay"
+ requires = "bin_prot core re2 sexplib threads"
+ archive(byte) = "selector_lib.cma"
+ archive(byte, plugin) = "selector_lib.cma"
+ archive(native) = "selector_lib.cmxa"
+ archive(native, plugin) = "selector_lib.cmxs"
+ exists_if = "selector_lib.cma"
+)
+# OASIS_STOP
+
