@@ -5,20 +5,20 @@
 open Core.Std
 
 module type Key = sig
-  type t with sexp, bin_io
+  type t [@@deriving sexp, bin_io]
   include Comparable.S with type t := t
   module Packed_array : Packed_array.S with type elt := t
 end
 
 module type Value = sig
-  type t with sexp, bin_io
+  type t [@@deriving sexp, bin_io]
   module Packed_array : Packed_array.S with type elt := t
 end
 
 module type S = sig
-  type t     with sexp, bin_io
-  type key   with sexp, bin_io
-  type value with sexp, bin_io
+  type t     [@@deriving sexp, bin_io]
+  type key   [@@deriving sexp, bin_io]
+  type value [@@deriving sexp, bin_io]
 
   val empty            : t
 
@@ -28,10 +28,10 @@ module type S = sig
   val of_sorted_aarray : (key * value) array -> t
   val of_hashtbl       : (key, value) Hashtbl.t -> t
 
-  val find : t -> key -> value option
-  val mem  : t -> key -> bool
-  val iter : t -> f:(key:key -> data:value -> unit) -> unit
-  val fold : t -> init:'acc -> f:(key:key -> data:value -> 'acc -> 'acc) -> 'acc
+  val find  : t -> key -> value option
+  val mem   : t -> key -> bool
+  val iteri : t -> f:(key:key -> data:value -> unit) -> unit
+  val fold  : t -> init:'acc -> f:(key:key -> data:value -> 'acc -> 'acc) -> 'acc
 end
 
 module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t

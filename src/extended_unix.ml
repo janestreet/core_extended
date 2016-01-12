@@ -110,7 +110,7 @@ external setreuid : uid:int -> euid:int -> unit = "extended_ml_setreuid"
 external htonl : Int32.t -> Int32.t = "extended_ml_htonl"
 external ntohl : Int32.t -> Int32.t = "extended_ml_ntohl"
 
-TEST =
+let%test _ =
   htonl (ntohl 0xdeadbeefl) = 0xdeadbeefl
 
 type statvfs = {
@@ -125,7 +125,7 @@ type statvfs = {
   fsid: int;                            (** file system ID *)
   flag: int;                            (** mount flags *)
   namemax: int;                         (** maximum filename length *)
-} with sexp, bin_io
+} [@@deriving sexp, bin_io]
 
 (** get file system statistics *)
 external statvfs : string -> statvfs = "statvfs_stub"
@@ -164,7 +164,7 @@ end
 external strptime : fmt:string -> string -> Unix.tm = "unix_strptime"
 
 module Inet_port = struct
-  type t = int with sexp
+  type t = int [@@deriving sexp]
 
   let of_int_exn x =
     if x > 0 && x < 65536 then
@@ -199,16 +199,16 @@ module Inet_port = struct
   let _flag = Command.Spec.Arg_type.create of_string_exn
 end
 
-TEST = Inet_port.of_string "88" = Some 88
-TEST = Inet_port.of_string "2378472398572" = None
-TEST = Inet_port.of_int 88 = Some 88
-TEST = Inet_port.of_int 872342 = None
+let%test _ = Inet_port.of_string "88" = Some 88
+let%test _ = Inet_port.of_string "2378472398572" = None
+let%test _ = Inet_port.of_int 88 = Some 88
+let%test _ = Inet_port.of_int 872342 = None
 
 module Mac_address = struct
   (* An efficient internal representation would be something like a 6 byte array,
      but let's use a hex string to get this off the ground. *)
   module T = struct
-    type t = string with sexp, bin_io, compare
+    type t = string [@@deriving sexp, bin_io, compare]
     let ( = ) = String.( = )
     let equal = ( = )
     let rex = Re2.Std.Re2.create_exn "[^a-f0-9]"
@@ -249,16 +249,16 @@ module Mac_address = struct
   include Hashable.Make(T)
 end
 
-TEST = Mac_address.to_string (Mac_address.of_string "00:1d:09:68:82:0f") = "00:1d:09:68:82:0f"
-TEST = Mac_address.to_string (Mac_address.of_string "00-1d-09-68-82-0f") = "00:1d:09:68:82:0f"
-TEST = Mac_address.to_string (Mac_address.of_string "001d.0968.820f") = "00:1d:09:68:82:0f"
-TEST = Mac_address.to_string_cisco (Mac_address.of_string "00-1d-09-68-82-0f") = "001d.0968.820f"
+let%test _ = Mac_address.to_string (Mac_address.of_string "00:1d:09:68:82:0f") = "00:1d:09:68:82:0f"
+let%test _ = Mac_address.to_string (Mac_address.of_string "00-1d-09-68-82-0f") = "00:1d:09:68:82:0f"
+let%test _ = Mac_address.to_string (Mac_address.of_string "001d.0968.820f") = "00:1d:09:68:82:0f"
+let%test _ = Mac_address.to_string_cisco (Mac_address.of_string "00-1d-09-68-82-0f") = "001d.0968.820f"
 
 
 module Quota = struct
 
-  type bytes  = Int63.t with sexp
-  type inodes = Int63.t with sexp
+  type bytes  = Int63.t [@@deriving sexp]
+  type inodes = Int63.t [@@deriving sexp]
 
   let bytes  x = x
   let inodes x = x
@@ -267,7 +267,7 @@ module Quota = struct
     soft  : 'units sexp_option;
     hard  : 'units sexp_option;
     grace : Time.t sexp_option;
-  } with sexp
+  } [@@deriving sexp]
 
   type 'units usage = private 'units
 
@@ -333,7 +333,7 @@ module Mount_entry = struct
     options    : string;
     dump_freq  : int sexp_option;
     fsck_pass  : int sexp_option;
-  } with sexp, fields
+  } [@@deriving sexp, fields]
 
   let escape_seqs = [ "040", " " ;
                       "011", "\t";

@@ -86,10 +86,10 @@ end
    [()] and [("foo")] respectively, so that you can switch to regular options more easily.
 *)
 module Make_explicit_sexp_option (T: sig
-  type t with sexp
+  type t [@@deriving sexp]
   val explicit_sexp_option_fields : string list
 end) : sig
-  type t = T.t with sexp
+  type t = T.t [@@deriving sexp]
 end
 
 val load_sexp_conv_exn_sample :
@@ -135,5 +135,5 @@ val load_sexp_conv_exn_sample :
    have a list and you want bash expansion/compression.
 *)
 module Comprehension : sig
-  type 'a t = 'a list with sexp
+  type 'a t = 'a list [@@deriving sexp]
 end

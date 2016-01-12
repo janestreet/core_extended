@@ -1,11 +1,5 @@
 open Core.Std;;
 
-let home () =
-  match Sys.getenv "HOME" with
-  | None ->
-    (Unix.Passwd.getbyuid_exn (Unix.geteuid ())).Unix.Passwd.dir
-  | Some home -> home
-
 let groups = Memo.unit
     (fun () ->
        Unix.getgroups ()

@@ -17,13 +17,13 @@ module Raw = struct
     | Union of ('base, 'set) t * ('base, 'set) t
     | Inter of ('base, 'set) t * ('base, 'set) t
     | Diff  of ('base, 'set) t * ('base, 'set) t
-  with bin_io, compare
+  [@@deriving bin_io, compare]
 
 end
 
 open Raw
 
-type ('base, 'elt, 'cmp) t = ('base, ('elt, 'cmp) Set.t) Raw.t with compare
+type ('base, 'elt, 'cmp) t = ('base, ('elt, 'cmp) Set.t) Raw.t [@@deriving compare]
 
 (****************************************
    Constructors
@@ -330,7 +330,7 @@ module Make (Elt : Comparable.S) = struct
 
   module Set = Elt.Set
 
-  type 'base t = ('base, Set.t) Raw.t with compare
+  type 'base t = ('base, Set.t) Raw.t [@@deriving compare]
 
   let base = base
   let set = set
@@ -368,7 +368,7 @@ module Make_binable (Elt : Comparable.S_binable) = struct
 
   module Set = Elt.Set
 
-  type 'base t = ('base, Set.t) Raw.t with bin_io, compare
+  type 'base t = ('base, Set.t) Raw.t [@@deriving bin_io, compare]
 
   let base = base
   let set = set
@@ -402,7 +402,7 @@ module Make_binable (Elt : Comparable.S_binable) = struct
 
 end
 
-TEST_MODULE "set lang" = struct
+let%test_module "set lang" = (module struct
 
   module Set = Char.Set
   module Slang = Make(Char)
@@ -486,9 +486,9 @@ TEST_MODULE "set lang" = struct
     test "specialize" (0 = Set.compare set (eval_slang (specialize_slang slang)));
     test "sexp" (0 = compare_slang slang (slang_of_sexp sexp))
 
-  TEST_UNIT =
-    for _i = 1 to 50 * 1000 do
+  let%test_unit _ =
+    for _ = 1 to 50 * 1000 do
       let s,l = set_and_slang() in test s l
-    done;
+    done
 
-end
+end)

@@ -78,7 +78,7 @@ module type S = sig
   module Raw : sig type ('base, 'set) t end
   module Set : Set.S
 
-  type 'base t = ('base, Set.t) Raw.t with compare, sexp
+  type 'base t = ('base, Set.t) Raw.t [@@deriving compare, sexp]
 
   include S_lang
     with type 'base t := 'base t
@@ -97,7 +97,7 @@ module type S_binable = sig
   module Raw : sig type ('base, 'set) t end
   module Set : Set.S_binable
 
-  type 'base t = ('base, Set.t) Raw.t with compare, sexp, bin_io
+  type 'base t = ('base, Set.t) Raw.t [@@deriving compare, sexp, bin_io]
 
   include S_lang
     with type 'base t := 'base t

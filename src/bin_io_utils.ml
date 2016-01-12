@@ -208,21 +208,21 @@ module Serialized = struct
   let bin_size_t _ = bin_size_t
   let bin_write_t _ = bin_write_t
 
-  TEST_MODULE = struct
+  let%test_module _ = (module struct
     module Make_test (B : sig
-                   type t with bin_io, sexp_of, compare
+                   type t [@@deriving bin_io, sexp_of, compare]
                    val values_and_sizes : (t * int) list
                  end) =
     struct
       module Serialized_t = Make (B)
 
-      TEST_UNIT "roundtrip" =
+      let%test_unit "roundtrip" =
         List.iter B.values_and_sizes ~f:(fun (value, _size) ->
           let t = Serialized_t.create value in
-          <:test_result<B.t>> ~expect:value (Serialized_t.value t))
+          [%test_result: B.t] ~expect:value (Serialized_t.value t))
       ;;
 
-      TEST_UNIT "serialized writer matches writer" =
+      let%test_unit "serialized writer matches writer" =
         List.iter B.values_and_sizes ~f:(fun (value, _size) ->
           let t = Serialized_t.create value in
           let expect =
@@ -233,20 +233,20 @@ module Serialized = struct
             Bin_prot.Utils.bin_dump Serialized_t.bin_writer_t t
             |> Bigstring.to_string
           in
-          <:test_result<string>> ~expect buffer)
+          [%test_result: string] ~expect buffer)
       ;;
 
-      TEST_UNIT "serialized reader matches reader" =
+      let%test_unit "serialized reader matches reader" =
         List.iter B.values_and_sizes ~f:(fun (value, _size) ->
           let buffer = Bin_prot.Utils.bin_dump B.bin_writer_t value in
           let t = Serialized_t.bin_read_t buffer ~pos_ref:(ref 0) in
-          <:test_result<B.t>> ~expect:value (Serialized_t.value t))
+          [%test_result: B.t] ~expect:value (Serialized_t.value t))
       ;;
 
-      TEST_UNIT "bin_size_t" =
+      let%test_unit "bin_size_t" =
         List.iter B.values_and_sizes ~f:(fun (value, size) ->
           let t = Serialized_t.create value in
-          <:test_result<B.t * int>>
+          [%test_result: B.t * int]
             ~expect:(value, size)
             (value, (Serialized_t.bin_size_t t)))
     end
@@ -271,7 +271,7 @@ module Serialized = struct
     end)
 
     module Variant = struct
-      type t = | A of int | B of string | C with sexp, bin_io, compare
+      type t = | A of int | B of string | C [@@deriving sexp, bin_io, compare]
     end
 
     module Test_variant = Make_test (struct
@@ -288,7 +288,7 @@ module Serialized = struct
       type t =
         { name : string
         ; age : int
-        } with sexp, bin_io, compare
+        } [@@deriving sexp, bin_io, compare]
     end
 
     module Test_record = Make_test (struct
@@ -299,7 +299,7 @@ module Serialized = struct
     end)
 
     module Polymorphic_variant = struct
-      type t = [ `A of int | `B of string | `C ] with sexp, bin_io, compare
+      type t = [ `A of int | `B of string | `C ] [@@deriving sexp, bin_io, compare]
     end
 
     module Test_polymorphic_variant = Make_test (struct
@@ -311,5 +311,5 @@ module Serialized = struct
         ; `C, 4
         ]
     end)
-  end
+  end)
 end

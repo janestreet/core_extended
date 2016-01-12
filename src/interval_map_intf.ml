@@ -25,43 +25,20 @@ open Core_kernel.Std
 
 module type Key = Core_kernel.Core_map_intf.Key
 
-(* Something which has a map type. This is used when constructing Interval_map types so
-   that the structures used are compatible with normal maps for that key type.
-
-   The map part should be a subset of that generated with [Map.Make] or [Comparable.Make],
-   so you should be able to satisfy this signature with many existing modules
-   e.g. [String] or [Date], and also do e.g.
-
-       Interval_map.Make(struct
-         module T = struct
-           type t = ... with compare, sexp
-         end
-         include T
-         module Map = Map.Make(T)
-         (* OR include Comparable.Make(T) *)
-       end)
-*)
-module type Type_with_map_module = sig
-  type t with sexp, compare
-
-  module Map : sig
-    module Key : Comparator.S with type t = t
-
-    type +'a t = (Key.t, 'a, Key.comparator_witness) Map.t
-    with compare, sexp
-  end
-end
-
+(** A simple representation of a contiguous interval in some type. *)
 module Interval : sig
-  (** Represents a single interval across a key type. *)
+  (** An interval on a key type which can be open (extend to ±infinity) at either end. *)
   type 'k t =
     [ `Always
     | `From of 'k
     | `Until of 'k
     | `Between of 'k * 'k ]
-  with sexp
+  [@@deriving sexp]
 
+  (** Identify whether an interval is empty. *)
   val is_empty : 'k t -> cmp:('k -> 'k -> int) -> bool
+
+  (** Check whether an interval contains a specific key. *)
   val contains : 'k t -> cmp:('k -> 'k -> int) -> 'k -> bool
 end = struct
   type 'k t =
@@ -69,7 +46,7 @@ end = struct
     | `From of 'k
     | `Until of 'k
     | `Between of 'k * 'k ]
-  with sexp
+  [@@deriving sexp]
 
   let is_empty t ~cmp =
     match t with
@@ -85,68 +62,8 @@ end = struct
       (cmp k min >= 0) && (cmp k max < 0)
 end
 
-(** A standard incarnation of an interval map for some key type.
-
-    The majority of the operations are further defined/explained in
-    the main module type {!M}.
-*)
-module type S = sig
-  type ('k, +'v, 'cmp) interval_map
-
-  module Key : Comparator.S
-  module Interval : sig
-    type t = Key.t Interval.t
-
-    val is_empty : t -> bool
-    val contains : t -> Key.t -> bool
-  end
-
-  type +'a t = (Key.t, 'a, Key.comparator_witness) interval_map
-  with sexp, compare
-
-  val create
-    : left_of_leftmost:'a
-    -> value_right_of:(Key.t, 'a, Key.comparator_witness) Map.t
-    -> 'a t
-
-  val always : 'a -> 'a t
-
-  (* For these operations, see {!M}. *)
-  val find : 'v t -> Key.t -> 'v
-  val change : 'v t -> at:Key.t -> 'v -> 'v t
-  val map : 'a t -> f:('a -> 'b) -> 'b t
-  val map2 : 'a t -> 'b t -> f:('a -> 'b -> 'c) -> 'c t
-  val remove_changes_within : 'v t -> Interval.t -> 'v t
-  val set_within : 'v t -> Interval.t -> 'v -> 'v t
-  val map_within : 'v t -> Interval.t -> f:('v -> 'v) -> 'v t
-  val construct_preimage : 'v t -> ('v * Interval.t) Sequence.t
-end
-
-(** An incarnation of an interval map where the key type has been wrapped
-    with [Left_boundary.t].
-
-    The majority of the operations are further defined/explained in
-    the main module type {!M}.
-*)
-module type S_with_boundary = sig
-  type key
-
-  module Left_boundary : sig
-    type t = key Left_boundary.t with sexp, compare
-    include Comparable.S with type t := t
-  end
-
-  include S with type Key.t = Left_boundary.t
-
-  (** Finding the value for an unwrapped key in an interval map based on wrapped keys
-      means searching for the value at the point [Inclusive k], because the point
-      [Exclusive k] should not apply for keys equal to [k]. This can be very confusing,
-      so [find' k] does this automatically.
-  *)
-  val find' : 'a t -> key -> 'a
-end
-
-module type M = sig
+(** The core operations of interval maps. *)
+module type Operations = sig
   type ('k, +'v, 'cmp) t
 
   (** Note on complexities: As the mappings are for ranges, where complexities are
@@ -156,6 +73,8 @@ module type M = sig
 
   (** Comparison works lexicographically pointwise across the whole sequence
       (from -infty to +infty).
+
+      This means that [x = y ⇔ (∀k. find x k = find y k)].
 
       Complexity is O(n + m).
 
@@ -186,7 +105,19 @@ module type M = sig
   (** Create a sequence with a specified far-leftmost value, and sequence of
       change points.
 
-      O(1).
+      Complexity is O(1), as the primary cost is in construction of the
+      map which is passed into this function.
+
+      e.g. suppose that
+      [let x = create ~left_of_leftmost:"A"
+                 ~value_right_of:Int.Map.of_alist_exn [
+                   0, "B"; 2, "C"; 4, "D"; ]]
+
+      Then [x] will be an interval map such that:
+      [∀      k < 0. find x k = "A"]
+      [∀ 0 <= k < 2. find x k = "B"]
+      [∀ 2 <= k < 4. find x k = "C"]
+      [∀ 4 <= k    . find x k = "D"]
   *)
   val create
     : left_of_leftmost:'v
@@ -195,6 +126,8 @@ module type M = sig
 
   (** Create a sequence which has a single constant value across the whole
       sequence of keys.
+
+      [find (always ~comparator x) k = x]
 
       O(1).
   *)
@@ -223,17 +156,29 @@ module type M = sig
 
   (** Apply a function to all values within the sequence.
 
+      [find (map x ~f) k = f (find x k)]
+
       O(n).
   *)
   val map : ('k, 'a, 'cmp) t -> f:('a -> 'b) -> ('k, 'b, 'cmp) t
 
-  (** Create a sequence whose value at all points is taken by applying
-      a function to the values of two other sequences at that point.
+  (** Apply a function to values from two sequences.
+
+      [find (map2 x y ~f) = f (find x k) (find y k)]
 
       O(n + m).
   *)
   val map2 : ('k, 'a, 'cmp) t -> ('k, 'b, 'cmp) t
     -> f:('a -> 'b -> 'c) -> ('k, 'c, 'cmp) t
+
+  (** Flatten a sequence of sequences.
+
+      [find (flatten x) k = find (find x k) k]
+
+      O(sum(k)) where k is the size/number of changes of each inner
+      sequence, of which there will be n.
+  *)
+  val join : ('k, ('k, 'v, 'cmp) t, 'cmp) t -> ('k, 'v, 'cmp) t
 
   (** [remove_changes_within t interval] removes any change points within
       the specified interval.
@@ -253,6 +198,9 @@ module type M = sig
   (** [set_within t interval v] modifies the sequence so that all values
       within the specified interval are [v], and values outside the interval
       are not modified.
+
+      [find (set_within t interval x) k =
+        (if Interval.contains interval k then x else find t k)]
 
       Complexity is O(log(n) + n'), where n' is the number of change points
       within the specified interval (not the whole sequence).
@@ -293,6 +241,101 @@ module type M = sig
   val construct_preimage
     : ('k, 'v, 'cmp) t
     -> ('v * 'k Interval.t) Sequence.t
+end
+
+(* Something which has a map type. This is used when constructing Interval_map types so
+   that the structures used are compatible with normal maps for that key type.
+
+   The map part should be a subset of that generated with [Map.Make] or [Comparable.Make],
+   so you should be able to satisfy this signature with many existing modules
+   e.g. [String] or [Date], and also do e.g.
+
+       Interval_map.Make(struct
+         module T = struct
+           type t = ... with compare, sexp
+         end
+         include T
+         module Map = Map.Make(T)
+         (* OR include Comparable.Make(T) *)
+       end)
+*)
+module type Type_with_map_module = sig
+  type t [@@deriving sexp, compare]
+
+  module Map : sig
+    module Key : Comparator.S with type t = t
+
+    type +'a t = (Key.t, 'a, Key.comparator_witness) Map.t
+    [@@deriving compare, sexp]
+  end
+end
+
+(** A standard incarnation of an interval map for some key type.
+
+    The majority of the operations are commented in {!Operations}.
+*)
+module type S = sig
+  type ('k, +'v, 'cmp) interval_map
+
+  module Key : Comparator.S
+  module Interval : sig
+    type t = Key.t Interval.t
+
+    val is_empty : t -> bool
+    val contains : t -> Key.t -> bool
+  end
+
+  type +'a t = (Key.t, 'a, Key.comparator_witness) interval_map
+  [@@deriving sexp, compare]
+
+  include Applicative.S with type 'a t := 'a t
+  include Monad.S with type 'a t := 'a t
+
+  val create
+    : left_of_leftmost:'a
+    -> value_right_of:(Key.t, 'a, Key.comparator_witness) Map.t
+    -> 'a t
+
+  val always : 'a -> 'a t
+
+  (** All values of type unit t are equal. *)
+  val unit : unit t
+
+  (* functions from {!Operations} adapted to this specific key type. *)
+  val find : 'v t -> Key.t -> 'v
+  val change : 'v t -> at:Key.t -> 'v -> 'v t
+  val map2 : 'a t -> 'b t -> f:('a -> 'b -> 'c) -> 'c t
+  val remove_changes_within : 'v t -> Interval.t -> 'v t
+  val set_within : 'v t -> Interval.t -> 'v -> 'v t
+  val map_within : 'v t -> Interval.t -> f:('v -> 'v) -> 'v t
+  val construct_preimage : 'v t -> ('v * Interval.t) Sequence.t
+end
+
+(** An incarnation of an interval map where the key type has been wrapped
+    with [Left_boundary.t].
+
+    The majority of the operations are further defined/explained in {!Operations}.
+*)
+module type S_with_boundary = sig
+  type key
+
+  module Left_boundary : sig
+    type t = key Left_boundary.t [@@deriving sexp, compare]
+    include Comparable.S with type t := t
+  end
+
+  include S with type Key.t = Left_boundary.t
+
+  (** Finding the value for an unwrapped key in an interval map based on wrapped keys
+      means searching for the value at the point [Inclusive k], because the point
+      [Exclusive k] should not apply for keys equal to [k]. This can be very confusing,
+      so [find' k] does this automatically.
+  *)
+  val find' : 'a t -> key -> 'a
+end
+
+module type M = sig
+  include Operations
 
   (* [Make] creates an interval map which directly uses some key type.
 

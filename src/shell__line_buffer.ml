@@ -10,10 +10,10 @@ let rec nl_between (s:string) ~(eol:char) ~(pos:int) ~(len:int) : int option =
   else nl_between s ~eol ~pos:(pos + 1) ~len:(len - 1)
 
 
-TEST = nl_between "abcd" ~eol:'\n' ~pos:0 ~len:4 = None
-TEST = nl_between "a\nb\ncd" ~eol:'\n' ~pos:0 ~len:6 = Some 1
-TEST = nl_between "a\nb\ncd" ~eol:'\n' ~pos:3 ~len:3 = Some 3
-TEST = nl_between "a\nb\ncd" ~eol:'\n' ~pos:4 ~len:2 = None
+let%test _ = nl_between "abcd" ~eol:'\n' ~pos:0 ~len:4 = None
+let%test _ = nl_between "a\nb\ncd" ~eol:'\n' ~pos:0 ~len:6 = Some 1
+let%test _ = nl_between "a\nb\ncd" ~eol:'\n' ~pos:3 ~len:3 = Some 3
+let%test _ = nl_between "a\nb\ncd" ~eol:'\n' ~pos:4 ~len:2 = None
 
 (**
    Type for line buffers.
@@ -78,7 +78,7 @@ let test_list l =
   flush b;
   List.rev !lines
 
-TEST = test_list ["abcd\nas\nere\n"] = ["abcd";"as";"ere"]
-TEST = test_list ["ab";"cd";"\nas\n";"ere\n"] = ["abcd";"as";"ere"]
-TEST = test_list ["no new\nline";" at the end"] = ["no new";"line at the end"]
-TEST = test_list ["a new line";" at the end\n"] = ["a new line at the end"]
+let%test _ = test_list ["abcd\nas\nere\n"] = ["abcd";"as";"ere"]
+let%test _ = test_list ["ab";"cd";"\nas\n";"ere\n"] = ["abcd";"as";"ere"]
+let%test _ = test_list ["no new\nline";" at the end"] = ["no new";"line at the end"]
+let%test _ = test_list ["a new line";" at the end\n"] = ["a new line at the end"]

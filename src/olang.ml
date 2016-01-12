@@ -8,7 +8,7 @@ type 'a t = [
   | `EQ of 'a * 'a
   | `NE of 'a * 'a
   | `One_of of 'a * 'a list
-] with bin_io, sexp, compare
+] [@@deriving bin_io, sexp, compare]
 
 let t_of_sexp a_of_sexp sexp =
   let open Sexplib.Type in
@@ -47,10 +47,10 @@ include struct
     | `One_of (x, ys) -> List.mem ys x ~equal:(fun x y -> compare x y = 0)
 end
 
-TEST_MODULE = struct
+let%test_module _ = (module struct
 
   module Term0 = struct
-    type t = [ `C of float | `V of string ] with sexp, bin_io, compare
+    type t = [ `C of float | `V of string ] [@@deriving sexp, bin_io, compare]
 
     let t_of_sexp = function
       | Sexp.Atom x -> (try `C (Float.of_string x) with _ -> `V x)
@@ -65,7 +65,7 @@ TEST_MODULE = struct
     include (Flang : (module type of Flang) with type 'a t := 'a Flang.t)
     module X = Flang.Eval (Float)
     let eval = X.eval
-    type t = Term0.t Flang.t with sexp, compare
+    type t = Term0.t Flang.t [@@deriving sexp, compare]
 
     let x = base (`V "x")
     let const value = base (`C value)
@@ -82,7 +82,7 @@ TEST_MODULE = struct
 
   let eval_term ~x term =
     let sexp_of_term = Term.sexp_of_t term in
-    <:test_eq< Term.t >> term (Term.t_of_sexp sexp_of_term)
+    [%test_eq: Term.t] term (Term.t_of_sexp sexp_of_term)
       ~message:"Term sexp roundtrip";
     let env = env x in
     Term.eval term ~f:(function `C v -> v | `V x -> env x)
@@ -101,42 +101,42 @@ TEST_MODULE = struct
   let sexp3 = Sexp.of_string "(min x (max x (abs x)))"
   let term3 = Term.(min x (max x (abs x)))
 
-  TEST_UNIT "sexp term1" =
-    <:test_result< Term.t >> ~expect:term1 (Term.t_of_sexp sexp1)
+  let%test_unit "sexp term1" =
+    [%test_result: Term.t] ~expect:term1 (Term.t_of_sexp sexp1)
 
-  TEST_UNIT "sexp term2" =
-    <:test_result< Term.t >> ~expect:term2 (Term.t_of_sexp sexp2)
+  let%test_unit "sexp term2" =
+    [%test_result: Term.t] ~expect:term2 (Term.t_of_sexp sexp2)
 
-  TEST_UNIT "sexp term3" =
-    <:test_result< Term.t >> ~expect:term3 (Term.t_of_sexp sexp3)
+  let%test_unit "sexp term3" =
+    [%test_result: Term.t] ~expect:term3 (Term.t_of_sexp sexp3)
 
-  TEST_UNIT "evaluate arithmetic" =
-    let test = <:test_result< Float.t >> ~equal:Float.(=.) in
+  let%test_unit "evaluate arithmetic" =
+    let test = [%test_result: Float.t] ~equal:Float.(=.) in
     for x = 1 to 100 do
       test ~expect:(Int.to_float ((x + 1) * (x + 1))) (eval_term term1 ~x);
       test ~expect:(Int.to_float ((x + 1) * (x + 1))) (eval_term term2 ~x)
     done
 
-  TEST_UNIT "evaluate min-max" =
-    let test = <:test_result< Float.t >> ~equal:Float.(=.) in
+  let%test_unit "evaluate min-max" =
+    let test = [%test_result: Float.t] ~equal:Float.(=.) in
     for x = -100 to 100 do
       test ~expect:(Int.to_float x) (eval_term term3 ~x)
     done
 
-  TEST_UNIT "evaluate predicate" =
+  let%test_unit "evaluate predicate" =
     for x = 1 to 100 do
-      <:test_pred< Term.t t * int >> (fun (p, x) -> eval_pred p ~x)
+      [%test_pred: Term.t t * int] (fun (p, x) -> eval_pred p ~x)
         (`EQ (term1, term2), x);
-      <:test_pred< Term.t t * int >> (fun (p, x) -> not (eval_pred p ~x))
+      [%test_pred: Term.t t * int] (fun (p, x) -> not (eval_pred p ~x))
         (`GT (term1, term2), x)
     done
 
-  TEST_UNIT "predicate sexp" =
+  let%test_unit "predicate sexp" =
     let x = Term.base (`V "x") in
     let const value = Term.base (`C value) in
     List.iter ~f:(fun (s, expect) ->
-      let actual = <:of_sexp< Term.t t >> (Sexp.of_string s) in
-      <:test_result< Term.t t >> actual ~expect)
+      let actual = [%of_sexp: Term.t t] (Sexp.of_string s) in
+      [%test_result: Term.t t] actual ~expect)
       [ "((x + 1) > 4)",
         `GT (Term.add x (const 1.), const 4.);
 
@@ -151,15 +151,15 @@ TEST_MODULE = struct
     let sexp1 = Sexp.of_string pred in
     let pred = pred_of_sexp sexp1 in
     let sexp2 = sexp_of_pred pred in
-    <:test_result< Sexp.t >> ~expect:sexp1 sexp2
+    [%test_result: Sexp.t] ~expect:sexp1 sexp2
       ~message:"Pred sexp roundtrip";
     eval_pred pred ~x
 
-  TEST = eval_pred_s "((x + 1) = 4)"               ~x:3
-  TEST = eval_pred_s "((x * x) = 9)"               ~x:3
-  TEST = eval_pred_s "((x * x) > (x + x))"         ~x:3
-  TEST = eval_pred_s "((x * x) <> 8)"              ~x:3
-  TEST = eval_pred_s "((x * x) one-of (1 2 9 12))" ~x:3
-  TEST = eval_pred_s "((x / 2) = 1.5)"             ~x:3
-  TEST = eval_pred_s "((x - 10) = -7)"             ~x:3
-end
+  let%test _ = eval_pred_s "((x + 1) = 4)"               ~x:3
+  let%test _ = eval_pred_s "((x * x) = 9)"               ~x:3
+  let%test _ = eval_pred_s "((x * x) > (x + x))"         ~x:3
+  let%test _ = eval_pred_s "((x * x) <> 8)"              ~x:3
+  let%test _ = eval_pred_s "((x * x) one-of (1 2 9 12))" ~x:3
+  let%test _ = eval_pred_s "((x / 2) = 1.5)"             ~x:3
+  let%test _ = eval_pred_s "((x - 10) = -7)"             ~x:3
+end)

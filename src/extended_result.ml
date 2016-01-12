@@ -26,7 +26,7 @@ end
 
 module Exn = struct
   module T = struct
-    type 'a t = ('a, exn) Result.t with sexp_of
+    type 'a t = ('a, exn) Result.t [@@deriving sexp_of]
   end
   include T
 

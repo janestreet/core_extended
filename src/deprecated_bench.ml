@@ -160,17 +160,17 @@ type column = [ `Name
               | `Normalized_cycles
               | `Nanos
               | `Allocated
-              | `Warnings ] with sexp, compare
+              | `Warnings ] [@@deriving sexp, compare]
 
 module CMap = Map.Make (struct
-  type t = column with sexp
+  type t = column [@@deriving sexp]
   let compare = compare_column
 end)
 
 let default_columns = [ `If_not_empty `Name; `Normalized_cycles; `If_not_empty `Warnings ]
 
 module Warning_set = Set.Make (struct
-  type t = Char.t with sexp
+  type t = Char.t [@@deriving sexp]
   (* Case-insensitive compare, lowercase first in case of equality. *)
   let compare a b =
     match a, b with
@@ -186,7 +186,6 @@ module Warning_set = Set.Make (struct
 end)
 
 let print ?(limit_width_to=72) ?(columns=default_columns) ?display data =
-  let left, right = Ascii_table.Align.(left, right) in
   (* Map displayed columns to `If_not_empty or `Yes. *)
   let displayed =
     List.fold columns ~init:CMap.empty ~f:(fun cmap column ->
@@ -199,15 +198,15 @@ let print ?(limit_width_to=72) ?(columns=default_columns) ?display data =
       ~show:(Option.value (CMap.find displayed tag) ~default:`No)
   in
   let columns = [
-    col `Name                "Name"                 make_name                    left ;
-    col `Input_size          "Input size"           make_size                    right;
-    col `Cycles              "Cycles"               make_cycles                  right;
-    col `Normalized_cycles   "Normalized cycles"    make_norm_cycles             right;
-    col `Nanos               "Time (ns)"            make_nanos                   right;
-    col `Allocated           "Allocated (minor)"    make_minor_allocated         right;
-    col `Allocated           "Allocated (major)"    make_major_allocated         right;
-    col `Allocated           "Promoted"             make_promoted                right;
-    col `Warnings            "Warnings"             make_warn                    right;
+    col `Name                "Name"                 make_name                    Left ;
+    col `Input_size          "Input size"           make_size                    Right;
+    col `Cycles              "Cycles"               make_cycles                  Right;
+    col `Normalized_cycles   "Normalized cycles"    make_norm_cycles             Right;
+    col `Nanos               "Time (ns)"            make_nanos                   Right;
+    col `Allocated           "Allocated (minor)"    make_minor_allocated         Right;
+    col `Allocated           "Allocated (major)"    make_major_allocated         Right;
+    col `Allocated           "Promoted"             make_promoted                Right;
+    col `Warnings            "Warnings"             make_warn                    Right;
   ] in
   Ascii_table.output ?display ~oc:stdout ~limit_width_to columns data;
   (* Print the meaning of warnings. *)
@@ -250,7 +249,7 @@ let stabilize_gc () =
 let full_major_cost ~now () =
   let count = 10 in
   let s = now () in
-  for _i = 1 to count do
+  for _ = 1 to count do
     Gc.full_major ();
   done;
   let e = now () in
@@ -260,7 +259,7 @@ let find_run_size ~now ~rdtscp ~mean_cycles f =
   let rec loop samples =
     let s = now () in
     let sc = rdtscp () in
-    for _i = 1 to samples do
+    for _ = 1 to samples do
       f ();
     done;
     let ec = rdtscp () in

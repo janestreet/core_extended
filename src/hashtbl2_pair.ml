@@ -13,7 +13,7 @@ let clear t =
 ;;
 
 let sexp_of_t sexp_of_key1 sexp_of_key2 sexp_of_data t =
-  t.table1 |> <:sexp_of< (key1, key2, data) Hashtbl2.t >>
+  t.table1 |> [%sexp_of: (key1, key2, data) Hashtbl2.t]
 ;;
 
 let invariant invariant_key1 invariant_key2 invariant_data t =
@@ -36,6 +36,9 @@ let mem2 t key2 = Hashtbl2.mem1 t.table2 key2
 
 let find1 t key1 = Hashtbl2.find1 t.table1 key1
 let find2 t key2 = Hashtbl2.find1 t.table2 key2
+
+let iter1 t ~f = Hashtbl2.iter1 t.table1 ~f
+let iter2 t ~f = Hashtbl2.iter1 t.table2 ~f
 
 let mem t key1 key2 =
   match Hashtbl2.find1 t.table1 key1 with
@@ -79,7 +82,7 @@ module Make (Key1 : Key) (Key2 : Key) = struct
   module Table1 = Hashtbl2.Make (Key1) (Key2)
   module Table2 = Hashtbl2.Make (Key2) (Key1)
 
-  type nonrec 'data t = (Key1.t, Key2.t, 'data) t with sexp_of
+  type nonrec 'data t = (Key1.t, Key2.t, 'data) t [@@deriving sexp_of]
 
   let create () =
     { table1 = Table1.create ()
@@ -97,12 +100,12 @@ module Make (Key1 : Key) (Key2 : Key) = struct
 
 end
 
-TEST_MODULE = struct
+let%test_module _ = (module struct
   module M = Make(String)(Int)
   let key1 = "key1"
   let key2 = 2
 
-  TEST_UNIT =
+  let%test_unit _ =
     let t = M.create () in
     add_exn t key1 key2 ();
     assert (mem t key1 key2);
@@ -111,10 +114,10 @@ TEST_MODULE = struct
     remove_exn t key1 key2;
     assert (not (mem t key1 key2));
     assert (not (mem1 t key1));
-    assert (not (mem2 t key2));
+    assert (not (mem2 t key2))
   ;;
 
-  TEST_UNIT =
+  let%test_unit _ =
     let t_empty = M.create () in
     let t_empty2 = M.create () in
     add_exn t_empty2 key1 key2 ();
@@ -122,6 +125,6 @@ TEST_MODULE = struct
     assert (M.equal Unit.equal t_empty t_empty2);
     let t_nonempty = M.create () in
     add_exn t_nonempty key1 key2 ();
-    assert (not (M.equal Unit.equal t_empty t_nonempty));
+    assert (not (M.equal Unit.equal t_empty t_nonempty))
   ;;
-end
+end)

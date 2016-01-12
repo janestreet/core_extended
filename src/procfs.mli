@@ -4,20 +4,20 @@ open Core.Std
    Process and system stats
 *)
 
-type bigint = Big_int.big_int with sexp ;;
+type bigint = Big_int.big_int [@@deriving sexp] ;;
 
 val input_all_with_reused_buffer : unit -> (string -> string) Staged.t
 
 module Process : sig
   module Inode : sig
-    type t with sexp ;;
+    type t [@@deriving sexp] ;;
     val of_string : string -> t
     val to_string : t -> string
   end ;;
   module Limits : sig
     module Rlimit : sig
-      type value = [ `unlimited | `limited of bigint ] with sexp ;;
-      type t = { soft : value; hard: value } with fields, sexp ;;
+      type value = [ `unlimited | `limited of bigint ] [@@deriving sexp] ;;
+      type t = { soft : value; hard: value } [@@deriving fields, sexp] ;;
     end ;;
     type t =
       {
@@ -37,7 +37,7 @@ module Process : sig
         nice_priority     : Rlimit.t;
         realtime_priority : Rlimit.t;
      }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
 
     val of_string : string -> t
   end ;;
@@ -98,7 +98,7 @@ module Process : sig
         rt_priority : bigint; (** Real-time scheduling priority. *)
         policy      : bigint; (** Scheduling policy *)
       }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
 
     (* For a stat string such as "14574 (cat) R 10615 14574 ...", extract_command returns
        (`command "cat", `rest "R 10615 14574 ..."). Note that the pid at the beginning is
@@ -119,7 +119,7 @@ module Process : sig
         data     : bigint; (** data/stack *)
         dt       : bigint; (** dirty pages (unused) *)
       }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
 
     val of_string : string -> t
   end ;;
@@ -136,7 +136,7 @@ module Process : sig
         sgid  : int; (** Saved group ID *)
         fsgid : int; (** FS group ID *)
       }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
 
     val of_string : string -> t
   end ;;
@@ -147,13 +147,13 @@ module Process : sig
       | Socket of Inode.t
       | Pipe of Inode.t
       | Inotify
-    with sexp ;;
+    [@@deriving sexp] ;;
     type t =
       {
         fd      : int;     (** File descriptor (0=stdin, 1=stdout, etc.) *)
         fd_stat : fd_stat; (** Kind of file *)
       }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
   end ;;
 
   type t =
@@ -174,7 +174,7 @@ module Process : sig
       oom_adj     : int;              (** OOM killer niceness [range: -17 to +15] *)
       oom_score   : int;              (** OOM "sacrifice" priority *)
     }
-  with fields, sexp ;;
+  [@@deriving fields, sexp] ;;
 end ;;
 
 module Meminfo : sig
@@ -204,11 +204,11 @@ module Meminfo : sig
       vmalloc_used  : bigint;
       vmalloc_chunk : bigint;
     }
-  with fields, sexp ;;
+  [@@deriving fields, sexp] ;;
 end ;;
 
 module Kstat : sig
-  type index_t = All | Number of int with sexp
+  type index_t = All | Number of int [@@deriving sexp]
 
   type cpu_t =
     {
@@ -221,7 +221,7 @@ module Kstat : sig
       softirq : bigint option;
       steal   : bigint option;
       guest   : bigint option;
-    } with fields, sexp;;
+    } [@@deriving fields, sexp];;
 
   type t =
     index_t * cpu_t
@@ -235,7 +235,7 @@ module Loadavg : sig
     one : float;
     ten : float;
     fifteen : float;
-  } with fields
+  } [@@deriving fields]
 end
 
 (** [get_all_procs] returns a list of all processes on the system *)
@@ -306,7 +306,7 @@ module Net : sig
       tx_carrier: int;
       tx_compressed : bool;
       }
-      with fields;;
+      [@@deriving fields];;
 
     val interfaces : unit -> string list
 
@@ -328,7 +328,7 @@ module Net : sig
       window      : int;
       irtt        : int;
     }
-  with fields ;;
+  [@@deriving fields] ;;
 
   val default : unit -> Unix.Inet_addr.t
 
@@ -373,7 +373,7 @@ module Net : sig
         timeout : int;
         inode : Process.Inode.t;
         rest : string;
-      } with fields
+      } [@@deriving fields]
 
     (** These don't do any IO and should be async-ok *)
     val of_line : string -> t option
@@ -395,7 +395,7 @@ module Mount : sig
       freq    : int; (* dump frequency *)
       passno  : int; (* pass number of parallel dump *)
     }
-  with fields ;;
+  [@@deriving fields] ;;
 end
 
 val mounts : unit -> Mount.t list

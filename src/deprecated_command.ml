@@ -4,7 +4,7 @@ open Textutils.Std
 
 open Printf
 
-exception Invalid_arguments of string list with sexp
+exception Invalid_arguments of string list [@@deriving sexp]
 
 (* compare command names, so that "help" is the last one *)
 let subcommand_cmp a c =
@@ -484,7 +484,7 @@ module Autocomplete_ = struct
         | `Disabled | `Enabled | `Export | `File | `Function | `Group
         | `Helptopic | `Hostname | `Job | `Keyword | `Running | `Service
         | `Setopt | `Shopt | `Signal | `Stopped | `User | `Variable
-      ] with sexp
+      ] [@@deriving sexp]
 
     let to_string action =
       sexp_of_t action |! Sexp.to_string |! String.lowercase
@@ -649,7 +649,7 @@ let expanded_argv_head_rev = ref []
 let expanded_argv_tail = ref []
 
 (* This exception is raised if we try to read expanded argv before calling run_internal *)
-exception Expanded_argv_not_yet_initialized with sexp
+exception Expanded_argv_not_yet_initialized [@@deriving sexp]
 
 let get_expanded_argv () =
   let expanded_argv =
@@ -1460,7 +1460,7 @@ end
 
 
 module Helpers = struct
-  exception Found_anonymous_arguments with sexp
+  exception Found_anonymous_arguments [@@deriving sexp]
   let no_anons c anons =
     match anons with
     | [] -> c

@@ -1,6 +1,6 @@
 open Core.Std
 
-INCLUDE "config.mlh"
+#import "config.mlh"
 
 type mallinfo = {
   arena : int;
@@ -13,7 +13,7 @@ type mallinfo = {
   uordblks : int;
   fordblks : int;
   keepcost : int;
-} with sexp, bin_io
+} [@@deriving sexp, bin_io]
 
 type opt =
   | TRIM_THRESHOLD
@@ -22,9 +22,9 @@ type opt =
   | MMAP_MAX
   | CHECK_ACTION
 (*   | PERTURB *)
-with sexp, bin_io
+[@@deriving sexp, bin_io]
 
-IFDEF LINUX_EXT THEN
+#if JSC_LINUX_EXT
 
 external mallinfo     : unit -> mallinfo   = "malloc_mallinfo_stub"
 external mallopt      : opt -> int -> unit = "malloc_mallopt_stub"
@@ -36,11 +36,11 @@ let mallopt      = Ok mallopt
 let malloc_trim  = Ok malloc_trim
 let malloc_stats = Ok malloc_stats
 
-ELSE
+#else
 
 let mallinfo     = Or_error.unimplemented "Malloc.mallinfo"
 let mallopt      = Or_error.unimplemented "Malloc.mallopt"
 let malloc_trim  = Or_error.unimplemented "Malloc.malloc_trim"
 let malloc_stats = Or_error.unimplemented "Malloc.malloc_stats"
 
-ENDIF
+#endif

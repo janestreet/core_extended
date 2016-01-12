@@ -282,5 +282,5 @@ module Test = struct
     | _e -> false
   ;;
 
-  TEST = test ()
+  let%test _ = test ()
 end

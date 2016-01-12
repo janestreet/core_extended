@@ -1,13 +1,13 @@
 open Core.Std
 
 module type Key = sig
-  type t with sexp
+  type t [@@deriving sexp]
   include Comparable with type t := t
 end
 
 module type S = sig
-  type 'a t with sexp
-  type key with sexp
+  type 'a t [@@deriving sexp]
+  type key [@@deriving sexp]
   val empty : 'a t
   val is_empty : 'a t -> bool
   val length : 'a t -> int
@@ -34,7 +34,7 @@ end
 
 module Make (Key : Key) : (S with type key = Key.t) = struct
 
-  type key = Key.t with sexp
+  type key = Key.t [@@deriving sexp]
 
   (* [Kernel] ensures that no Node can be constructed with an incorrect size *)
   module Kernel : sig
@@ -44,19 +44,19 @@ module Make (Key : Key) : (S with type key = Key.t) = struct
     type 'a t = private
       | Empty
       | Node of 'a t * key * 'a * 'a t * size
-    with sexp
+    [@@deriving sexp]
 
     val length : 'a t -> int
     val node   : 'a t -> key -> 'a -> 'a t -> 'a t
     val empty  : 'a t
   end = struct
 
-    type size = int with sexp
+    type size = int [@@deriving sexp]
 
     type 'a t =
       | Empty
       | Node of 'a t * key * 'a * 'a t * size
-    with sexp
+    [@@deriving sexp]
 
     let length = function
       | Empty -> 0

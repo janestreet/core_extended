@@ -28,9 +28,9 @@ module Query = struct
           (Int63.to_string (inodes_usage : Quota.inodes Quota.usage :> Int63.t));
         printf "== Limits ==\n";
         printf "  - Bytes  : %s\n"
-          (Sexp.to_string (<:sexp_of< Quota.bytes Quota.limit >> bytes_limit));
+          (Sexp.to_string ([%sexp_of: Quota.bytes Quota.limit] bytes_limit));
         printf "  - Inodes : %s\n"
-          (Sexp.to_string (<:sexp_of< Quota.inodes Quota.limit >> inodes_limit)))
+          (Sexp.to_string ([%sexp_of: Quota.inodes Quota.limit] inodes_limit)))
 
   let named_command =
     "query",

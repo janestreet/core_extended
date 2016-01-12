@@ -208,7 +208,7 @@ module Cpu_use = struct
     mutable rss : Big_int.big_int;
     mutable cpu0 : cpu_sample;
     mutable cpu1 : cpu_sample;
-  } with fields
+  } [@@deriving fields]
 
   module P = Procfs.Process
 
@@ -262,7 +262,7 @@ module Lsb_release = struct
       release        : string; (* e.g. "5.7", "6.3" on CentOs, 'testing' on debian*)
       codename       : string; (* e.g. "Final", "Lucid", etc. *)
     }
-  with sexp, fields, bin_io
+  [@@deriving sexp, fields, bin_io]
 
   let query () =
     let q flag =

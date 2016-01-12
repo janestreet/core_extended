@@ -579,163 +579,163 @@ let even_until_8 x =
 let lst = to_list
 let seq = of_list
 
-TEST = lst (seq []) = []
-TEST = lst (seq [2]) = [2]
-TEST = lst (seq [2;4;6;8]) = [2;4;6;8]
-TEST = to_array (seq [2;4;6;8]) = [|2;4;6;8|]
+let%test _ = lst (seq []) = []
+let%test _ = lst (seq [2]) = [2]
+let%test _ = lst (seq [2;4;6;8]) = [2;4;6;8]
+let%test _ = to_array (seq [2;4;6;8]) = [|2;4;6;8|]
 
-TEST = lst (map (seq [2;4;6;8]) ~f:(fun x -> x + 1)) = [3;5;7;9]
-TEST = lst (mapi (seq [2;4;6;8]) ~f:(fun i x -> x + i)) = [2;5;8;11]
+let%test _ = lst (map (seq [2;4;6;8]) ~f:(fun x -> x + 1)) = [3;5;7;9]
+let%test _ = lst (mapi (seq [2;4;6;8]) ~f:(fun i x -> x + i)) = [2;5;8;11]
 
-TEST = lst (filter_map (seq [2;4;6;8]) ~f:(fun _ -> None)) = []
-TEST = lst (filter_map (seq [2;4;6;8]) ~f:(fun x -> Some (x + 1))) = [3;5;7;9]
-TEST = lst (filter_map (seq [3;4;6;9;10]) ~f:div2) = [2;3;5]
-TEST = lst (filter_mapi (seq [2;4;6;8]) ~f:(fun i x -> Some (x + i))) = [2;5;8;11]
+let%test _ = lst (filter_map (seq [2;4;6;8]) ~f:(fun _ -> None)) = []
+let%test _ = lst (filter_map (seq [2;4;6;8]) ~f:(fun x -> Some (x + 1))) = [3;5;7;9]
+let%test _ = lst (filter_map (seq [3;4;6;9;10]) ~f:div2) = [2;3;5]
+let%test _ = lst (filter_mapi (seq [2;4;6;8]) ~f:(fun i x -> Some (x + i))) = [2;5;8;11]
 
-TEST = lst (filter (seq [2;4;6;8]) ~f:(fun _ -> false)) = []
-TEST = lst (filter (seq [2;4;6;8]) ~f:(fun _ -> true)) = [2;4;6;8]
-TEST = lst (filter (seq [2;4;6;8]) ~f:is4or6) = [4;6]
+let%test _ = lst (filter (seq [2;4;6;8]) ~f:(fun _ -> false)) = []
+let%test _ = lst (filter (seq [2;4;6;8]) ~f:(fun _ -> true)) = [2;4;6;8]
+let%test _ = lst (filter (seq [2;4;6;8]) ~f:is4or6) = [4;6]
 
-TEST = lst (filter_fold_map (seq [3;4;6;9;10]) ~init:0 ~f:prev_even) = [3;6;9]
-TEST = lst (filter_fold_map (seq [3;4;6;9;10]) ~init:0 ~f:running_sum_geq8) = [13;22;32]
-TEST = lst (filter_fold_map (seq [3;4;6;9;10]) ~init:1 ~f:running_sum_geq8) = [8;14;23;33]
+let%test _ = lst (filter_fold_map (seq [3;4;6;9;10]) ~init:0 ~f:prev_even) = [3;6;9]
+let%test _ = lst (filter_fold_map (seq [3;4;6;9;10]) ~init:0 ~f:running_sum_geq8) = [13;22;32]
+let%test _ = lst (filter_fold_map (seq [3;4;6;9;10]) ~init:1 ~f:running_sum_geq8) = [8;14;23;33]
 
-TEST = lst (fold_map (seq [3;4;6;9;10]) ~init:0 ~f:running_sum) = [3;7;13;22;32]
-TEST = lst (fold_map (seq [3;4;6;9;10]) ~init:1 ~f:running_sum) = [4;8;14;23;33]
+let%test _ = lst (fold_map (seq [3;4;6;9;10]) ~init:0 ~f:running_sum) = [3;7;13;22;32]
+let%test _ = lst (fold_map (seq [3;4;6;9;10]) ~init:1 ~f:running_sum) = [4;8;14;23;33]
 
-TEST = lst (filter_map_partial (seq [3;4;6;9;10]) ~f:even_until_8) = [4;6]
-TEST = lst (filter_map_partial (infinite_ints ()) ~f:even_until_8) = [0;2;4;6]
+let%test _ = lst (filter_map_partial (seq [3;4;6;9;10]) ~f:even_until_8) = [4;6]
+let%test _ = lst (filter_map_partial (infinite_ints ()) ~f:even_until_8) = [0;2;4;6]
 
-TEST = lst (concat_map (seq [3;4;6;9;10]) ~f:(fun x -> [x;x+1]))
+let%test _ = lst (concat_map (seq [3;4;6;9;10]) ~f:(fun x -> [x;x+1]))
        = [3;4;4;5;6;7;9;10;10;11]
-TEST = lst (concat_map (seq [[3;4];[];[6;9];[10]]) ~f:Fn.id)
+let%test _ = lst (concat_map (seq [[3;4];[];[6;9];[10]]) ~f:Fn.id)
        = [3;4;6;9;10]
-TEST = lst (concat_list_seq (seq [[3;4];[];[6;9];[10]]))
+let%test _ = lst (concat_list_seq (seq [[3;4];[];[6;9];[10]]))
        = [3;4;6;9;10]
-TEST = lst (concat_seq_list [seq [3;4]; seq []; seq [6;9]; seq [10]])
+let%test _ = lst (concat_seq_list [seq [3;4]; seq []; seq [6;9]; seq [10]])
        = [3;4;6;9;10]
-TEST = lst (concat (seq [seq [3;4]; seq []; seq [6;9]; seq [10]]))
+let%test _ = lst (concat (seq [seq [3;4]; seq []; seq [6;9]; seq [10]]))
        = [3;4;6;9;10]
 
-TEST = lst (zip_full (seq [1;2;3]) (seq [2;4;6])) =
+let%test _ = lst (zip_full (seq [1;2;3]) (seq [2;4;6])) =
   [(Some 1,Some 2);(Some 2,Some 4);(Some 3, Some 6)]
-TEST = lst (zip_full (seq [1;2;3]) (seq [])) =
+let%test _ = lst (zip_full (seq [1;2;3]) (seq [])) =
   [(Some 1,None);(Some 2,None);(Some 3,None)]
-TEST = lst (zip_full (seq [1;2;3]) (seq [4;5])) =
+let%test _ = lst (zip_full (seq [1;2;3]) (seq [4;5])) =
   [(Some 1,Some 4);(Some 2,Some 5);(Some 3,None)]
 
-TEST = hd (seq []) = None
-TEST = hd (seq [1;2;3]) = Some 1
-TEST = hd (seq [6]) = Some 6
-TEST = hd (infinite_ints ()) = Some 0
-TEST = last (seq []) = None
-TEST = last (seq [1;2;3]) = Some 3
-TEST = last (seq [6]) = Some 6
-TEST = nth (seq []) 0 = None
-TEST = nth (seq []) 1 = None
-TEST = nth (seq [1;2;3]) 0 = Some 1
-TEST = nth (seq [1;2;3]) 1 = Some 2
-TEST = nth (seq [1;2;3]) 2 = Some 3
-TEST = nth (seq [1;2;3]) 3 = None
-TEST = nth (infinite_ints ()) 10 = Some 10
+let%test _ = hd (seq []) = None
+let%test _ = hd (seq [1;2;3]) = Some 1
+let%test _ = hd (seq [6]) = Some 6
+let%test _ = hd (infinite_ints ()) = Some 0
+let%test _ = last (seq []) = None
+let%test _ = last (seq [1;2;3]) = Some 3
+let%test _ = last (seq [6]) = Some 6
+let%test _ = nth (seq []) 0 = None
+let%test _ = nth (seq []) 1 = None
+let%test _ = nth (seq [1;2;3]) 0 = Some 1
+let%test _ = nth (seq [1;2;3]) 1 = Some 2
+let%test _ = nth (seq [1;2;3]) 2 = Some 3
+let%test _ = nth (seq [1;2;3]) 3 = None
+let%test _ = nth (infinite_ints ()) 10 = Some 10
 
-TEST = lst (tl (seq [])) = []
-TEST = lst (tl (seq [1])) = []
-TEST = lst (tl (seq [1;2;3])) = [2;3]
-TEST = lst (take (seq []) 0) = []
-TEST = lst (take (seq []) 2) = []
-TEST = lst (take (seq [1;2;3]) 0) = []
-TEST = lst (take (seq [1;2;3]) 1) = [1]
-TEST = lst (take (seq [1;2;3]) 2) = [1;2]
-TEST = lst (take (seq [1;2;3]) 3) = [1;2;3]
-TEST = lst (take (seq [1;2;3]) 4) = [1;2;3]
-TEST = lst (take (infinite_ints ()) 6) = [0;1;2;3;4;5]
-TEST = lst (drop (seq []) 0) = []
-TEST = lst (drop (seq []) 1) = []
-TEST = lst (drop (seq [1;2;3]) 0) = [1;2;3]
-TEST = lst (drop (seq [1;2;3]) 1) = [2;3]
-TEST = lst (drop (seq [1;2;3]) 2) = [3]
-TEST = lst (drop (seq [1;2;3]) 3) = []
-TEST = lst (drop (seq [1;2;3]) 4) = []
-TEST = lst (append (seq []) (seq [])) = []
-TEST = lst (append (seq [1]) (seq [])) = [1]
-TEST = lst (append (seq []) (seq [2])) = [2]
-TEST = lst (append (seq [1]) (seq [2])) = [1;2]
-TEST = lst (append (seq [1;2;3]) (seq [])) = [1;2;3]
-TEST = lst (append (seq [1;2;3]) (seq [4;5;6])) = [1;2;3;4;5;6]
-TEST = lst (sub (seq []) ~pos:0 ~len:0) = []
-TEST = lst (sub (seq []) ~pos:0 ~len:1) = []
-TEST = lst (sub (seq []) ~pos:1 ~len:0) = []
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:0 ~len:0) = []
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:0 ~len:1) = [1]
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:0 ~len:2) = [1;2]
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:1 ~len:2) = [2;3]
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:1 ~len:3) = [2;3;4]
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:2 ~len:3) = [3;4;5]
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:2 ~len:4) = [3;4;5]
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:3 ~len:3) = [4;5]
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:3 ~len:1) = [4]
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:3 ~len:0) = []
-TEST = lst (sub (seq [1;2;3;4;5]) ~pos:5 ~len:1) = []
-TEST = lst (sub (infinite_ints ()) ~pos:5 ~len:4) = [5;6;7;8]
+let%test _ = lst (tl (seq [])) = []
+let%test _ = lst (tl (seq [1])) = []
+let%test _ = lst (tl (seq [1;2;3])) = [2;3]
+let%test _ = lst (take (seq []) 0) = []
+let%test _ = lst (take (seq []) 2) = []
+let%test _ = lst (take (seq [1;2;3]) 0) = []
+let%test _ = lst (take (seq [1;2;3]) 1) = [1]
+let%test _ = lst (take (seq [1;2;3]) 2) = [1;2]
+let%test _ = lst (take (seq [1;2;3]) 3) = [1;2;3]
+let%test _ = lst (take (seq [1;2;3]) 4) = [1;2;3]
+let%test _ = lst (take (infinite_ints ()) 6) = [0;1;2;3;4;5]
+let%test _ = lst (drop (seq []) 0) = []
+let%test _ = lst (drop (seq []) 1) = []
+let%test _ = lst (drop (seq [1;2;3]) 0) = [1;2;3]
+let%test _ = lst (drop (seq [1;2;3]) 1) = [2;3]
+let%test _ = lst (drop (seq [1;2;3]) 2) = [3]
+let%test _ = lst (drop (seq [1;2;3]) 3) = []
+let%test _ = lst (drop (seq [1;2;3]) 4) = []
+let%test _ = lst (append (seq []) (seq [])) = []
+let%test _ = lst (append (seq [1]) (seq [])) = [1]
+let%test _ = lst (append (seq []) (seq [2])) = [2]
+let%test _ = lst (append (seq [1]) (seq [2])) = [1;2]
+let%test _ = lst (append (seq [1;2;3]) (seq [])) = [1;2;3]
+let%test _ = lst (append (seq [1;2;3]) (seq [4;5;6])) = [1;2;3;4;5;6]
+let%test _ = lst (sub (seq []) ~pos:0 ~len:0) = []
+let%test _ = lst (sub (seq []) ~pos:0 ~len:1) = []
+let%test _ = lst (sub (seq []) ~pos:1 ~len:0) = []
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:0 ~len:0) = []
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:0 ~len:1) = [1]
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:0 ~len:2) = [1;2]
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:1 ~len:2) = [2;3]
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:1 ~len:3) = [2;3;4]
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:2 ~len:3) = [3;4;5]
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:2 ~len:4) = [3;4;5]
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:3 ~len:3) = [4;5]
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:3 ~len:1) = [4]
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:3 ~len:0) = []
+let%test _ = lst (sub (seq [1;2;3;4;5]) ~pos:5 ~len:1) = []
+let%test _ = lst (sub (infinite_ints ()) ~pos:5 ~len:4) = [5;6;7;8]
 
 
-TEST_UNIT = with_ctr 6 (fun ctr -> iter (seq [1;2;3]) ~f:(fun x -> ctr := !ctr + x))
-TEST_UNIT = with_ctr 9 (fun ctr -> iteri (seq [1;2;3]) ~f:(fun i x -> ctr := !ctr + x + i))
-TEST = fold ~init:1 (seq [1;2;3]) ~f:(+) = 7
-TEST = foldi ~init:1 (seq [1;2;3]) ~f:(fun i sum x -> i + sum + x) = 10
-TEST = find_map (seq [3;4;6;9;10]) ~f:div2 = Some 2
-TEST = find_map (infinite_ints ()) ~f:div2 = Some 0
-TEST = find (seq [1;2;5]) ~f:is4or6 = None
-TEST = find (seq [1;2;6;5]) ~f:is4or6 = Some 6
-TEST = find (seq [1;2;5;6;4]) ~f:is4or6 = Some 6
-TEST = find (seq [1;2;5;4;6]) ~f:is4or6 = Some 4
-TEST = find (infinite_ints ()) ~f:is4or6 = Some 4
-TEST = exists (seq []) ~f:(fun _ -> assert false) = false
-TEST = exists (seq [1;3;5;6;9]) ~f:iseven = true
-TEST = exists (seq [2;4;6;7;8]) ~f:iseven = true
-TEST = exists (seq [2;4;6;6;8]) ~f:iseven = true
-TEST = exists (infinite_ints ()) ~f:iseven = true
-TEST = for_all (seq []) ~f:(fun _ -> assert false) = true
-TEST = for_all (seq [1;3;5;6;9]) ~f:iseven = false
-TEST = for_all (seq [2;4;6;7;8]) ~f:iseven = false
-TEST = for_all (seq [2;4;6;6;8]) ~f:iseven = true
-TEST = for_all (infinite_ints ()) ~f:iseven = false
-TEST = is_empty (seq []) = true
-TEST = is_empty (seq [1]) = false
-TEST = is_empty (seq [1;2;3]) = false
-TEST = is_empty (infinite_ints ()) = false
-TEST = mem (seq [3;4;5]) 6 = false
-TEST = mem (seq [3;6;5]) 6 = true
-TEST = mem (infinite_ints ()) 10 = true
-TEST = length (seq []) = 0
-TEST = length (seq [3;4;6;9;10]) = 5
-TEST = count (seq []) ~f:iseven = 0
-TEST = count (seq [3;4;6;9;10]) ~f:iseven = 3
-TEST = count (seq [3;4;6;9;10]) ~f:(fun x -> not (iseven x)) = 2
-TEST = length_bounded_by ~min:(-1) (seq []) = true
-TEST = length_bounded_by ~min:0 (seq []) = true
-TEST = length_bounded_by ~min:1 (seq []) = false
-TEST = length_bounded_by ~max:(-1) (seq []) = false
-TEST = length_bounded_by ~max:0 (seq []) = true
-TEST = length_bounded_by ~max:1 (seq []) = true
-TEST = length_bounded_by ~min:2 ~max:3 (seq [5]) = false
-TEST = length_bounded_by ~min:2 ~max:3 (seq [5;6]) = true
-TEST = length_bounded_by ~min:2 ~max:3 (seq [5;6;7]) = true
-TEST = length_bounded_by ~min:2 ~max:3 (seq [5;6;7;8]) = false
-TEST = length_bounded_by ~min:2 ~max:10 (infinite_ints ()) = false
-TEST = length_if_at_most ~max:(-1) (seq []) = None
-TEST = length_if_at_most ~max:0 (seq []) = Some 0
-TEST = length_if_at_most ~max:1 (seq []) = Some 0
-TEST = length_if_at_most ~max:0 (seq [4]) = None
-TEST = length_if_at_most ~max:1 (seq [4]) = Some 1
-TEST = length_if_at_most ~max:3 (seq [4;5]) = Some 2
-TEST = length_if_at_most ~max:3 (seq [4;5;6]) = Some 3
-TEST = length_if_at_most ~max:3 (seq [4;5;6;7]) = None
-TEST = length_if_at_most ~max:10 (infinite_ints ()) = None
+let%test_unit _ = with_ctr 6 (fun ctr -> iter (seq [1;2;3]) ~f:(fun x -> ctr := !ctr + x))
+let%test_unit _ = with_ctr 9 (fun ctr -> iteri (seq [1;2;3]) ~f:(fun i x -> ctr := !ctr + x + i))
+let%test _ = fold ~init:1 (seq [1;2;3]) ~f:(+) = 7
+let%test _ = foldi ~init:1 (seq [1;2;3]) ~f:(fun i sum x -> i + sum + x) = 10
+let%test _ = find_map (seq [3;4;6;9;10]) ~f:div2 = Some 2
+let%test _ = find_map (infinite_ints ()) ~f:div2 = Some 0
+let%test _ = find (seq [1;2;5]) ~f:is4or6 = None
+let%test _ = find (seq [1;2;6;5]) ~f:is4or6 = Some 6
+let%test _ = find (seq [1;2;5;6;4]) ~f:is4or6 = Some 6
+let%test _ = find (seq [1;2;5;4;6]) ~f:is4or6 = Some 4
+let%test _ = find (infinite_ints ()) ~f:is4or6 = Some 4
+let%test _ = exists (seq []) ~f:(fun _ -> assert false) = false
+let%test _ = exists (seq [1;3;5;6;9]) ~f:iseven = true
+let%test _ = exists (seq [2;4;6;7;8]) ~f:iseven = true
+let%test _ = exists (seq [2;4;6;6;8]) ~f:iseven = true
+let%test _ = exists (infinite_ints ()) ~f:iseven = true
+let%test _ = for_all (seq []) ~f:(fun _ -> assert false) = true
+let%test _ = for_all (seq [1;3;5;6;9]) ~f:iseven = false
+let%test _ = for_all (seq [2;4;6;7;8]) ~f:iseven = false
+let%test _ = for_all (seq [2;4;6;6;8]) ~f:iseven = true
+let%test _ = for_all (infinite_ints ()) ~f:iseven = false
+let%test _ = is_empty (seq []) = true
+let%test _ = is_empty (seq [1]) = false
+let%test _ = is_empty (seq [1;2;3]) = false
+let%test _ = is_empty (infinite_ints ()) = false
+let%test _ = mem (seq [3;4;5]) 6 = false
+let%test _ = mem (seq [3;6;5]) 6 = true
+let%test _ = mem (infinite_ints ()) 10 = true
+let%test _ = length (seq []) = 0
+let%test _ = length (seq [3;4;6;9;10]) = 5
+let%test _ = count (seq []) ~f:iseven = 0
+let%test _ = count (seq [3;4;6;9;10]) ~f:iseven = 3
+let%test _ = count (seq [3;4;6;9;10]) ~f:(fun x -> not (iseven x)) = 2
+let%test _ = length_bounded_by ~min:(-1) (seq []) = true
+let%test _ = length_bounded_by ~min:0 (seq []) = true
+let%test _ = length_bounded_by ~min:1 (seq []) = false
+let%test _ = length_bounded_by ~max:(-1) (seq []) = false
+let%test _ = length_bounded_by ~max:0 (seq []) = true
+let%test _ = length_bounded_by ~max:1 (seq []) = true
+let%test _ = length_bounded_by ~min:2 ~max:3 (seq [5]) = false
+let%test _ = length_bounded_by ~min:2 ~max:3 (seq [5;6]) = true
+let%test _ = length_bounded_by ~min:2 ~max:3 (seq [5;6;7]) = true
+let%test _ = length_bounded_by ~min:2 ~max:3 (seq [5;6;7;8]) = false
+let%test _ = length_bounded_by ~min:2 ~max:10 (infinite_ints ()) = false
+let%test _ = length_if_at_most ~max:(-1) (seq []) = None
+let%test _ = length_if_at_most ~max:0 (seq []) = Some 0
+let%test _ = length_if_at_most ~max:1 (seq []) = Some 0
+let%test _ = length_if_at_most ~max:0 (seq [4]) = None
+let%test _ = length_if_at_most ~max:1 (seq [4]) = Some 1
+let%test _ = length_if_at_most ~max:3 (seq [4;5]) = Some 2
+let%test _ = length_if_at_most ~max:3 (seq [4;5;6]) = Some 3
+let%test _ = length_if_at_most ~max:3 (seq [4;5;6;7]) = None
+let%test _ = length_if_at_most ~max:10 (infinite_ints ()) = None
 
 (* Test laziness *)
-TEST_UNIT =
+let%test_unit _ =
   (* Run a bunch of functions that should be lazy and do nothing
      Note that for sequences that actually begin with some element right away,
      (Cons(x,tail)), these functions will actually operate on the first element. *)
@@ -777,7 +777,7 @@ let mutable_ints_protected start stop incr_on_open incr_on_close =
 
 (* Test that mutable state for generating sequences works and doesn't interfere
    with itself, and that protect's finally gets called *)
-TEST_UNIT =
+let%test_unit _ =
   let opens = ref 0 in
   let closes = ref 0 in
   let s = mutable_ints_protected 1 4 opens closes in

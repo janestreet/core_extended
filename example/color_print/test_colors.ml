@@ -14,7 +14,7 @@ let () =
         let g = floatify g in
         let b = floatify b in
         if !i mod 3 = 0
-        then Color_print.rgbprintf ~r ~g ~b "%s" "X"
+        then Color_print.rgb_printf ~r ~g ~b "%s" "X"
         else if !i mod 3 = 1
         then printf "%s" (Color_print.rgb_sprintf ~r ~g ~b "%s" "X")
         else printf "%s" (Color_print.rgb ~r ~g ~b "X");
@@ -29,7 +29,7 @@ let () =
   for x = 0 to 23 do
     let floatify x = Float.of_int x /. 23. in
     let x = floatify x in
-    Color_print.grayprintf ~brightness:x "X";
+    Color_print.gray_printf ~brightness:x "X";
   done;
   printf "\n";
   printf "\n";

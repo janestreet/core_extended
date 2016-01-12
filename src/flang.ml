@@ -1,7 +1,7 @@
 open Core.Std
 
 module type Ordered_field = sig
-  type t with compare, sexp
+  type t [@@deriving compare, sexp]
   val zero : t
   val ( + ) : t -> t -> t
   val ( - ) : t -> t -> t
@@ -18,7 +18,7 @@ type 'a t = [
   | `Abs of 'a t
   | `Min of 'a t * 'a t
   | `Max of 'a t * 'a t
-] with sexp, bin_io, compare
+] [@@deriving sexp, bin_io, compare]
 
 let base a   = `Base a
 let add  x y = `Add (x, y)

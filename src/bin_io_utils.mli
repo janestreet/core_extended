@@ -27,7 +27,7 @@ module Serialized : sig
       valid ['a]. When deserializing an ['a], this requires actually constructing ['a]. If
       you'd like access to the ['a] that's constructed during deserialization, see the
       [bin_reader_t_with_value] below. *)
-  type 'a t with bin_io
+  type 'a t [@@deriving bin_io]
 
   val create : 'a Bin_prot.Type_class.writer -> 'a -> 'a t
 
@@ -47,7 +47,7 @@ module Serialized : sig
 
 
   module Make (B : Binable) : sig
-    type t with bin_io
+    type t [@@deriving bin_io]
 
     val create : B.t -> t
     val value : t -> B.t

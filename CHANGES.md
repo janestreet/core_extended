@@ -1,3 +1,48 @@
+## 113.24.00
+
+N.B. Some interface changes occured in Core which are repercuted in this
+package, they are not all list in this file though.
+
+- Switched to PPX.
+
+- Upgrade `Interval_map.t` with monad operations.
+
+- Update the `interval_map_intf.ml` file to try to make the documentation
+  clearer.
+
+  This mostly constitutes splitting out the core operations into a separate
+  module type earlier in the file, so that their documentation occurs before
+  the various more specific module types in reading order.
+
+  Various bits of documentation have been tweaked with examples or laws.
+
+- Add underscores to color print names
+  Improve and uniformize the behavior of colorprintf functions at the cost of changing the type slightly
+
+- Fix core_extended stubs on openbsd
+
+  Closes #7
+  Closes #2
+
+- Move `Core_extended.Std.Sys.home` to `Core.Std.Sys.home_directory`.
+
+- Add a module whose type `'a t` acts as a container of ordered items of type 'a
+  (morally, a `'a list`) but which supports efficient append operations.
+
+  Sometimes called a Rope, or Concatenable_list.
+
+- Expose the constructors of `Ascii_table.Align.t` so that we can write
+
+    Column.create ~align:Left ...
+
+  instead of
+
+    Column.create ~align:Align.left
+
+- Fix sexp diffing on records
+  The wrong comparaison was leading to huge diff as soon as one field was
+  missing on one side
+
 ## 113.00.00
 
 - Added to `Interval_map` a more complete set of operations.

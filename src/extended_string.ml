@@ -78,7 +78,7 @@ let collate s1 s2 =
   loop ()
 ;;
 
-TEST_MODULE "collate" = struct
+let%test_module "collate" = (module struct
   let (<!) s s' = collate s s' < 0
 
 (*
@@ -101,11 +101,11 @@ TEST_MODULE "collate" = struct
       (((s1 <! s2) || (s2 <! s3)) = (s1 <! s3)))
     (tg sg sg sg); *)
 
-  TEST = "a2b" <! "a10b"
-  TEST = "a2b" <! "a02b"
-  TEST = "a010b" <! "a20b"
+  let%test _ = "a2b" <! "a10b"
+  let%test _ = "a2b" <! "a02b"
+  let%test _ = "a010b" <! "a20b"
 
-end
+end)
 
 (**
    Inverse operation of [String.escaped]
@@ -414,30 +414,30 @@ let word_wrap
 
 let is_substring_deprecated ~substring:needle haystack =
   (* 2014-10-29 mbac: a recent release of Core introduced a fast and less surprising
-     version of KMP.  Everyone should use that.  This function is simply here to maintain
-     bug compatibiltiy with the original pure-ML version of f is_substring that used to be
-     here. *)
+    version of KMP.  Everyone should use that.  This function is simply here to maintain
+    bug compatibiltiy with the original pure-ML version of f is_substring that used
+     to be here. *)
   if String.length needle = 0 then begin
     if String.length haystack = 0 then false
     else invalid_arg "index out of bounds"
   end else
     Core.Std.String.is_substring ~substring:needle haystack
 
-TEST = is_substring_deprecated ~substring:"foo" "foo"
-TEST = not (is_substring_deprecated ~substring:"" "")
-TEST =
+let%test _ = is_substring_deprecated ~substring:"foo" "foo"
+let%test _ = not (is_substring_deprecated ~substring:"" "")
+let%test _ =
   (* For bug compatibility with the ML version that used to be here *)
   try
     ignore (is_substring_deprecated ~substring:"" "foo");
     assert false (* should not be reachable *)
   with Invalid_argument _ ->
     true
-TEST = not (is_substring_deprecated ~substring:"foo" "")
-TEST = is_substring_deprecated ~substring:"bar" "foobarbaz"
-TEST = not (is_substring_deprecated ~substring:"Z" "z")
-TEST = not (is_substring_deprecated ~substring:"store" "video stapler")
-TEST = not (is_substring_deprecated ~substring:"sandwich" "apple")
-TEST = is_substring_deprecated ~substring:"z" "abc\x00z"
+let%test _ = not (is_substring_deprecated ~substring:"foo" "")
+let%test _ = is_substring_deprecated ~substring:"bar" "foobarbaz"
+let%test _ = not (is_substring_deprecated ~substring:"Z" "z")
+let%test _ = not (is_substring_deprecated ~substring:"store" "video stapler")
+let%test _ = not (is_substring_deprecated ~substring:"sandwich" "apple")
+let%test _ = is_substring_deprecated ~substring:"z" "abc\x00z"
 
 let edit_distance_matrix ?transpose s1 s2 =
   let transpose = Option.is_some transpose in
@@ -468,12 +468,12 @@ let edit_distance_matrix ?transpose s1 s2 =
 let edit_distance ?transpose s1 s2 =
   (edit_distance_matrix ?transpose s1 s2).(String.length s1).(String.length s2)
 
-TEST = edit_distance "" "" = 0
-TEST = edit_distance "stringStringString" "stringStringString" = 0
-TEST = edit_distance "ocaml" "coaml" = 2
-TEST = edit_distance ~transpose:() "ocaml" "coaml" = 1
-TEST = edit_distance "sitting" "kitten" = 3
-TEST = edit_distance ~transpose:() "sitting" "kitten" = 3
-TEST = edit_distance "abcdef" "1234567890" = 10
-TEST = edit_distance "foobar" "fubahr" = 3
-TEST = edit_distance "hylomorphism" "zylomorphism" = 1
+let%test _ = edit_distance "" "" = 0
+let%test _ = edit_distance "stringStringString" "stringStringString" = 0
+let%test _ = edit_distance "ocaml" "coaml" = 2
+let%test _ = edit_distance ~transpose:() "ocaml" "coaml" = 1
+let%test _ = edit_distance "sitting" "kitten" = 3
+let%test _ = edit_distance ~transpose:() "sitting" "kitten" = 3
+let%test _ = edit_distance "abcdef" "1234567890" = 10
+let%test _ = edit_distance "foobar" "fubahr" = 3
+let%test _ = edit_distance "hylomorphism" "zylomorphism" = 1

@@ -8,9 +8,6 @@ val ls : string -> string list
 
 val file_kind : string -> Unix.file_kind
 
-(** Get the home of the effective user *)
-val home : unit -> string
-
 (** Get the names of the groups the user belongs to *)
 val groups : unit -> string list
 

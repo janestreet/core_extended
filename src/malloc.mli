@@ -17,7 +17,7 @@ type mallinfo = {
   uordblks : int;  (** total allocated space *)
   fordblks : int;  (** total free space *)
   keepcost : int;  (** top-most, releasable (via malloc_trim) space *)
-} with sexp, bin_io
+} [@@deriving sexp, bin_io]
 
 (** Malloc options *)
 type opt =
@@ -33,7 +33,7 @@ type opt =
                   using mmap. *)
   | CHECK_ACTION  (** ??? *)
 (*   | PERTURB  (** ??? *) *)
-with sexp, bin_io
+[@@deriving sexp, bin_io]
 
 (** [mallinfo ()]
     @return information on the state of malloced memory (C-heap). *)

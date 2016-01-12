@@ -1,6 +1,6 @@
 open Core.Std
 
-exception Not_a_record_type of Sexp.t with sexp
+exception Not_a_record_type of Sexp.t [@@deriving sexp]
 
 (* The create [t_of_sexp] function will record whichever extra fields were passed in. *)
 module Make (M:Sexpable) : sig

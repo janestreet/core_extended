@@ -5,7 +5,7 @@ module Access_control : sig
   module Immutable : sig
     type ('key,'data) t = ('key,'data,immutable) any
     include Sexpable.S2 with type ('key,'data) t := ('key,'data) t
-    include Binable.S2 with type ('key,'data) t := ('key,'data) t
+   include Binable.S2 with type ('key,'data) t := ('key,'data) t
   end
   module Read_only : sig
     type ('key,'data) t = ('key,'data,read) any
@@ -23,20 +23,26 @@ module Access_control : sig
   val copy : ('a, 'b, [> read]) any -> ('a, 'b, [< _ perms]) any
   val fold :
     ('a, 'b, [> read]) any -> init:'c -> f:(key:'a -> data:'b -> 'c -> 'c) -> 'c
+  val iter_vals : ('a, 'b, [> read]) any -> f:('b -> unit) -> unit
+
   val iter : ('a, 'b, [> read]) any -> f:(key:'a -> data:'b -> unit) -> unit
+    [@@ocaml.deprecated "[since 2015-10] Use iteri instead"]
+
+  val iteri : ('a, 'b, [> read]) any -> f:(key:'a -> data:'b -> unit) -> unit
   val existsi : ('a, 'b, [> read]) any -> f:(key: 'a -> data:'b -> bool) -> bool
   val exists : ('a, 'b, [> read]) any -> f:('b -> bool) -> bool
   val length : (_, _, _) any -> int
   val is_empty : (_, _, _) any -> bool
   val mem : ('a, _, [> read]) any -> 'a -> bool
   val remove : ('a, _) Read_write.t -> 'a -> unit
-  val remove_one : ('a, _ list) Read_write.t -> 'a -> unit
   val replace : ('a, 'b) Read_write.t -> key:'a -> data:'b -> unit
   val set : ('a, 'b) Read_write.t -> key:'a -> data:'b -> unit
   val add : ('a, 'b) Read_write.t -> key:'a -> data:'b -> [ `Ok | `Duplicate ]
   val add_exn : ('a, 'b) Read_write.t -> key:'a -> data:'b -> unit
-  val change : ('a, 'b) Read_write.t -> 'a -> ('b option -> 'b option) -> unit
+  val change : ('a, 'b) Read_write.t -> 'a -> f:('b option -> 'b option) -> unit
+  val update : ('a, 'b) Read_write.t -> 'a -> f:('b option -> 'b) -> unit
   val add_multi : ('a, 'b list) Read_write.t -> key:'a -> data:'b -> unit
+  val remove_multi : ('a, _ list) Read_write.t -> 'a -> unit
   val map : ('a, 'b, [> read]) any -> f:('b -> 'c) -> ('a, 'c, [< _ perms]) any
   val mapi
     :  ('a, 'b, [> read]) any
@@ -61,7 +67,6 @@ module Access_control : sig
   val find_or_add : ('a, 'b) Read_write.t -> 'a -> default:(unit -> 'b) -> 'b
   val find : ('a, 'b, [> read]) any -> 'a -> 'b option
   val find_exn : ('a, 'b, [> read]) any -> 'a -> 'b
-  val iter_vals : ('a, 'b, [> read]) any -> f:('b -> unit) -> unit
   val merge :
     ('k, 'a, [> read]) any
     -> ('k, 'b, [> read]) any
@@ -75,7 +80,7 @@ module Access_control : sig
   val keys : ('a, 'b, [> read]) any -> 'a list
   val data : ('a, 'b, [> read]) any -> 'b list
   val filter_inplace : ('a, 'b) Read_write.t -> f:('b -> bool) -> unit
-  val filteri_inplace : ('a, 'b) Read_write.t -> f:('a -> 'b -> bool) -> unit
+  val filteri_inplace : ('a, 'b) Read_write.t -> f:(key:'a -> data:'b -> bool) -> unit
   val equal
     :  ('a, 'b, [> read]) any
     -> ('a, 'b, [> read]) any

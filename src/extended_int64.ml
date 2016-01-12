@@ -1,7 +1,7 @@
 open Core.Std
 
 module Filesize = struct
-  type t = Int64.t with bin_io
+  type t = Int64.t [@@deriving bin_io]
 
   module Infix64 = (Int64 :
     sig type t = Int64.t

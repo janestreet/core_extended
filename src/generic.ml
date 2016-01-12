@@ -67,28 +67,28 @@ let create_type map = (); fun map' k -> k (fun f x ->
 
 let (>>|) x f = map x ~f
 
-TEST = map ([[1];[2;3];[3;4]] >: __ list) ~f:List.length = [1;2;2]
+let%test _ = map ([[1];[2;3];[3;4]] >: __ list) ~f:List.length = [1;2;2]
 
-TEST = map ([[1];[2;3];[3;4]] >: __) ~f:List.length = 3
+let%test _ = map ([[1];[2;3];[3;4]] >: __) ~f:List.length = 3
 
-TEST = length ([[1];[2;3];[3;4]] >: __ list list) = 5
+let%test _ = length ([[1];[2;3];[3;4]] >: __ list list) = 5
 
-TEST = length ([[1];[2;3];[3;4]] >: __ list) = 3
+let%test _ = length ([[1];[2;3];[3;4]] >: __ list) = 3
 
-TEST = length ( [1;2;3;4] >: __ ) = 1
+let%test _ = length ( [1;2;3;4] >: __ ) = 1
 
-TEST = ([ "asdf"; "a" ] >: string list >>| fun c ->
+let%test _ = ([ "asdf"; "a" ] >: string list >>| fun c ->
         Char.uppercase c
 ) = [ "ASDF"; "A" ]
 
-TEST = length ([ Error "foo"; Ok (); Error "banana"] >: __ error list) = 2
-TEST = length ([ Error "foo"; Ok (); Error "banana"] >: __ ok list) = 1
+let%test _ = length ([ Error "foo"; Ok (); Error "banana"] >: __ error list) = 2
+let%test _ = length ([ Error "foo"; Ok (); Error "banana"] >: __ ok list) = 1
 
-TEST = to_list ([ [ Error "foo"]; [Ok (); Error "banana"]]
+let%test _ = to_list ([ [ Error "foo"]; [Ok (); Error "banana"]]
                    >: __ error list list) = [ "foo"; "banana" ]
 
 
-TEST = to_list ([Some 3; None; Some 4] >: __ option list) = [3;4]
+let%test _ = to_list ([Some 3; None; Some 4] >: __ option list) = [3;4]
 
 (*
 TEST = to_list ([Some (1,'s'); None; Some (3,'a')]

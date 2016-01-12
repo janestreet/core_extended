@@ -7,7 +7,7 @@ type 'a t = { mutable data: 'a array; (** base of circular buffer *)
               never_shrink: bool; (** whether to refrain from shrinking the buffer *)
               dummy: 'a; (** value used to pack into newly allocated arrays *)
             }
-with sexp
+[@@deriving sexp]
 
 let create ?(never_shrink=false) dummy length =
   { data = Array.create ~len:(Int.max 10 length) dummy;
@@ -116,14 +116,14 @@ let rec cb_compare ~f ~b1 ~b2 ~s1 ~s2 ~n =
   then cb_compare ~f ~b1 ~b2 ~s1:(s1+1) ~s2:(s2+1) ~n:(n-1)
   else false
 
-TEST_MODULE "compare" = struct
+let%test_module "compare" = (module struct
   let cb1 = of_array [|0;1;2;3;4|]
   let cb2 = of_array [|0;1;2;2;2|]
 
-  TEST "yes" = cb_compare ~f:(=) ~b1:cb1 ~b2:cb2 ~s1:0 ~s2:0 ~n:3
-  TEST "no1" = not (cb_compare ~f:(=) ~b1:cb1 ~b2:cb2 ~s1:0 ~s2:0 ~n:4)
-  TEST "no2"= not (cb_compare ~f:(=) ~b1:cb1 ~b2:cb2 ~s1:1 ~s2:0 ~n:3)
-end
+  let%test "yes" = cb_compare ~f:(=) ~b1:cb1 ~b2:cb2 ~s1:0 ~s2:0 ~n:3
+  let%test "no1" = not (cb_compare ~f:(=) ~b1:cb1 ~b2:cb2 ~s1:0 ~s2:0 ~n:4)
+  let%test "no2"= not (cb_compare ~f:(=) ~b1:cb1 ~b2:cb2 ~s1:1 ~s2:0 ~n:3)
+end)
 
 let drop_old ?(cmp = compare) ?free ~f ~cutoff buf =
   (* should be ?(f=ident), but then ocaml thinks that f is 'a -> 'a *)
@@ -139,46 +139,46 @@ let drop_old ?(cmp = compare) ?free ~f ~cutoff buf =
 
 (* This is a bit of a hacky test module because it's a straightforward copy of
    the  one that was in lib_test *)
-TEST_MODULE = struct
+let%test_module _ = (module struct
 
-  TEST_MODULE "mapping" = struct
+  let%test_module "mapping" = (module struct
     let cb = of_array [|0;1;2;3;4|]
     let bu = Buffer.create 10
     let out n x = Printf.bprintf bu "(%d %d)" n x
     let () = iter cb ~f:out
-    TEST "map" = Buffer.contents bu = "(0 0)(1 1)(2 2)(3 3)(4 4)"
+    let%test "map" = Buffer.contents bu = "(0 0)(1 1)(2 2)(3 3)(4 4)"
     let () = Buffer.clear bu
     let () = iterr cb ~f:out
-    TEST "mapr" = Buffer.contents bu = "(4 4)(3 3)(2 2)(1 1)(0 0)"
-  end
+    let%test "mapr" = Buffer.contents bu = "(4 4)(3 3)(2 2)(1 1)(0 0)"
+  end)
 
-  TEST_MODULE "drop_old" = struct
+  let%test_module "drop_old" = (module struct
     let cb = of_array [|4;3;2;1;0|]
     let list = ref []
     let free obj = list := obj::!list
-    TEST "ret-1" = drop_old ~cutoff:(-1) ~free cb ~f:ident = 0
-    TEST "buf-1" = to_array cb = [|4;3;2;1;0|]
-    TEST "free-1" = !list = []
-    TEST "ret0" = drop_old ~cutoff:0 ~free cb ~f:ident = 1
-    TEST "buf0" = to_array cb = [|4;3;2;1|]
-    TEST "free0" = !list = [0]
-    TEST "ret1" = drop_old ~cutoff:1 ~free cb ~f:ident = 1
-    TEST "buf1" = to_array cb = [|4;3;2|]
-    TEST "free1" = !list = [1;0]
-    TEST "ret2" = drop_old ~cutoff:2 ~free cb ~f:ident = 1
-    TEST "buf2" = to_array cb = [|4;3|]
-    TEST "free2" = !list = [2;1;0]
-    TEST "ret3" = drop_old ~cutoff:3 ~free cb ~f:ident = 1
-    TEST "buf3" = to_array cb = [|4|]
-    TEST "free3" = !list = [3;2;1;0]
-    TEST "ret4" = drop_old ~cutoff:4 ~free cb ~f:ident = 1
-    TEST "buf4" = to_array cb = [||]
-    TEST "free4" = !list = [4;3;2;1;0]
-  end
+    let%test "ret-1" = drop_old ~cutoff:(-1) ~free cb ~f:ident = 0
+    let%test "buf-1" = to_array cb = [|4;3;2;1;0|]
+    let%test "free-1" = !list = []
+    let%test "ret0" = drop_old ~cutoff:0 ~free cb ~f:ident = 1
+    let%test "buf0" = to_array cb = [|4;3;2;1|]
+    let%test "free0" = !list = [0]
+    let%test "ret1" = drop_old ~cutoff:1 ~free cb ~f:ident = 1
+    let%test "buf1" = to_array cb = [|4;3;2|]
+    let%test "free1" = !list = [1;0]
+    let%test "ret2" = drop_old ~cutoff:2 ~free cb ~f:ident = 1
+    let%test "buf2" = to_array cb = [|4;3|]
+    let%test "free2" = !list = [2;1;0]
+    let%test "ret3" = drop_old ~cutoff:3 ~free cb ~f:ident = 1
+    let%test "buf3" = to_array cb = [|4|]
+    let%test "free3" = !list = [3;2;1;0]
+    let%test "ret4" = drop_old ~cutoff:4 ~free cb ~f:ident = 1
+    let%test "buf4" = to_array cb = [||]
+    let%test "free4" = !list = [4;3;2;1;0]
+  end)
 
-  TEST_MODULE "drop_old2" = struct
+  let%test_module "drop_old2" = (module struct
     let cb = of_array [|4;3;2;1;0|]
-    TEST "ret5" = drop_old ~cutoff:5 cb ~f:ident = 5
-    TEST "buf5" = to_array cb = [||]
-  end
-end
+    let%test "ret5" = drop_old ~cutoff:5 cb ~f:ident = 5
+    let%test "buf5" = to_array cb = [||]
+  end)
+end)

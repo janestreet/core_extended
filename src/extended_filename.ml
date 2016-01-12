@@ -63,27 +63,27 @@ let make_relative ?to_ f =
     and f   = normalize_path (explode f) in
     implode (aux (to_,f))
 
-TEST_MODULE "make_relative" = struct
+let%test_module "make_relative" = (module struct
   let make_relative ~to_ f =
     try
       Some (make_relative ~to_ f)
     with Failure _ -> None
 
-  TEST = make_relative ~to_:".." "a" = None
-  TEST = make_relative ~to_:".." "../a"= Some "a"
-  TEST = make_relative ~to_:"c" "a/b" = Some "../a/b"
-  TEST = make_relative ~to_:"/" "a/b" = None
-end
+  let%test _ = make_relative ~to_:".." "a" = None
+  let%test _ = make_relative ~to_:".." "../a"= Some "a"
+  let%test _ = make_relative ~to_:"c" "a/b" = Some "../a/b"
+  let%test _ = make_relative ~to_:"/" "a/b" = None
+end)
 
 let normalize p = implode (normalize_path (explode p))
 
-TEST_MODULE "normalize" = struct
-    TEST "id" = normalize "/mnt/local" ="/mnt/local"
-    TEST "dot_dotdot" = normalize "/mnt/./../local" = "/local"
-    TEST = normalize "/mnt/local/../global/foo" = "/mnt/global/foo"
-    TEST "beyond_root" = normalize "/mnt/local/../../.." = "/"
-    TEST "negative_lookahead" = normalize "../a/../../b" = "../../b"
-end
+let%test_module "normalize" = (module struct
+    let%test "id" = normalize "/mnt/local" ="/mnt/local"
+    let%test "dot_dotdot" = normalize "/mnt/./../local" = "/local"
+    let%test _ = normalize "/mnt/local/../global/foo" = "/mnt/global/foo"
+    let%test "beyond_root" = normalize "/mnt/local/../../.." = "/"
+    let%test "negative_lookahead" = normalize "../a/../../b" = "../../b"
+end)
 
 let (//) src p =
   if is_absolute p then
@@ -180,11 +180,11 @@ let filename_compare map v1 v2 =
 
 let parent p = normalize (concat p parent_dir_name)
 
-TEST_MODULE "parent" = struct
-    TEST = parent "/mnt/local" = "/mnt"
-    TEST = parent "/mnt/local/../global/foo" = "/mnt/global"
-    TEST = parent "/mnt/local/../../global" = "/"
-end
+let%test_module "parent" = (module struct
+    let%test _ = parent "/mnt/local" = "/mnt"
+    let%test _ = parent "/mnt/local/../global/foo" = "/mnt/global"
+    let%test _ = parent "/mnt/local/../../global" = "/"
+end)
 
 let extension_map = create_extension_map [["h";"c"];["mli";"ml"]]
 

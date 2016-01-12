@@ -8,7 +8,7 @@ module Pos_int = Int64
 
 let max_null_retries = 20
 
-type lnum = Known of int | Unknown with sexp_of;;
+type lnum = Known of int | Unknown [@@deriving sexp_of];;
 
 (** The type of a linebuf. *)
 type t = { mutable file: In_channel.t;      (** The channel we maintain. *)
@@ -36,15 +36,14 @@ type t = { mutable file: In_channel.t;      (** The channel we maintain. *)
                                                 whenever we hit nulls *)
          }
 
-type error_type = Null_retry | Too_many_nulls | Exception of string * Exn.t with
-sexp_of;;
+type error_type = Null_retry | Too_many_nulls | Exception of string * Exn.t [@@deriving sexp_of];;
 
 type result =
   | Success of lnum * string
   | Nothing_available
   | Error of error_type
   | Fatal_error of string * Exn.t
-with sexp_of
+[@@deriving sexp_of]
 ;;
 
 (** Open a linebuffer from the passed filename. *)
@@ -89,7 +88,7 @@ let close lbuf =
 
 let is_closed t = t.closed
 
-exception File_truncated_or_deleted with sexp;;
+exception File_truncated_or_deleted [@@deriving sexp];;
 
 let possibly_reopen lbuf =
   if lbuf.signal_on_truncate_or_delete
@@ -123,8 +122,8 @@ let reopen_if_deleted lbuf =
     Unix.Unix_error (ENOENT, _, _) -> `No_such_file
   | exn -> `Error ("reopen_if_deleted: stat failed", exn)
 
-exception Null_found with sexp;;
-exception Too_many_null_retries with sexp;;
+exception Null_found [@@deriving sexp];;
+exception Too_many_null_retries [@@deriving sexp];;
 
 let try_read_lnum_verbose lbuf =
   try

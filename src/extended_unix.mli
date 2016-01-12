@@ -79,7 +79,7 @@ type statvfs = {
   fsid: int;                            (** file system ID *)
   flag: int;                            (** mount flags *)
   namemax: int;                         (** maximum filename length *)
-} with sexp, bin_io
+} [@@deriving sexp, bin_io]
 
 (** get file system statistics *)
 external statvfs : string -> statvfs = "statvfs_stub"
@@ -109,7 +109,7 @@ external strptime : fmt:string -> string -> Unix.tm = "unix_strptime"
 
 (** Simple int wrapper to be explicit about ports. *)
 module Inet_port : sig
-  type t with sexp
+  type t [@@deriving sexp]
 
   val of_int : int -> t option
   val of_int_exn : int -> t
@@ -124,7 +124,7 @@ end
 
 (* MAC-48 (Ethernet) adddresses *)
 module Mac_address : sig
-  type t with sexp, bin_io
+  type t [@@deriving sexp, bin_io]
   val equal : t -> t -> bool
   (* Supports standard "xx:xx:xx:xx:xx:xx", "xx-xx-xx-xx-xx-xx", and cisco
      "xxxx.xxxx.xxxx" representations. *)
@@ -140,8 +140,8 @@ end
 
 module Quota : sig
 
-  type bytes  = private Int63.t with sexp
-  type inodes = private Int63.t with sexp
+  type bytes  = private Int63.t [@@deriving sexp]
+  type inodes = private Int63.t [@@deriving sexp]
 
   val bytes  : Int63.t -> bytes
   val inodes : Int63.t -> inodes
@@ -150,7 +150,7 @@ module Quota : sig
     soft  : 'units option;
     hard  : 'units option;
     grace : Time.t option;
-  } with sexp
+  } [@@deriving sexp]
 
   type 'units usage = private 'units
 
@@ -172,7 +172,7 @@ end
 
 module Mount_entry : sig
   (* see: man 3 getmntent *)
-  type t with sexp
+  type t [@@deriving sexp]
 
   val parse_line : string -> t option Or_error.t
 

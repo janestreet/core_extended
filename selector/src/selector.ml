@@ -9,7 +9,7 @@ module Stable = struct
         | LT of Date.V1.t
         | Between of Date.V1.t * Date.V1.t
         | On of Date.V1.t
-        with bin_io, sexp
+        [@@deriving bin_io, sexp]
 
       let t_of_sexp sexp =
         let module Date = Core.Std.Date in
@@ -48,7 +48,7 @@ module Stable = struct
           let of_string s = of_regexp s
         end
         include T
-        include Core.Std.Binable.Of_stringable(T)
+        include Binable.Of_stringable.V1(T)
 
         let t_of_sexp sexp =
           let open Core.Std in
@@ -74,7 +74,7 @@ module Stable = struct
         | Equal of string list
         | Matches of Regexp.V1.t list
         | Mixed of [ `Regexp of Regexp.V1.t | `Literal of string ] list
-        with bin_io, sexp
+        [@@deriving bin_io, sexp]
 
       let t_of_sexp sexp =
         let parse_atom a =
@@ -106,7 +106,7 @@ module Stable = struct
 
   module String_list_selector = struct
     module V1 = struct
-      type t = string list with bin_io, sexp
+      type t = string list [@@deriving bin_io, sexp]
 
       let t_of_sexp sexp =
         match sexp with
@@ -147,7 +147,7 @@ end
 module String_selector = struct
   module Regexp : sig
     type t = Stable.String_selector.Regexp.Current.t
-    with bin_io, sexp
+    [@@deriving bin_io, sexp]
 
     val of_regexp : string -> t
     val to_string : t -> string

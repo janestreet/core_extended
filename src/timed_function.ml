@@ -2,7 +2,7 @@ open Core.Std
 
 exception Timeout
 
-type 'a forked_computation = ('a,Sexp.t) Result.t with sexp
+type 'a forked_computation = ('a,Sexp.t) Result.t [@@deriving sexp]
 
 let run_in_fork ~f ~sexp_of v =
   let pipe_read,pipe_write = Unix.pipe () in

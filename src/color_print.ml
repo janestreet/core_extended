@@ -56,7 +56,7 @@ type color = [
 | `Blue_violet | `Violet
 | `Dark_magenta | `Purple | `Magenta | `Orchid | `Plum
 | `Rose | `Deep_pink
-] with sexp, bin_io
+] [@@deriving sexp, bin_io]
 
 let color_code ~(color:color) =
   let (r,g,b) =
@@ -99,26 +99,22 @@ let gray  ?override str ~brightness = wrap ?override str ~code:(gray_code ~brigh
 let rgb   ?override str ~r ~g ~b    = wrap ?override str ~code:(rgb_code ~r ~g ~b)
 let color ?override str ~color      = wrap ?override str ~code:(color_code ~color)
 
-(* Note that this always flushes after the terminating normal_code.
-   This is probably not necessary, but it helps ensure that the code that turns
-   off the special formatting actually does get output *)
-let wrap_print ~code fmt =
-  Printf.kfprintf (fun oc -> fprintf oc "%s%!" normal_code) stdout
-    ("%s" ^^ fmt) code
+let wrap_print ?override ~code fmt =
+  Printf.ksprintf (fun str -> print_string (wrap ?override str ~code)) fmt
 
-let boldprintf      fmt = wrap_print ~code:bold_code      fmt
-let underlineprintf fmt = wrap_print ~code:underline_code fmt
-let inverseprintf   fmt = wrap_print ~code:inverse_code   fmt
-let redprintf       fmt = wrap_print ~code:red_code       fmt
-let yellowprintf    fmt = wrap_print ~code:yellow_code    fmt
-let greenprintf     fmt = wrap_print ~code:green_code     fmt
-let blueprintf      fmt = wrap_print ~code:blue_code      fmt
-let magentaprintf   fmt = wrap_print ~code:magenta_code   fmt
-let cyanprintf      fmt = wrap_print ~code:cyan_code      fmt
+let bold_printf      ?override fmt = wrap_print ?override ~code:bold_code      fmt
+let underline_printf ?override fmt = wrap_print ?override ~code:underline_code fmt
+let inverse_printf   ?override fmt = wrap_print ?override ~code:inverse_code   fmt
+let red_printf       ?override fmt = wrap_print ?override ~code:red_code       fmt
+let yellow_printf    ?override fmt = wrap_print ?override ~code:yellow_code    fmt
+let green_printf     ?override fmt = wrap_print ?override ~code:green_code     fmt
+let blue_printf      ?override fmt = wrap_print ?override ~code:blue_code      fmt
+let magenta_printf   ?override fmt = wrap_print ?override ~code:magenta_code   fmt
+let cyan_printf      ?override fmt = wrap_print ?override ~code:cyan_code      fmt
 
-let grayprintf ~brightness fmt = wrap_print ~code:(gray_code ~brightness) fmt
-let rgbprintf ~r ~g ~b     fmt = wrap_print ~code:(rgb_code ~r ~g ~b)     fmt
-let colorprintf ~color     fmt = wrap_print ~code:(color_code ~color)     fmt
+let gray_printf ?override ~brightness fmt = wrap_print ?override ~code:(gray_code ~brightness) fmt
+let rgb_printf ?override ~r ~g ~b     fmt = wrap_print ?override ~code:(rgb_code ~r ~g ~b)     fmt
+let color_printf ?override ~color     fmt = wrap_print ?override ~code:(color_code ~color)     fmt
 
 let wrap_sprint ?override ~code fmt =
   Printf.ksprintf (fun str -> wrap ?override str ~code) fmt

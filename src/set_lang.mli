@@ -20,12 +20,12 @@ module Raw : sig
     | Union of ('base, 'set) t * ('base, 'set) t
     | Inter of ('base, 'set) t * ('base, 'set) t
     | Diff  of ('base, 'set) t * ('base, 'set) t
-  with compare
+  [@@deriving compare]
 
 end
 
 (* A [t] is a Raw.t specialized to Set.t. *)
-type ('base, 'elt, 'cmp) t = ('base, ('elt, 'cmp) Set.t) Raw.t with compare
+type ('base, 'elt, 'cmp) t = ('base, ('elt, 'cmp) Set.t) Raw.t [@@deriving compare]
 
 (*
    [base], [set], [inter2], [union2], [diff]:

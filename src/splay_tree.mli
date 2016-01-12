@@ -1,14 +1,17 @@
 open Core.Std
 
+(** splay trees are binary search trees with a heuristic for moving recently accessed
+    nodes closer to the root for easier access.  They have amortized O(log n)-time access
+    for any sequence of operations. *)
 
 module type Key = sig
-  type t with sexp
+  type t [@@deriving sexp]
   include Comparable with type t := t
 end
 
 module type S = sig
-  type 'a t with sexp
-  type key with sexp
+  type 'a t [@@deriving sexp]
+  type key [@@deriving sexp]
 
   val empty : 'a t
   val is_empty : 'a t -> bool

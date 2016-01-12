@@ -58,10 +58,9 @@ let rec (obj_to_sexp_ : Obj.t -> Sexp.t) = fun x ->
     (* no-scan tags *)
     if tag = Obj.string_tag            then String.sexp_of_t (Obj.obj x: string)
     else if tag = Obj.double_tag       then Float.sexp_of_t (Obj.obj x : float)
-    else if tag = Obj.double_array_tag then <:sexp_of<float array>> (Obj.obj x : float array)
+    else if tag = Obj.double_array_tag then [%sexp_of: float array] (Obj.obj x : float array)
     else if tag = Obj.abstract_tag     then Sexp.Atom "<abstract>"
     else if tag = Obj.custom_tag       then Sexp.Atom "<custom>"
-    else if tag = Obj.final_tag        then Sexp.Atom "<finalized>"
     else if tag = Obj.int_tag          then Sexp.Atom "<int>"
     else if tag = Obj.out_of_heap_tag  then Sexp.Atom "<out_of_heap>"
     else if tag = Obj.unaligned_tag    then Sexp.Atom "<unaligned>"

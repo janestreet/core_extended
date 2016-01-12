@@ -1,20 +1,20 @@
 open Core.Std
 
 module type Key = sig
-  type t with sexp, bin_io
+  type t [@@deriving sexp, bin_io]
   include Comparable.S with type t := t
   module Packed_array : Packed_array.S with type elt := t
 end
 
 module type Value = sig
-  type t with sexp, bin_io
+  type t [@@deriving sexp, bin_io]
   module Packed_array : Packed_array.S with type elt := t
 end
 
 module type S = sig
-  type t     with sexp, bin_io
-  type key   with sexp, bin_io
-  type value with sexp, bin_io
+  type t     [@@deriving sexp, bin_io]
+  type key   [@@deriving sexp, bin_io]
+  type value [@@deriving sexp, bin_io]
 
   val empty            : t
   val of_alist         : (key * value) list -> t
@@ -23,16 +23,16 @@ module type S = sig
   val of_sorted_aarray : (key * value) array -> t
   val of_hashtbl       : (key, value) Hashtbl.t -> t
 
-  val find : t -> key -> value option
-  val mem  : t -> key -> bool
-  val iter : t -> f:(key:key -> data:value -> unit) -> unit
-  val fold : t -> init:'acc -> f:(key:key -> data:value -> 'acc -> 'acc) -> 'acc
+  val find  : t -> key -> value option
+  val mem   : t -> key -> bool
+  val iteri : t -> f:(key:key -> data:value -> unit) -> unit
+  val fold  : t -> init:'acc -> f:(key:key -> data:value -> 'acc -> 'acc) -> 'acc
 end
 
 (* TODO How should we handle duplicate keys? *)
 module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t = struct
-  type key = K.t with sexp, bin_io
-  type value = V.t with sexp, bin_io
+  type key = K.t [@@deriving sexp, bin_io]
+  type value = V.t [@@deriving sexp, bin_io]
 
   module T = Packed_array.Tuple2 (struct
     include K.Packed_array
@@ -42,12 +42,12 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
     type elt = V.t
   end)
 
-  type t = T.t with sexp, bin_io
+  type t = T.t [@@deriving sexp, bin_io]
 
   let empty = T.empty
 
-  exception Duplicate_key of key with sexp
-  exception Unsorted_array of (key * value) array with sexp
+  exception Duplicate_key of key [@@deriving sexp]
+  exception Unsorted_array of (key * value) array [@@deriving sexp]
 
   let fst (a, _) = a
   let cmp a b = K.compare (fst a) (fst b)
@@ -152,7 +152,7 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
       | Some kv -> Array.create ~len kv
     in
     let ix = ref 0 in
-    Hashtbl.iter tbl ~f:(fun ~key ~data ->
+    Hashtbl.iteri tbl ~f:(fun ~key ~data ->
       let i = !ix in
       Array.unsafe_set arr i (key, data);
       ix := i + 1);
@@ -188,12 +188,12 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
     let keys, _ = T.unzip t in
     Option.is_some (binary_search keys k)
 
-  let iter t ~f = T.iter t ~f:(fun (key, data) -> f ~key ~data)
+  let iteri t ~f = T.iter t ~f:(fun (key, data) -> f ~key ~data)
 
   let fold t ~init ~f = T.fold t ~init ~f:(fun acc (key, data) -> f ~key ~data acc)
 end
 
-TEST_MODULE "string->int" = struct
+let%test_module "string->int" = (module struct
   module K = struct
     include String
     module Packed_array = (Packed_array.String : Packed_array.S with type elt := t)
@@ -213,23 +213,23 @@ TEST_MODULE "string->int" = struct
   let alist = List.zip_exn keys values
   let packed_map = M.of_alist alist
 
-  TEST "find  (present)" =
+  let%test "find  (present)" =
     List.for_all keys ~f:(fun k ->
       match M.find packed_map k with
       | None -> false
       | Some v -> List.exists alist ~f:(fun (k', v') -> k = k' && v = v'))
 
-  TEST "find  (too low)" =
+  let%test "find  (too low)" =
     assert ('/' < '0');
     match M.find packed_map "/foo" with
     | None -> true
     | Some _ -> false
 
-  TEST "find  (too high)" =
+  let%test "find  (too high)" =
     assert ('f' > '9');
     not (M.mem packed_map "foo")
 
-  TEST "find  (not present)" = not (M.mem packed_map "73")
+  let%test "find  (not present)" = not (M.mem packed_map "73")
 
-  TEST "find  (empty)" = not (M.mem M.empty "foo")
-end
+  let%test "find  (empty)" = not (M.mem M.empty "foo")
+end)

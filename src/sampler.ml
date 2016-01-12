@@ -57,7 +57,7 @@ let create dist =
   in
   loop [] (List.fold ~f:add ~init:([], []) dist)
 
-TEST_MODULE = struct
+let%test_module _ = (module struct
 
   let probs = [
       ("A", 0.083);
@@ -72,8 +72,8 @@ TEST_MODULE = struct
 
   let num_samples = 10_000_000
 
-  TEST_UNIT =
-    for _i = 1 to num_samples do
+  let%test_unit _ =
+    for _ = 1 to num_samples do
       let key = sample t in
       incr (Hashtbl.find_or_add histogram key ~default:(fun () -> ref 0))
     done
@@ -85,10 +85,10 @@ TEST_MODULE = struct
     if Float.abs (percentage -. prob) > 0.001 then
       failwithf "prob = %G; percentage = %G" prob percentage ()
 
-  TEST_UNIT = test_outcome "A"
-  TEST_UNIT = test_outcome "B"
-  TEST_UNIT = test_outcome "C"
-  TEST_UNIT = test_outcome "D"
+  let%test_unit _ = test_outcome "A"
+  let%test_unit _ = test_outcome "B"
+  let%test_unit _ = test_outcome "C"
+  let%test_unit _ = test_outcome "D"
 
-end
+end)
 

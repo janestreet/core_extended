@@ -1,21 +1,46 @@
 (* OASIS_START *)
 (* OASIS_STOP *)
 
+(* Temporary hacks *)
+let js_hacks = function
+  | After_rules ->
+    rule "Generate a cmxs from a cmxa"
+      ~dep:"%.cmxa"
+      ~prod:"%.cmxs"
+      ~insert:`top
+      (fun env _ ->
+         Cmd (S [ !Options.ocamlopt
+                ; A "-shared"
+                ; A "-linkall"
+                ; A "-I"; A (Pathname.dirname (env "%"))
+                ; A (env "%.cmxa")
+                ; A "-o"
+                ; A (env "%.cmxs")
+            ]));
+
+    (* Pass -predicates to ocamldep *)
+    pflag ["ocaml"; "ocamldep"] "predicate" (fun s -> S [A "-predicates"; A s])
+  | _ -> ()
+
+let setup_preprocessor_deps = function
+  | After_rules ->
+    dep ["pp_deps_for_src"] ["src/config.h"; "src/config.mlh"];
+  | _ -> ()
+
+let setup_core_config_import = function
+  | After_rules ->
+    let env  = BaseEnvLight.load () in
+    let core = BaseEnvLight.var_get "pkg_core" env in
+    rule "import core config for src"
+      ~prods:["src/config.h"; "src/config.mlh"]
+      (fun _ _ -> Seq [ cp (core / "config.h"  ) "src/config.h"
+                      ; cp (core / "config.mlh") "src/config.mlh"
+                      ])
+  | _ -> ()
+
 let dispatch = function
   | After_rules ->
-    dep  ["ocaml"; "ocamldep"; "mlh"] ["src/config.mlh"];
-
-    flag ["mlh"; "ocaml"; "ocamldep"] (S[A"-ppopt"; A"-Isrc/"]);
-    flag ["mlh"; "ocaml"; "compile"]  (S[A"-ppopt"; A"-Isrc/"]);
-    flag ["mlh"; "ocaml"; "doc"]      (S[A"-ppopt"; A"-Isrc/"]);
-
     flag ["c"; "compile"] & S[A"-I"; A"src"; A"-package"; A"core"; A"-thread"];
-
-    List.iter
-      (fun tag ->
-         pflag ["ocaml"; tag] "pa_ounit_lib"
-           (fun s -> S[A"-ppopt"; A"-pa-ounit-lib"; A"-ppopt"; A s]))
-      ["ocamldep"; "compile"; "doc"];
 
     let hack = "ugly_hack_to_workaround_ocamlbuild_nightmare" in
     mark_tag_used hack;
@@ -58,4 +83,11 @@ let dispatch = function
 | _ ->
     ()
 
-let () = Ocamlbuild_plugin.dispatch (fun hook -> dispatch hook; dispatch_default hook)
+let () =
+  Ocamlbuild_plugin.dispatch (fun hook ->
+    js_hacks hook;
+    setup_preprocessor_deps hook;
+    setup_core_config_import hook;
+    Ppx_driver_ocamlbuild.dispatch hook;
+    dispatch hook;
+    dispatch_default hook)

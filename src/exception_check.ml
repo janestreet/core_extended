@@ -26,7 +26,7 @@ let create ?(listen_port = 65100) exns =
     Thread.create (fun () ->
       let s = U.socket ~domain:U.PF_INET ~kind:U.SOCK_STREAM ~protocol:0 in
       U.bind s ~addr:(U.ADDR_INET (U.Inet_addr.bind_any, listen_port));
-      U.listen s ~max:10;
+      U.listen s ~backlog:10;
       U.set_nonblock s;
       while true do
         try

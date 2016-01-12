@@ -4,7 +4,7 @@ module type Key = sig
   type t
 
   module Part : sig
-    type t with sexp
+    type t [@@deriving sexp]
     val hash  : t -> int
     val compare : t -> t -> int
   end

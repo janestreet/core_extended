@@ -7,6 +7,10 @@ open Core.Std
    in the sexp parsers exposed below, the following magic will be available:
    - constructors that take lists can be written as atoms for singletons
    - specific notes as detailed below
+
+   There is an extension to this exposed in Sqml that has an additional to_expr method for
+   converting these to SQL expressions.  It also has additional selectors for Sqml
+   specific types.
 *)
 
 module type Selector = sig
@@ -27,7 +31,7 @@ module Date_selector : sig
     | LT of Date.t
     | Between of Date.t * Date.t
     | On of Date.t
-    with bin_io, sexp
+    [@@deriving bin_io, sexp]
 
   include Selector with type selector = t and type value = Date.t
 end
@@ -42,7 +46,7 @@ end
 *)
 module String_selector : sig
   module Regexp : sig
-    type t with bin_io, sexp
+    type t [@@deriving bin_io, sexp]
 
     val of_regexp : string -> t
     val matches : t -> string -> bool
@@ -54,13 +58,13 @@ module String_selector : sig
     | Equal of string list
     | Matches of Regexp.t list
     | Mixed of [ `Regexp of Regexp.t | `Literal of string ] list
-    with bin_io, sexp
+    [@@deriving bin_io, sexp]
 
   include Selector with type selector = t and type value = String.t
 end
 
 module String_list_selector : sig
-  type t = string list with bin_io, sexp
+  type t = string list [@@deriving bin_io, sexp]
 
   include Selector with type selector = t and type value = string
 end
@@ -70,22 +74,22 @@ module Stable : sig
 
   module Date_selector : sig
     module V1 : sig
-      type t = Date_selector.t with sexp, bin_io
+      type t = Date_selector.t [@@deriving sexp, bin_io]
     end
   end
   module String_selector : sig
     module Regexp : sig
       module V1 : sig
-        type t = String_selector.Regexp.t with sexp, bin_io
+        type t = String_selector.Regexp.t [@@deriving sexp, bin_io]
       end
     end
     module V1 : sig
-      type t = String_selector.t with bin_io, sexp
+      type t = String_selector.t [@@deriving bin_io, sexp]
     end
   end
   module String_list_selector : sig
     module V1 : sig
-      type t = String_list_selector.t with sexp, bin_io
+      type t = String_list_selector.t [@@deriving sexp, bin_io]
     end
   end
 end

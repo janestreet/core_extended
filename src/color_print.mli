@@ -44,7 +44,7 @@ type color = [
 | `Blue_violet | `Violet
 | `Dark_magenta | `Purple | `Magenta | `Orchid | `Plum
 | `Rose | `Deep_pink
-] with sexp, bin_io
+] [@@deriving sexp, bin_io]
 
 val color: ?override:bool -> string -> color:color -> string
 
@@ -63,19 +63,18 @@ val gray_sprintf : ?override:bool -> brightness:float              -> ('a, unit,
 val rgb_sprintf  : ?override:bool -> r:float -> g:float -> b:float -> ('a, unit, string, string) format4 -> 'a
 val color_sprintf: ?override:bool -> color:color                   -> ('a, unit, string, string) format4 -> 'a
 
-
 (* Formatted printf. *)
-val boldprintf     : ('a, out_channel, unit) format -> 'a
-val underlineprintf: ('a, out_channel, unit) format -> 'a
-val inverseprintf  : ('a, out_channel, unit) format -> 'a
-val redprintf      : ('a, out_channel, unit) format -> 'a
-val yellowprintf   : ('a, out_channel, unit) format -> 'a
-val greenprintf    : ('a, out_channel, unit) format -> 'a
-val blueprintf     : ('a, out_channel, unit) format -> 'a
-val magentaprintf  : ('a, out_channel, unit) format -> 'a
-val cyanprintf     : ('a, out_channel, unit) format -> 'a
+val bold_printf     : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
+val underline_printf: ?override:bool -> ('a, unit, string, unit) format4 -> 'a
+val inverse_printf  : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
+val red_printf      : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
+val yellow_printf   : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
+val green_printf    : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
+val blue_printf     : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
+val magenta_printf  : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
+val cyan_printf     : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
 
-val grayprintf : brightness:float              -> ('a, out_channel, unit) format -> 'a
-val rgbprintf  : r:float -> g:float -> b:float -> ('a, out_channel, unit) format -> 'a
-val colorprintf: color:color                   -> ('a, out_channel, unit) format -> 'a
+val gray_printf : ?override:bool -> brightness:float              -> ('a, unit, string, unit) format4 -> 'a
+val rgb_printf  : ?override:bool -> r:float -> g:float -> b:float -> ('a, unit, string, unit) format4 -> 'a
+val color_printf: ?override:bool -> color:color                   -> ('a, unit, string, unit) format4 -> 'a
 

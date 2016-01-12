@@ -8,7 +8,7 @@ open Core.Std
 (** [Basic] is the minimal interface you need to provide to make a packed array for a new
     type. *)
 module type Basic = sig
-  type elt with sexp, bin_io
+  type elt [@@deriving sexp, bin_io]
   type t
 
   val length : t -> int

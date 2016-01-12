@@ -11,7 +11,7 @@ type 'a t = {
    	mutable length : int; 	(*	number of elements in buffer	*)
    	never_shrink : bool; 	(*	whether to refrain from shrinking the buffer	*)
    	dummy : 'a; 	(*	value used to pack into newly allocated arrays	*)
-} with sexp
+} [@@deriving sexp]
 
 val create : ?never_shrink:bool -> 'a -> Core.Std.Int.t -> 'a t
 

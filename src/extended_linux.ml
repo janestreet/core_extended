@@ -1,15 +1,15 @@
 open Core.Std
 
-INCLUDE "config.mlh"
+#import "config.mlh"
 
 type uids = {
   ruid:int;
   euid:int;
   suid:int
-} with sexp,bin_io
+} [@@deriving sexp, bin_io]
 
 module Statfs = struct
-IFDEF LINUX_EXT THEN
+#if JSC_LINUX_EXT
   module Raw = struct
     type t =
       {
@@ -24,7 +24,7 @@ IFDEF LINUX_EXT THEN
       }
     ;;
   end
-ENDIF
+#endif
 
   type f_type =
         ADFS_SUPER_MAGIC | AFFS_SUPER_MAGIC | BEFS_SUPER_MAGIC | BFS_MAGIC
@@ -49,7 +49,7 @@ ENDIF
     }
   ;;
 
-IFDEF LINUX_EXT THEN
+#if JSC_LINUX_EXT
   let of_rawstatfs raw =
     {
       f_type =
@@ -93,10 +93,10 @@ IFDEF LINUX_EXT THEN
       f_namelen = raw.Raw.f_namelen
     }
   ;;
-ENDIF
+#endif
 end ;;
 
-IFDEF LINUX_EXT THEN
+#if JSC_LINUX_EXT
 
 external setresuid : ruid:int -> euid:int -> suid:int -> unit = "linux_setresuid_stub"
 
@@ -113,7 +113,7 @@ let getresuid = Ok getresuid
 open Unix
 
 module Splice = struct
-  type flag = MOVE | NONBLOCK | MORE | GIFT with sexp, bin_io
+  type flag = MOVE | NONBLOCK | MORE | GIFT [@@deriving sexp, bin_io]
   type flags
 
   external unsafe_splice :
@@ -178,13 +178,13 @@ external linux_statfs_stub : string -> Statfs.Raw.t = "linux_statfs_stub" ;;
 let statfs path = Statfs.of_rawstatfs (linux_statfs_stub path) ;;
 let statfs = Ok statfs
 
-ELSE
+#else
 
 let setresuid = Or_error.unimplemented "Extended_linux.setresuid"
 let getresuid = Or_error.unimplemented "Extended_linux.getresuid"
 
 module Splice = struct
-  type flag = MOVE | NONBLOCK | MORE | GIFT with sexp, bin_io
+  type flag = MOVE | NONBLOCK | MORE | GIFT [@@deriving sexp, bin_io]
   type flags = flag array
 
   let make_flags = Fn.id
@@ -195,4 +195,4 @@ end
 
 let statfs = Or_error.unimplemented "Extended_linux.statfs"
 
-ENDIF
+#endif

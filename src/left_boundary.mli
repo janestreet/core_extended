@@ -4,4 +4,4 @@
 type 'k t =
   | Inc of 'k
   | Exc of 'k
-with sexp, compare
+[@@deriving sexp, compare]

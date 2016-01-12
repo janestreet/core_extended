@@ -8,7 +8,7 @@ module type Key = sig
   type t
 
   module Part : sig
-    type t with sexp
+    type t [@@deriving sexp]
     val hash    : t -> int
     val compare : t -> t -> int
   end
@@ -128,7 +128,7 @@ module Make(T : Key) = struct
       | Alt of t list
       | Seq of t * t
       | Maybe of t
-    with sexp
+    [@@deriving sexp]
 
     (* not tail recursive *)
     let rec of_t (Node t) =

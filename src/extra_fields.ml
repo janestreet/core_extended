@@ -1,6 +1,6 @@
 open Core.Std
 
-exception Not_a_record_type of Sexp.t with sexp
+exception Not_a_record_type of Sexp.t [@@deriving sexp]
 
 let fields sexp =
   match sexp with

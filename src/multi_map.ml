@@ -2,14 +2,18 @@ open Core.Std
 
 include Fold_map.Make2_sexpable
 (struct
-   type 'a t = 'a list with sexp
+   type 'a t = 'a list [@@deriving sexp]
    let init = []
    let f list x = x :: list
  end)
 
 
-let iter ~f m =
-  iter ~f:(fun ~key ~data -> List.iter data ~f:(fun data -> f ~key ~data)) m
+let iteri ~f m =
+  iteri ~f:(fun ~key ~data -> List.iter data ~f:(fun data -> f ~key ~data)) m
+
+(* DEPRECATED - leaving here for a little while so as to ease the transition for
+   external core users. (But marking as deprecated in the mli *)
+let iter = iteri
 
 let mapi ~f m =
   of_map (Map.mapi (to_map m)
@@ -32,7 +36,7 @@ let set ~key ~data m =
   else
     set ~key ~data m
 
-let filter ~f m =
+let filteri ~f m =
   of_map
     (Map.filter_mapi (to_map m)
         ~f:(fun ~key ~data ->
@@ -43,5 +47,9 @@ let filter ~f m =
             None
           else
             Some data))
+
+(* DEPRECATED - leaving here for a little while so as to ease the transition for
+   external core users. (But marking as deprecated in the mli *)
+let filter = filteri
 
 let reduce ~f m = Map.map ~f (to_map m)

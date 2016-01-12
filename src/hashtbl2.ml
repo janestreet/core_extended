@@ -1,7 +1,7 @@
 open Core.Std
 
 module type Key = sig
-  type t with compare, sexp_of
+  type t [@@deriving compare, sexp_of]
   val hash : t -> int
 end
 
@@ -12,7 +12,7 @@ type ('key1, 'key2, 'data) t =
   ; sexp_of_key2 : 'key2 -> Sexp.t
   }
 
-type ('key1, 'key2, 'data) sexp_repr = ('key1 * 'key2 * 'data) list with sexp_of
+type ('key1, 'key2, 'data) sexp_repr = ('key1 * 'key2 * 'data) list [@@deriving sexp_of]
 
 let to_sexp_repr t =
   List.concat_map (Hashtbl.to_alist t.by_key1)
@@ -22,7 +22,7 @@ let to_sexp_repr t =
 ;;
 
 let sexp_of_t sexp_of_key1 sexp_of_key2 sexp_of_data t =
-  to_sexp_repr t |> <:sexp_of< (key1, key2, data) sexp_repr >>
+  to_sexp_repr t |> [%sexp_of: (key1, key2, data) sexp_repr]
 ;;
 
 let clear t =
@@ -34,21 +34,23 @@ let mem1 t key1 =
 ;;
 
 let iter t ~f =
-  Hashtbl.iter t.by_key1 ~f:(fun ~key:key1 ~data:by_key2 ->
-    Hashtbl.iter by_key2 ~f:(fun ~key:key2 ~data ->
+  Hashtbl.iteri t.by_key1 ~f:(fun ~key:key1 ~data:by_key2 ->
+    Hashtbl.iteri by_key2 ~f:(fun ~key:key2 ~data ->
       f key1 key2 data))
 ;;
+
+let iter1 t ~f = Hashtbl.iteri t.by_key1 ~f:(fun ~key ~data -> f key data)
 
 let remove_all1 t key1 = Hashtbl.remove t.by_key1 key1
 
 let iter_key2 t key1 ~f =
   match Hashtbl.find t.by_key1 key1 with
   | None -> ()
-  | Some by_key2 -> Hashtbl.iter by_key2 ~f:(fun ~key:key2 ~data -> f key2 data)
+  | Some by_key2 -> Hashtbl.iteri by_key2 ~f:(fun ~key:key2 ~data -> f key2 data)
 ;;
 
 let invariant invariant_key1 invariant_key2 invariant_data t =
-  Hashtbl.iter t.by_key1 ~f:(fun ~key:_ ~data:by_key2 ->
+  Hashtbl.iteri t.by_key1 ~f:(fun ~key:_ ~data:by_key2 ->
     assert (not (Hashtbl.is_empty by_key2)));
   iter t ~f:(fun key1 key2 data ->
     invariant_key1 key1;
@@ -91,7 +93,7 @@ let set t key1 key2 data =
 let remove_error t key1 key2 =
   let sexp_of_key1 = t.sexp_of_key1 in
   let sexp_of_key2 = t.sexp_of_key2 in
-  failwiths "Hashtbl2.remove_exn of absent keys" (key1, key2) <:sexp_of< key1 * key2 >>
+  failwiths "Hashtbl2.remove_exn of absent keys" (key1, key2) [%sexp_of: key1 * key2]
 ;;
 
 let remove_exn t key1 key2 =
@@ -112,13 +114,13 @@ module Make (Key1 : Key) (Key2 : Key) = struct
   module Table1 = Hashtbl.Make (struct include Key1 let t_of_sexp _ = assert false end)
   module Table2 = Hashtbl.Make (struct include Key2 let t_of_sexp _ = assert false end)
 
-  type nonrec 'data t = (Key1.t, Key2.t, 'data) t with sexp_of
+  type nonrec 'data t = (Key1.t, Key2.t, 'data) t [@@deriving sexp_of]
 
   let create () =
     { create2      = Table2.create
     ; by_key1      = Table1.create ()
-    ; sexp_of_key1 = <:sexp_of< Key1.t >>
-    ; sexp_of_key2 = <:sexp_of< Key2.t >>
+    ; sexp_of_key1 = [%sexp_of: Key1.t]
+    ; sexp_of_key2 = [%sexp_of: Key2.t]
     }
   ;;
 

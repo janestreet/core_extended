@@ -96,12 +96,12 @@ struct
     | [], tail -> make_tail (fun kv -> New_in_updated (recf kv)) tail acc
     | tail, [] -> make_tail (fun kv -> Not_in_updated (recf kv)) tail acc
     | (((k_o, v_o) as h_o) :: t_o as l_o), (((k_u, v_u) as h_u) :: t_u as l_u) ->
-        let c = compare k_o k_u in
+        let c = String.compare k_o k_u in
         if c = 0 then
           match of_sexps ~original:v_o ~updated:v_u with
           | None -> of_record_fields acc t_o t_u
           | Some diff -> of_record_fields (Bad_match (k_u, diff) :: acc) t_o t_u
-        else if c < 0 then of_record_fields (New_in_updated (recf h_u) :: acc) l_o t_u
+        else if c > 0 then of_record_fields (New_in_updated (recf h_u) :: acc) l_o t_u
         else of_record_fields (Not_in_updated (recf h_o) :: acc) t_o l_u
 
   and of_lists acc original updated =
@@ -302,10 +302,10 @@ let of_generated_sexp of_sexp ~original_sexp ~generated_sexp =
 ;;
 
 module Make_explicit_sexp_option (T: sig
-  type t with sexp
+  type t [@@deriving sexp]
   val explicit_sexp_option_fields : string list
 end) : sig
-  type t = T.t with sexp
+  type t = T.t [@@deriving sexp]
 end = struct
   type t = T.t
 
@@ -349,7 +349,7 @@ end = struct
     in
     let field_names = List.fold T.explicit_sexp_option_fields ~init:field_names
       ~f:(fun field_names explicit_sexp_option_field ->
-        let value = <:sexp_of<Sexp.t option>>
+        let value = [%sexp_of: Sexp.t option]
           (Map.find field_names explicit_sexp_option_field)
         in
         Map.add field_names ~key:explicit_sexp_option_field ~data:value
@@ -361,12 +361,12 @@ end = struct
 end
 
 module Records_table = struct
-  type 'a t = 'a list with sexp
+  type 'a t = 'a list [@@deriving sexp]
 
-  exception Invalid_record_sexp of Sexp.t with sexp
+  exception Invalid_record_sexp of Sexp.t [@@deriving sexp]
 
   exception Record_sexp_missing_field of (string * Sexp.t) list * string
-  with sexp
+  [@@deriving sexp]
 
   let sexp_of_t sexp_of_record records =
     let records =
@@ -404,7 +404,7 @@ module Records_table = struct
     Sexp.List rows
   ;;
 
-  exception Invalid_table_sexp with sexp
+  exception Invalid_table_sexp [@@deriving sexp]
 
   let t_of_sexp record_of_sexp sexp =
     let error () = raise (Of_sexp_error (Invalid_table_sexp, sexp)) in
@@ -458,7 +458,7 @@ module Comprehension = struct
     type ispec =
     | Sing of int
     | IRange of int * int * int
-    with sexp
+    [@@deriving sexp]
 
     type t =
     | Atom of string
@@ -466,7 +466,7 @@ module Comprehension = struct
     | Times of t list
     | Set of ispec list
     | CRange of char * char
-    with sexp
+    [@@deriving sexp]
 
     let print_list print_elem list =
       match list with
@@ -491,7 +491,7 @@ module Comprehension = struct
       | CRange (c1,c2) -> sprintf "{%c..%c}" c1 c2
   end
 
-  type 'a t = 'a list with sexp
+  type 'a t = 'a list [@@deriving sexp]
 
   (* Takes a comprehension spec and produces all the strings it matches *)
   let rec expand fmt =
@@ -772,107 +772,107 @@ module Comprehension = struct
     let sort = List.sort ~cmp:String.compare in
     sort strs = (strs |> sort |> compress |> expand_strings_exn |> sort)
 
-  TEST = Format.(["1";"2";"3"] = expand (Set[IRange(1,3,1)]))
-  TEST = Format.(["ab1";"ab2";"ab3"] = expand (Times[Atom "ab"; Set[IRange (1,3,1)]]))
-  TEST = Format.(["foobar"] = expand(Times[Atom "foo"; Atom "bar"]))
-  TEST = Format.(["a1";"b1";"c1"] = expand(Times[Plus["a";"b";"c"]; Set[IRange(1,1,1)]]))
-  TEST = Format.(["a1";"a2";"d1";"d2"] = expand(Times[Plus["a";"d"]; Set[IRange(1,2,1)]]))
-  TEST = Format.(["135"; "136"; "145"; "146"; "235"; "236"; "245"; "246"]
+  let%test _ = Format.(["1";"2";"3"] = expand (Set[IRange(1,3,1)]))
+  let%test _ = Format.(["ab1";"ab2";"ab3"] = expand (Times[Atom "ab"; Set[IRange (1,3,1)]]))
+  let%test _ = Format.(["foobar"] = expand(Times[Atom "foo"; Atom "bar"]))
+  let%test _ = Format.(["a1";"b1";"c1"] = expand(Times[Plus["a";"b";"c"]; Set[IRange(1,1,1)]]))
+  let%test _ = Format.(["a1";"a2";"d1";"d2"] = expand(Times[Plus["a";"d"]; Set[IRange(1,2,1)]]))
+  let%test _ = Format.(["135"; "136"; "145"; "146"; "235"; "236"; "245"; "246"]
                  = expand(Times[Set[IRange(1,2,1)]; Set[IRange(3,4,1)]; Set[IRange(5,6,1)]]))
   (* Sums where the branches are different sizes *)
-  TEST = ["adefg"; "adfg"; "adg"; "abdefg"; "abdfg"; "abdg";
+  let%test _ = ["adefg"; "adfg"; "adg"; "abdefg"; "abdfg"; "abdg";
           "abcdefg"; "abcdfg"; "abcdg"] = expand_string_exn "{a,ab,abc}d{efg,fg,g}"
   (* Brace matching *)
-  TEST = ("{foo}", "bar") = str_split_brace_exn "{foo}bar"
-  TEST = ("foo", "{bar}") = str_split_char "foo{bar}"
-  TEST = ("{{{}}{}{{}}{}}", "{{}{}}") = str_split_brace_exn "{{{}}{}{{}}{}}{{}{}}"
-  TEST = Format.(Atom "") = parse_exn ""
+  let%test _ = ("{foo}", "bar") = str_split_brace_exn "{foo}bar"
+  let%test _ = ("foo", "{bar}") = str_split_char "foo{bar}"
+  let%test _ = ("{{{}}{}{{}}{}}", "{{}{}}") = str_split_brace_exn "{{{}}{}{{}}{}}{{}{}}"
+  let%test _ = Format.(Atom "") = parse_exn ""
   (* Whitepsace insensitivity for integer ranges *)
-  TEST = Format.(Set[IRange(12,25,1)]) = parse_exn "{12       ..  25}"
-  TEST = Format.(Set[IRange(12,25,1)]) = parse_exn "{12 .. 25}"
-  TEST = Format.(Set[IRange(12,25,1)]) = parse_exn "{12 ..25}"
-  TEST = Format.(Set[IRange(5,25,1)]) = parse_exn "{5.. 25}"
-  TEST = Format.(Set[IRange(3,6,3)] = parse_exn "{3..6..3}")
+  let%test _ = Format.(Set[IRange(12,25,1)]) = parse_exn "{12       ..  25}"
+  let%test _ = Format.(Set[IRange(12,25,1)]) = parse_exn "{12 .. 25}"
+  let%test _ = Format.(Set[IRange(12,25,1)]) = parse_exn "{12 ..25}"
+  let%test _ = Format.(Set[IRange(5,25,1)]) = parse_exn "{5.. 25}"
+  let%test _ = Format.(Set[IRange(3,6,3)] = parse_exn "{3..6..3}")
   (* Simple sums *)
-  TEST = Format.(Plus["a";"b";"c"]) = parse_exn "{a,b,c}"
+  let%test _ = Format.(Plus["a";"b";"c"]) = parse_exn "{a,b,c}"
   (* Character ranges *)
-  TEST = Format.(Times([Atom "hi"; CRange('a','d'); Plus["a";"e";"f"]])
+  let%test _ = Format.(Times([Atom "hi"; CRange('a','d'); Plus["a";"e";"f"]])
                  = parse_exn "hi{a..d}{a,e,f}")
 
-  TEST = Format.(Times[Atom "a"; Set[IRange(1,3,1)]; Atom "c"]) = parse_exn "a{1 .. 3}c"
-  TEST = (["{a}"; "{b}"; "{c}"] = expand_string_exn "{{a,b,c}}")
-  TEST = (["this{is}{not}a{test}"] = expand_string_exn "this{is}{not}a{test}")
-  TEST = (["{{{hi}}}"] = expand_string_exn "{{{hi}}}")
+  let%test _ = Format.(Times[Atom "a"; Set[IRange(1,3,1)]; Atom "c"]) = parse_exn "a{1 .. 3}c"
+  let%test _ = (["{a}"; "{b}"; "{c}"] = expand_string_exn "{{a,b,c}}")
+  let%test _ = (["this{is}{not}a{test}"] = expand_string_exn "this{is}{not}a{test}")
+  let%test _ = (["{{{hi}}}"] = expand_string_exn "{{{hi}}}")
 
-  TEST = (["{{1}{2}}hi{{a}{b}}"] = expand_string_exn "{{1}{2}}hi{{a}{b}}")
+  let%test _ = (["{{1}{2}}hi{{a}{b}}"] = expand_string_exn "{{1}{2}}hi{{a}{b}}")
 
-  TEST = (["{{1}{2}}hi{{a}{b}}"] = t_of_sexp String.t_of_sexp (List[Atom( "{{1}{2}}hi{{a}{b}}")]))
-  TEST = (["1";"2";"5";"6";"7"] = t_of_sexp String.t_of_sexp (List[Atom("{1..2}"); Atom("{5..7}")]))
+  let%test _ = (["{{1}{2}}hi{{a}{b}}"] = t_of_sexp String.t_of_sexp (List[Atom( "{{1}{2}}hi{{a}{b}}")]))
+  let%test _ = (["1";"2";"5";"6";"7"] = t_of_sexp String.t_of_sexp (List[Atom("{1..2}"); Atom("{5..7}")]))
 
-  TEST = (["Afoo7"; "Afoo8"; "Afoo9"; "bfoo7"; "bfoo8"; "bfoo9"] =
+  let%test _ = (["Afoo7"; "Afoo8"; "Afoo9"; "bfoo7"; "bfoo8"; "bfoo9"] =
       expand_string_exn "{A,b}foo{7..9}")
 
-  TEST = (["1"; "3"; "5"] = expand_string_exn "{1..5..2}")
-  TEST = (["1"; "3"; "5"] = expand_string_exn "{1..6..2}")
-  TEST = (["a1"; "a2"; "b1"; "b2"; "c1"; "c2"] = expand_string_exn "{a..c}{1..2}")
+  let%test _ = (["1"; "3"; "5"] = expand_string_exn "{1..5..2}")
+  let%test _ = (["1"; "3"; "5"] = expand_string_exn "{1..6..2}")
+  let%test _ = (["a1"; "a2"; "b1"; "b2"; "c1"; "c2"] = expand_string_exn "{a..c}{1..2}")
 
-  TEST = (["{ a }b5{4}"; "{ a }b1{4}"; "{ a }b2{4}"; "{ a }b1{4}";
+  let%test _ = (["{ a }b5{4}"; "{ a }b1{4}"; "{ a }b2{4}"; "{ a }b1{4}";
            "{ a }b7{4}"; "{ a }c5{4}"; "{ a }c1{4}"; "{ a }c2{4}";
            "{ a }c1{4}"; "{ a }c7{4}"]
           = expand_string_exn  "{ a }{   b  .. c  }{  5 , 1 .. 2 , 1 ..  2   .. 2   , 7  }{4}")
 
-  TEST = roundtrip ["foo1a"; "foo2a"; "foo3a"; "foo3b"; "foo4b"; "foo5c"; "foo7c";
+  let%test _ = roundtrip ["foo1a"; "foo2a"; "foo3a"; "foo3b"; "foo4b"; "foo5c"; "foo7c";
                     "foo7d"; "foo9d"; "foo11d"]
-  TEST = roundtrip ["foo1a"; "foo2a"; "foo3b"]
-  TEST = roundtrip["a1b1"; "a2b1"; "a1b2"; "a2b2"]
+  let%test _ = roundtrip ["foo1a"; "foo2a"; "foo3b"]
+  let%test _ = roundtrip["a1b1"; "a2b1"; "a1b2"; "a2b2"]
 
   (* Brace matching *)
-  TEST = roundtrip["{{{}}{}{{}}{}}{{}{}}"]
+  let%test _ = roundtrip["{{{}}{}{{}}{}}{{}{}}"]
   (* Keyboard-mashing*)
-  TEST = roundtrip["1212k1"; "121k2"; "12k"; "12k1"; "12k12"; "12k12121k2"; "1k1"; "1k2";
+  let%test _ = roundtrip["1212k1"; "121k2"; "12k"; "12k1"; "12k12"; "12k12121k2"; "1k1"; "1k2";
                    "1kk"; "2"; "21k"; "21k2"; "2k"; "2k1"; "2k12"; "2k12121k2"; "2k121k";
                    "2k12k1"; "2k12k121"; "2k12k12k"; "k"; "k1"; "k21k212"; "k2k121k212k";
                    "k2k12k1"]
   (* Longish range *)
-  TEST = (["a{1..100}b"] = compress (List.init 100 ~f:(fun i -> sprintf "a%db" (i+1))))
-  TEST = (["{1..100}b"] = compress (List.init 100 ~f:(fun i -> sprintf "%db" (i+1))))
-  TEST = (["a{1..100}"] = compress (List.init 100 ~f:(fun i -> sprintf "a%d" (i+1))))
-  TEST = (["{1..100}"] = compress (List.init 100 ~f:(fun i -> sprintf "%d" (i+1))))
+  let%test _ = (["a{1..100}b"] = compress (List.init 100 ~f:(fun i -> sprintf "a%db" (i+1))))
+  let%test _ = (["{1..100}b"] = compress (List.init 100 ~f:(fun i -> sprintf "%db" (i+1))))
+  let%test _ = (["a{1..100}"] = compress (List.init 100 ~f:(fun i -> sprintf "a%d" (i+1))))
+  let%test _ = (["{1..100}"] = compress (List.init 100 ~f:(fun i -> sprintf "%d" (i+1))))
   (* Compress suffixes *)
-  TEST = (["a{1..2}{foo,bar}"] = compress ["a1foo"; "a1bar"; "a2foo"; "a2bar"])
+  let%test _ = (["a{1..2}{foo,bar}"] = compress ["a1foo"; "a1bar"; "a2foo"; "a2bar"])
   (* Don't compress not-suffices - one buggy implementation turns this into {1..2}a{1..2} *)
-  TEST = (["1a1"; "2a2"] = compress ["1a1"; "2a2"])
+  let%test _ = (["1a1"; "2a2"] = compress ["1a1"; "2a2"])
   (* Same test but considering that we compress suffixes *)
-  TEST = roundtrip ["a1a"; "a2b"]
-  TEST = roundtrip ["a1a"; "b1b"]
-  TEST = roundtrip ["a1a"; "b2a"]
+  let%test _ = roundtrip ["a1a"; "a2b"]
+  let%test _ = roundtrip ["a1a"; "b1b"]
+  let%test _ = roundtrip ["a1a"; "b2a"]
   (* Similar test, but some things should actually get compressed *)
-  TEST = roundtrip ["a1a"; "a1b"; "aa1a"; "aa2a"; "a2b"]
+  let%test _ = roundtrip ["a1a"; "a1b"; "aa1a"; "aa2a"; "a2b"]
   (* Order shouldn't matter for compression *)
-  TEST = (compress ["a1"; "a3"; "a5"; "a7"]) = (compress ["a5"; "a1"; "a7"; "a3"])
+  let%test _ = (compress ["a1"; "a3"; "a5"; "a7"]) = (compress ["a5"; "a1"; "a7"; "a3"])
   (* If  you accidentally sort the numbers as strings they could end up in lexicographic
    * order and finding runs would fail. So test numbers whose lexicographic order
    * differs from numeric order *)
-  TEST = ["{500..1500..500}"] = compress ["1500"; "500"; "1000"]
+  let%test _ = ["{500..1500..500}"] = compress ["1500"; "500"; "1000"]
 
-  TEST = die (fun () -> expand_string_exn "{1..1}")
-  TEST = die (fun () -> expand_string_exn "{2..1}")
-  TEST = die (fun () -> expand_string_exn "{foo}{")
-  TEST = die (fun () -> expand_string_exn "}{1..3}")
-  TEST = die (fun () -> expand_string_exn "{{1}{2}}}}{{{a}")
-  TEST = die (fun () -> expand_string_exn "{1..5..0}")
-  TEST = die (fun () -> expand_string_exn "{z..a}")
-  TEST = die (fun () -> expand_string_exn "{a..a}")
-  TEST = die (fun () -> expand_string_exn "{1..23,a}")
-  TEST = die (fun () -> expand_string_exn "{a,1..23}")
-  TEST = die (fun () -> t_of_sexp String.t_of_sexp (Atom "hi"))
-  TEST = die (fun () -> t_of_sexp String.t_of_sexp (List [Atom "hi"; List []]))
+  let%test _ = die (fun () -> expand_string_exn "{1..1}")
+  let%test _ = die (fun () -> expand_string_exn "{2..1}")
+  let%test _ = die (fun () -> expand_string_exn "{foo}{")
+  let%test _ = die (fun () -> expand_string_exn "}{1..3}")
+  let%test _ = die (fun () -> expand_string_exn "{{1}{2}}}}{{{a}")
+  let%test _ = die (fun () -> expand_string_exn "{1..5..0}")
+  let%test _ = die (fun () -> expand_string_exn "{z..a}")
+  let%test _ = die (fun () -> expand_string_exn "{a..a}")
+  let%test _ = die (fun () -> expand_string_exn "{1..23,a}")
+  let%test _ = die (fun () -> expand_string_exn "{a,1..23}")
+  let%test _ = die (fun () -> t_of_sexp String.t_of_sexp (Atom "hi"))
+  let%test _ = die (fun () -> t_of_sexp String.t_of_sexp (List [Atom "hi"; List []]))
 
 
 end
 
-TEST_MODULE "sexp_parens" = struct
-  type t = (int * int option) Comprehension.t with sexp
+let%test_module "sexp_parens" = (module struct
+  type t = (int * int option) Comprehension.t [@@deriving sexp]
 
   let sexp_roundtrip t =
     t = t_of_sexp (sexp_of_t t)
@@ -880,6 +880,6 @@ TEST_MODULE "sexp_parens" = struct
   (* These elements have sexps that differ only by a suffix which contains
    * parens. If you compress these strings naively you'll get an invalid sexp,
    * and parsing it will fail *)
-  TEST = sexp_roundtrip [(100, Some 200); (100, None)]
-end
+  let%test _ = sexp_roundtrip [(100, Some 200); (100, None)]
+end)
 

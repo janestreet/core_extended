@@ -78,25 +78,6 @@ let wrap_block_signals f =
     ignore (Signal.sigprocmask `Set blocked_sigs))
 
 
-(* at_exit functions are honored only when terminating by exit, not by signals,
-   so we need to do some tricks to get it run by signals too.
-   NB: Ctrl-C is _not_ handled by this function, i.e., it terminates a program
-   without running at_exit functions. *)
-let ensure_at_exit () =
-  let pid = Unix.getpid () in
-  let handler signal =
-    do_at_exit ();
-    Signal.handle_default signal;
-    Signal.send_i signal (`Pid pid)
-  in
-  List.iter ~f:(fun s -> Signal.Expert.set s (`Handle handler)) [
-    (* there are the signals which terminate a program due to
-       "external circumstances" as opposed to "internal bugs" *)
-    Signal.hup;
-    Signal.quit;
-    Signal.term;
-  ]
-
 let getppid_exn pid =
   In_channel.read_lines ("/proc/" ^ Pid.to_string pid ^ "/status")
   |! List.find_exn ~f:(String.is_prefix ~prefix:"PPid:")

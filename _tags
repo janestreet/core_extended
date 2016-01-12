@@ -1,11 +1,11 @@
-<src/*.ml{,i}>          : pa_ounit_lib(core_extended)
-<{,janecheck{,_kernel}/}{src,test}/*.ml{,i}> : syntax_camlp4o
+<**/*.ml{,i}>: warn(-40), no_alias_deps
+<**/*>: thread
+# This prevents the implicit addition of -ppx options by ocamlfind
+<**/*.ml{,i}>: predicate(ppx_driver)
+<src/*.ml>: for-pack(Core_extended)
+<selector/src/*.ml{,i}>: pp(ppx-jane -dump-ast -inline-test-lib core_extended.selection)
+<src/*.ml{,i}>: pp(ppx-jane -dump-ast -inline-test-lib core_extended)
+<src/*.ml{,i}>: pp_deps_for_src
 <janecheck/src/*.ml{,i}> : ugly_hack_to_workaround_ocamlbuild_nightmare
-"src/console.ml"        : mlh, package(camlp4.macro)
-"src/core_command.ml"   : mlh, package(camlp4.macro)
-"src/extended_linux.ml" : mlh, package(camlp4.macro)
-"src/malloc.ml"         : mlh, package(camlp4.macro)
-"src/posix_clock.ml"    : mlh, package(camlp4.macro)
-"test/test.ml"          : mlh, package(camlp4.macro)
 # OASIS_START
 # OASIS_STOP

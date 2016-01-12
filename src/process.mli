@@ -13,7 +13,7 @@ module Status : sig
   | `Signaled of Signal.t
   (* WStopped is impossible*)
   ]
-  with sexp_of
+  [@@deriving sexp_of]
 
   val to_string : t -> string
 

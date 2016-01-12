@@ -31,6 +31,10 @@ sig
     ('a,'b) _t
     -> f:(key:'a -> data:'b _out_value -> unit)
     -> unit
+  val iteri     :
+    ('a,'b) _t
+    -> f:(key:'a -> data:'b _out_value -> unit)
+    -> unit
   val fold
     :  ('a,'b) _t
     -> init:'c
@@ -40,9 +44,13 @@ sig
     ('a,'b) _t
     -> f:(key:'a -> data:'b _out_value -> bool)
     -> ('a,'b) _t
+  val filteri   :
+    ('a,'b) _t
+    -> f:(key:'a -> data:'b _out_value -> bool)
+    -> ('a,'b) _t
   val keys      : ('a,_) _t -> 'a list
   val data      : (_,'b) _t -> 'b _out_value list
-  val to_alist  : ('a,'b) _t -> ('a * 'b _out_value) list
+  val to_alist  : ?key_order:[`Increasing|`Decreasing] -> ('a,'b) _t -> ('a * 'b _out_value) list
   val of_list   : ('a * 'b _in_value) list -> ('a,'b) _t
   val for_all   : (_,'b) _t -> f:('b _out_value -> bool) -> bool
   val exists    : (_,'b) _t -> f:('b _out_value -> bool) -> bool
@@ -76,6 +84,8 @@ struct
 
   let to_map = ident
   let of_map = ident
+
+  let to_alist ?key_order t = Map.Poly.to_alist ?key_order t
 
   let singleton key in_value = Map.Poly.singleton key (Fold.f Fold.init in_value)
   let find t key =
@@ -176,7 +186,7 @@ end
 
 module Make2_sexpable (Fold : Foldable2_sexpable) = struct
   type 'a out_value = 'a Fold.t               (* with sexp *)
-  type ('a,'b) t = ('a,'b Fold.t) Map.Poly.t with sexp
+  type ('a,'b) t = ('a,'b Fold.t) Map.Poly.t [@@deriving sexp]
 
   include (Make_fun((struct include Fold type 'a data = 'a end)))
 end
@@ -186,7 +196,7 @@ end
 module Cons =
   Make2_sexpable
     (struct
-       type 'a t = 'a list with sexp
+       type 'a t = 'a list [@@deriving sexp]
        let init = []
        let f list x = x :: list
      end)

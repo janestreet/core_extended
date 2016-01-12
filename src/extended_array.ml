@@ -3,7 +3,7 @@ open Core.Std
 let foldi ~init ar ~f =
   fst (Array.fold ~init:(init,0) ar ~f:(fun (a,i) x -> f i a x,i+1))
 
-TEST = 40 = foldi ~init:0 [|1;2;3;4;5|] ~f:(fun i a x -> a + i * x)
+let%test _ = 40 = foldi ~init:0 [|1;2;3;4;5|] ~f:(fun i a x -> a + i * x)
 
 let random_split ?random_state array ~p =
   let a = Array.copy array in

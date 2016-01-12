@@ -5,7 +5,7 @@ type uids = {
   ruid:int;
   euid:int;
   suid:int
-} with sexp,bin_io
+} [@@deriving sexp, bin_io]
 
 val setresuid : (?ruid:int -> ?euid:int -> ?suid:int -> unit -> unit) Or_error.t
 val getresuid : (unit -> uids) Or_error.t
@@ -68,7 +68,7 @@ module Splice : sig
   (** {6 Splice flags} *)
 
   (** Type of Splice event flag *)
-  type flag = MOVE | NONBLOCK | MORE | GIFT with sexp, bin_io
+  type flag = MOVE | NONBLOCK | MORE | GIFT [@@deriving sexp, bin_io]
 
   (** Type of Splice event flags *)
   type flags

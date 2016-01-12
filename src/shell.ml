@@ -9,24 +9,24 @@ include (Shell__core:sig val extra_path : string list ref end)
 
 module Process = struct
 
-  exception Early_exit with sexp
+  exception Early_exit [@@deriving sexp]
 
-  type status = [ `Timeout of Time.Span.t | Process.Status.t ] with sexp_of
+  type status = [ `Timeout of Time.Span.t | Process.Status.t ] [@@deriving sexp_of]
 (*  type status = (unit, error) Result.t with sexp_of *)
 
   type t = {
       program   : string;
       arguments : string list;
-  } with sexp_of
+  } [@@deriving sexp_of]
 
   type result = {
     command : t;
     status  : status;
     stdout  : string;
     stderr  : string;
-  } with sexp_of
+  } [@@deriving sexp_of]
 
-  exception Failed of result with sexp
+  exception Failed of result [@@deriving sexp]
 
   let to_string {program=prog; arguments=args} =
     let f s =
@@ -348,7 +348,7 @@ let sh_full  ?expect = sh_gen Process.content ?expect
 let sh_one     ?expect = sh_gen (Process.head ()) ?expect
 let sh_one_exn ?expect = sh_gen (Process.head_exn ()) ?expect
 
-TEST =
+let%test _ =
   sh_lines "yes yes | head -n 200000" =
    List.init 200_000 ~f:(fun _num -> "yes")
 

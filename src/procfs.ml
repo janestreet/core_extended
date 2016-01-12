@@ -34,20 +34,20 @@ let input_all_with_reused_buffer () =
 
 let string_of_file = unstage (input_all_with_reused_buffer ())
 
-type bigint = Big_int.big_int with sexp ;;
+type bigint = Big_int.big_int [@@deriving sexp] ;;
 
 module Process = struct
 
   module Inode = struct
-    type t = Int64.t with sexp ;;
+    type t = Int64.t [@@deriving sexp] ;;
     let of_string = Int64.of_string ;;
     let to_string = Int64.to_string ;;
   end ;;
 
   module Limits = struct
     module Rlimit = struct
-      type value = [ `unlimited | `limited of bigint ] with sexp ;;
-      type t = { soft : value; hard: value } with fields, sexp ;;
+      type value = [ `unlimited | `limited of bigint ] [@@deriving sexp] ;;
+      type t = { soft : value; hard: value } [@@deriving fields, sexp] ;;
     end ;;
     type t =
       {
@@ -67,7 +67,7 @@ module Process = struct
         nice_priority     : Rlimit.t;
         realtime_priority : Rlimit.t;
      }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
 
     let of_string s =
       let map =
@@ -182,7 +182,7 @@ module Process = struct
         rt_priority : bigint; (** Real-time scheduling priority. *)
         policy      : bigint; (** Scheduling policy *)
       }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
 
     (* extract_command, for a stat string such as: "14574 (cat) R 10615 14574 10615 34820
        14574 4194304 164 0..." returns this tuple "cat", "R 10615 14574 10615..." *)
@@ -257,7 +257,7 @@ module Process = struct
         data     : bigint; (** data/stack *)
         dt       : bigint; (** dirty pages (unused) *)
       }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
     let of_string s =
       let a = Array.of_list (String.split s ~on:' ') in
       {
@@ -284,7 +284,7 @@ module Process = struct
         sgid  : int; (** Saved group ID *)
         fsgid : int; (** FS group ID *)
       }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
     let of_string s =
       (* Splits "foo: 1\nbar: 2\n" into [Some ("foo"," 1"); Some ("bar"," 2"); None] *)
       let records = List.map (String.split s ~on:'\n')
@@ -315,13 +315,13 @@ module Process = struct
       | Socket of Inode.t
       | Pipe of Inode.t
       | Inotify
-    with sexp ;;
+    [@@deriving sexp] ;;
     type t =
       {
         fd      : int;     (** File descriptor (0=stdin, 1=stdout, etc.) *)
         fd_stat : fd_stat; (** Kind of file *)
       }
-    with fields, sexp ;;
+    [@@deriving fields, sexp] ;;
   end ;;
 
   type t =
@@ -342,7 +342,7 @@ module Process = struct
       oom_adj     : int;
       oom_score   : int;
     }
-  with fields, sexp ;;
+  [@@deriving fields, sexp] ;;
 
   let load_exn pid =
     let slurp f fn =
@@ -475,7 +475,7 @@ module Meminfo = struct
       vmalloc_used  : bigint;
       vmalloc_chunk : bigint;
     }
-  with fields, sexp ;;
+  [@@deriving fields, sexp] ;;
   let load_exn () =
     let of_kb = Big_int.mult_int_big_int 1024 in
     let map =
@@ -525,7 +525,7 @@ end ;;
 
 (** Parse /proc/stat because vmstat is dumb *)
 module Kstat = struct
-  type index_t = All | Number of int with sexp
+  type index_t = All | Number of int [@@deriving sexp]
 
   type cpu_t =
     {
@@ -538,7 +538,7 @@ module Kstat = struct
       softirq: bigint option;
       steal: bigint option;
       guest: bigint option;
-    } with fields, sexp;;
+    } [@@deriving fields, sexp];;
 
   type t =
     index_t * cpu_t
@@ -620,7 +620,7 @@ module Loadavg = struct
     one : float;
     ten : float;
     fifteen : float;
-  } with fields
+  } [@@deriving fields]
 
   (* /proc/loadavg has just 1 line nearly all the time, but occasionally there's an extra
      blank line. just be extra forgiving and grab only the first line. *)
@@ -752,7 +752,7 @@ module Net = struct
       tx_carrier: int;
       tx_compressed : bool;
       }
-      with fields;;
+      [@@deriving fields];;
 
   let eval_mul_comp rx_tx =
     match rx_tx with
@@ -816,7 +816,7 @@ module Net = struct
       window      : int;
       irtt        : int;
     }
-    with fields;;
+    [@@deriving fields];;
 
   let unix_inet_addr_of_revhex revhex_str =
     let ip =
@@ -931,7 +931,7 @@ module Net = struct
         timeout : int;
         inode : Process.Inode.t; (* I think this is right *)
         rest : string;
-      } with fields
+      } [@@deriving fields]
 
     let dehex ~int_of_string s = int_of_string ("0x"^s)
     let dehex_int   = dehex ~int_of_string:Int.of_string
@@ -986,14 +986,14 @@ module Net = struct
       )
       lines
 
-  TEST = of_line "  40: 458719AC:9342 CC1619AC:0016 01 00000000:00000000 02:000296F0 00000000 12021        0      64400541 2 ffff88022c777400 20 3 0 10 -1"
+  let%test _ = of_line "  40: 458719AC:9342 CC1619AC:0016 01 00000000:00000000 02:000296F0 00000000 12021        0      64400541 2 ffff88022c777400 20 3 0 10 -1"
   <> None
 
   (* Port 0 on the other side *)
-  TEST = of_line "  31: 0100007F:177E 00000000:0000 0A 00000000:00000000 00:00000000 00000000 12021        0 778748 1 ffff8102edd1ad00 3000 0 0 2 -1"
+  let%test _ = of_line "  31: 0100007F:177E 00000000:0000 0A 00000000:00000000 00:00000000 00000000 12021        0 778748 1 ffff8102edd1ad00 3000 0 0 2 -1"
   <> None
 
-  TEST = of_line
+  let%test _ = of_line
   "  40: 458719AC:9342 CC1619AC:0016 01 00000000:00000000 02:000296F0 00000000 12021        0      64400541 2 ffff88022c777400 20 3 0 10 -1"
   = Some { sl = 40;
   local_address = (Unix.Inet_addr.of_string "172.25.135.69");
@@ -1017,7 +1017,7 @@ module Mount = struct
       freq    : int; (* dump frequency *)
       passno  : int; (* pass number of parallel dump *)
     }
-  with fields ;;
+  [@@deriving fields] ;;
 
   let of_string s =
     match String.split ~on:' ' s |! List.filter ~f:(fun s -> s <> "") with

@@ -10,7 +10,7 @@ open Core.Std
     write "10g". Suffixes are b,k,g,m...
     The sexp reader also accepts plain ints.*)
 module Filesize : sig
-  type t = Int64.t with bin_io,sexp
+  type t = Int64.t [@@deriving bin_io, sexp]
   val to_string : t -> string
   val of_string : string -> t
 end

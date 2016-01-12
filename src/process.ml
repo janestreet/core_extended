@@ -139,7 +139,7 @@ module Status = struct
   | `Signaled of Signal.t
            (* WStopped is impossible*)
   ]
-  with sexp_of
+  [@@deriving sexp_of]
 
   let to_string = function
     | `Exited i -> sprintf "exited with code %d" i
@@ -445,7 +445,7 @@ let kill ?is_child ?wait_for ?signal pid =
     ?signal
     (Pid.to_int pid)
 
-TEST_MODULE = struct
+let%test_module _ = (module struct
   let with_fds n ~f =
     let restore_max_fds =
       let module RLimit = Core.Std.Unix.RLimit in
@@ -468,9 +468,9 @@ TEST_MODULE = struct
 
   let run_process () = ignore (run ~prog:"true" ~args:[] ())
 
-  TEST_UNIT = with_fds 10 ~f:run_process
-  TEST_UNIT = with_fds 1055 ~f:(fun () ->
-    <:test_eq< bool >>
+  let%test_unit _ = with_fds 10 ~f:run_process
+  let%test_unit _ = with_fds 1055 ~f:(fun () ->
+    [%test_eq: bool]
       (Result.is_ok Linux_ext.Epoll.create)
       (Result.is_ok (Result.try_with run_process)))
-end
+end)

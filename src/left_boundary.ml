@@ -1,7 +1,7 @@
 type 'k t =
   | Inc of 'k
   | Exc of 'k
-with sexp
+[@@deriving sexp]
 
 let key_of = function
   | Inc k -> k

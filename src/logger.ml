@@ -50,16 +50,20 @@ let close log =
 
 
 let too_large log =
-  try
-    let size = (Unix.stat (filename log)).Unix.st_size in
-    match log.max_size with
-    | `Kb kb when (Int64.(/) size 1024L) >= kb -> true
-    | `Mb mb when Int64.(/) (Int64.(/) size 1024L) 1024L >= mb -> true
-    | _ -> false
-  with
-  | _ ->
+  if Sys.file_exists (filename log) = `Yes
+  then
+    try
+      let size = (Unix.stat (filename log)).Unix.st_size in
+      match log.max_size with
+      | `Kb kb when (Int64.(/) size 1024L) >= kb -> true
+      | `Mb mb when Int64.(/) (Int64.(/) size 1024L) 1024L >= mb -> true
+      | _ -> false
+    with
+    | _ ->
     (* any error stating a file means that we should give up on ever using it *)
-    true
+      true
+  else false
+
 ;;
 
 

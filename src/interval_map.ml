@@ -4,7 +4,7 @@ open Interval_map_intf
 type ('k, 'v, 'cmp) t = {
   left_of_leftmost  : 'v; (* default *)
   value_right_of    : ('k, 'v, 'cmp) Map.t;
-} with fields
+} [@@deriving fields]
 
 let comparator t = Map.comparator t.value_right_of
 let comparing_with t = (comparator t).Comparator.compare
@@ -57,6 +57,8 @@ let create = Fields.create
 let always left_of_leftmost ~comparator = {
   left_of_leftmost; value_right_of = Map.empty ~comparator; }
 
+let is_always x = Map.is_empty x.value_right_of
+
 let change t ~at:key data = {
   t with value_right_of = Map.add t.value_right_of ~key ~data; }
 
@@ -91,24 +93,60 @@ let rec map2 lval rval left right init ~f =
           (Map.add init ~key:rnext ~data:(f lval rval'))
 
 let map2 x_val y_val x_changes y_changes ~f =
-  if Map.is_empty x_changes then
-    Map.map y_changes ~f:(fun y -> f x_val y)
-  else if Map.is_empty y_changes then
-    Map.map x_changes ~f:(fun x -> f x y_val)
-  else
-    map2 ~f x_val y_val
-      (Map.to_alist x_changes)
-      (Map.to_alist y_changes)
-      (Map.empty ~comparator:(Map.comparator x_changes))
+  map2 ~f x_val y_val
+    (Map.to_alist x_changes)
+    (Map.to_alist y_changes)
+    (Map.empty ~comparator:(Map.comparator x_changes))
 
-let map2 x y ~f = {
-  left_of_leftmost = f x.left_of_leftmost y.left_of_leftmost;
-  value_right_of = map2 ~f
-                     x.left_of_leftmost
-                     y.left_of_leftmost
-                     x.value_right_of
-                     y.value_right_of
-}
+let map2 x y ~f =
+  if is_always x then
+    if is_always y then
+      always (f x.left_of_leftmost y.left_of_leftmost)
+        ~comparator:(comparator x)
+    else
+      map y ~f:(fun y -> f x.left_of_leftmost y)
+  else if is_always y then
+    map x ~f:(fun x -> f x y.left_of_leftmost)
+  else {
+    left_of_leftmost = f x.left_of_leftmost y.left_of_leftmost;
+    value_right_of = map2 ~f
+                       x.left_of_leftmost
+                       y.left_of_leftmost
+                       x.value_right_of
+                       y.value_right_of
+  }
+
+let join =
+  let fold_step ~key ~data:inner acc =
+    (* acc is correct for [< key], has any old garbage [>= key] *)
+    let acc =
+      match Map.split acc key with
+      | (before_key, _at_key, _after_key) -> before_key
+    in
+    (* acc now just has correct content, all [< key] *)
+    if is_always inner then
+      (* inner value is unchanging, so change to it at [key] and let it remain *)
+      Map.add acc ~key ~data:inner.left_of_leftmost
+    else
+      let acc = Map.add acc ~key ~data:(find inner key) in
+      (* acc is now filled in for [<= key],
+         finally add values from inner [> key] to acc.
+         any beyond the next key in the outer sequence will be replaced.
+      *)
+      Map.to_sequence inner.value_right_of
+        ~keys_greater_or_equal_to:key
+      |> Sequence.fold ~init:acc
+           ~f:(fun acc (key, data) -> Map.add acc ~key ~data)
+  in
+  fun x ->
+    if is_always x then
+      x.left_of_leftmost
+    else {
+      left_of_leftmost = x.left_of_leftmost.left_of_leftmost;
+      value_right_of =
+        Map.fold x.value_right_of
+          ~init:x.left_of_leftmost.value_right_of ~f:fold_step;
+    }
 
 let iterate_changes t interval =
   let low_key, high_key =
@@ -147,8 +185,8 @@ let set_within t interval v =
     | `Always -> always v ~comparator:(comparator t)
     | `Until high_key ->
       { (change
-          (remove_changes_within t interval)
-          ~at:high_key (find t high_key))
+           (remove_changes_within t interval)
+           ~at:high_key (find t high_key))
         with left_of_leftmost = v; }
     | `From low_key ->
       change
@@ -210,8 +248,8 @@ module Preimage_impl = struct
       | None -> Sequence.Step.Yield (begin
         match state with
         | Fin ->
-          Error.failwithp _here_ "Reached impossible case"
-            () <:sexp_of< unit >>
+          Error.failwithp [%here] "Reached impossible case"
+            () [%sexp_of: unit]
         | Initially (x, _) ->
           x, `Always
         | From (date, x, _) ->
@@ -220,8 +258,8 @@ module Preimage_impl = struct
       | Some ((until, y), seq) -> Sequence.Step.Yield (begin
         match state with
         | Fin ->
-          Error.failwithp _here_ "Reached impossible case"
-            () <:sexp_of< unit >>
+          Error.failwithp [%here] "Reached impossible case"
+            () [%sexp_of: unit]
         | Initially (x, _) ->
           x, `Until until
         | From (from, x, _) ->
@@ -242,40 +280,66 @@ module Make(T : Type_with_map_module) = struct
     let contains = Interval.contains ~cmp:T.compare
   end
 
-  type nonrec 'a t = (Key.t, 'a, Key.comparator_witness) t
-
-  let t_of_sexp a_of_sexp sexp =
-    match sexp with
-    | Sexp.Atom _ | Sexp.List [] ->
-      raise (Sexplib.Conv.Of_sexp_error (
-        Failure "t_of_sexp: non-empty list needed", sexp))
-    | Sexp.List (left_of_leftmost :: value_right_of) -> {
-        left_of_leftmost = a_of_sexp left_of_leftmost;
-        value_right_of = <:of_sexp< a T.Map.t >> (Sexp.List value_right_of);
-      }
-  ;;
-
-  let sexp_of_t sexp_of_a t =
-    let f ~key ~data acc =
-      Sexp.List [T.sexp_of_t key; sexp_of_a data] :: acc
-    in
-    Sexp.List (
-      sexp_of_a t.left_of_leftmost :: Map.fold_right t.value_right_of ~f ~init:[])
-  ;;
-
   let compare = compare
 
   let create = create
-  let always = always ~comparator:Key.comparator
+  let always x = always ~comparator:Key.comparator x
+  let unit = always ()
 
   let find = find
   let change = change
-  let map = map
   let map2 = map2
   let remove_changes_within = remove_changes_within
   let set_within = set_within
   let map_within = map_within
   let construct_preimage = construct_preimage
+
+  let custom_join = join
+  let custom_map2 = map2
+
+  module T = struct
+    type nonrec 'a t = (Key.t, 'a, Key.comparator_witness) t
+
+    let t_of_sexp a_of_sexp sexp =
+      match sexp with
+      | Sexp.Atom _ | Sexp.List [] ->
+        raise (Sexplib.Conv.Of_sexp_error (
+          Failure "t_of_sexp: non-empty list needed", sexp))
+      | Sexp.List (left_of_leftmost :: value_right_of) -> {
+          left_of_leftmost = a_of_sexp left_of_leftmost;
+          value_right_of = [%of_sexp: a T.Map.t] (Sexp.List value_right_of);
+        }
+    ;;
+
+    let sexp_of_t sexp_of_a t =
+      let f ~key ~data acc =
+        Sexp.List [T.sexp_of_t key; sexp_of_a data] :: acc
+      in
+      Sexp.List (
+        sexp_of_a t.left_of_leftmost :: Map.fold_right t.value_right_of ~f ~init:[])
+    ;;
+
+    let return = always
+
+    let apply f x = map2 ~f:(fun f x -> f x) f x
+    let bind x f = join (map ~f x)
+
+    let map = `Custom map
+  end
+  include T
+  include Applicative.Make(T)
+  include Monad.Make(T)
+
+  (* Shadow some of the generated bindings for efficiency because
+     we are in an unusal position of defining bind via join and apply
+     via map2.
+  *)
+  let join = custom_join
+  let map2 = custom_map2
+
+  (* all values of type unit t = unit, so... *)
+  let ignore_m _ = unit
+  let all_ignore _ = unit
 end
 
 module Make_with_boundary (Key : Key) = struct
@@ -284,8 +348,7 @@ module Make_with_boundary (Key : Key) = struct
 
   module Left_boundary = struct
     module T = struct
-      type t = Key.t Left_boundary.t
-      with sexp, compare
+      type t = Key.t Left_boundary.t [@@deriving sexp, compare]
     end
     include T
     include Comparable.Make(T)
@@ -294,495 +357,550 @@ module Make_with_boundary (Key : Key) = struct
   include Make(Left_boundary)
 end
 
-TEST_MODULE "Check construction from standard map." = struct
-  (* This test is actually only checking that certain functor
-     applications that we want to allow really do type-check.
-  *)
+let gen k_gen a_gen ~comparator =
+  let open Quickcheck.Generator in
+  tuple2 a_gen (List.gen' k_gen ~unique:true)
+  >>= fun (initial_value, changes_keys) ->
+  List.gen' a_gen ~length:(`Exactly (List.length changes_keys))
+  >>| fun changes_vals ->
+  create ~left_of_leftmost:initial_value
+    ~value_right_of:(
+      List.zip_exn changes_keys changes_vals
+      |> Map.of_alist_exn ~comparator)
 
-  module Test_existing_w_String = Make(String)
-  module Test_existing_w_Int = Make(Int)
+let%test_module "Check construction from standard map." = (
+  module struct
+    (* This test is actually only checking that certain functor
+       applications that we want to allow really do type-check.
+    *)
 
-  module Make_via_map_key (Key : Key) = struct
-    include Make(struct
-        include Key
-        module Map = Map.Make(Key)
-      end)
-  end
+    module Test_existing_w_String = Make(String)
+    module Test_existing_w_Int = Make(Int)
 
-  module Make_via_comparable (Key : Key) = struct
-    include Make(struct
-        include Key
-        include Comparable.Make(Key)
-      end)
-  end
-end
+    module Make_via_map_key (Key : Key) = struct
+      include Make(struct
+          include Key
+          module Map = Map.Make(Key)
+        end)
+    end
 
-TEST_MODULE "Quickcheck tests." = struct
-  module Int_key = Make(Int)
-  module Interval = Interval
+    module Make_via_comparable (Key : Key) = struct
+      include Make(struct
+          include Key
+          include Comparable.Make(Key)
+        end)
+    end
+  end)
 
-  type 'a poly_t = 'a Int_key.t
-  with sexp, compare
+let%test_module "Quickcheck tests." = (
+  module struct
+    open Quickcheck
 
-  type t = string poly_t
-  with sexp, compare
+    module Int_key = Make(Int)
+    module Interval = Interval
 
-  type point = int * string
-  with sexp
+    type 'a poly_t = 'a Int_key.t [@@deriving sexp, compare]
+    let poly_t_gen a_gen =
+      gen ~comparator:Int.comparator Int.gen a_gen
 
-  open Quickcheck
+    type t = int poly_t [@@deriving sexp, compare]
+    let t_gen = poly_t_gen Int.gen
 
-  let point_gen =
-    Generator.(tuple2 int string)
+    type point = int * int [@@deriving sexp]
+    let point_gen = Generator.tuple2 Int.gen Int.gen
 
-  let t_gen =
-    let open Generator in
-    list int ~unique:true
-    >>= fun changes_keys ->
-    tuple2 string (list string ~length:(`Exactly (List.length changes_keys)))
-    >>| fun (init, changes_vals) ->
-    create
-      ~left_of_leftmost:init
-      ~value_right_of:(Int.Map.of_alist_exn (List.zip_exn changes_keys changes_vals))
-
-  TEST_UNIT "compare: reflexive" =
-    Quickcheck.test t_gen ~sexp_of:sexp_of_t
-      ~f:(fun t ->
-        <:test_result< int >> ~expect:0
-          (<:compare< t >> t t));
-  ;;
-  TEST_UNIT "compare: symmetric" =
-    Quickcheck.test
-      Generator.(tuple2 t_gen t_gen)
-      ~sexp_of:<:sexp_of< t * t >>
-      ~f:(fun (x, y) ->
-        <:test_result< int >>
-          ~expect:(Int.neg (<:compare< t >> y x))
-          (<:compare< t >> x y));
-  ;;
-  TEST_UNIT "compare: transitive" =
-    let transitive_rule c_a c_b =
-      if c_a = 0 then Some c_b
-      else if c_b = 0 then Some c_a
-      else if c_a = c_b then Some c_a
-      else None
-    in
-    Quickcheck.test
-      Generator.(tuple3 t_gen t_gen t_gen)
-      ~sexp_of:<:sexp_of< t * t * t >>
-      ~f:(fun (x, y, z) ->
-        let a = <:compare< t >> x y in
-        let b = <:compare< t >> y z in
-        Option.iter (transitive_rule a b)
-          ~f:(<:test_result< int >>
-               ~expect:(<:compare< t >> x z)));
-  ;;
-
-  TEST_UNIT "Induction principle" =
-    Quickcheck.test t_gen ~sexp_of:sexp_of_t
-      ~f:(fun t ->
-        <:test_result< t >> ~expect:t (
-          let { left_of_leftmost = i; value_right_of = c; } = t in
-          Map.fold c ~init:(always i ~comparator:(Map.comparator c))
-            ~f:(fun ~key:at ~data i_map -> change i_map ~at data)))
-  ;;
-
-  TEST_UNIT "sexp round-trip" =
-    Quickcheck.test t_gen ~sexp_of:sexp_of_t
-      ~f:(fun t ->
-        <:test_result< t >> ~expect:t (t_of_sexp (sexp_of_t t)));
-  ;;
-
-  TEST_UNIT "change interchange" =
-    let this_test_with gen =
+    let%test_unit "compare: reflexive" =
+      Quickcheck.test t_gen ~sexp_of:sexp_of_t
+        ~f:(fun t ->
+          [%test_result: int] ~expect:0
+            ([%compare: t] t t))
+    ;;
+    let%test_unit "compare: symmetric" =
       Quickcheck.test
-        gen
-        ~sexp_of:<:sexp_of< t * (int * string) * (int * string) >>
-        ~f:(fun (t, (k, v), (k', v')) ->
-          <:test_result< t >>
-            ~expect:(change (change t ~at:k v) ~at:k' v')
-            begin
-              if Int.equal k k' then
-                (change t ~at:k v')
-              else
-                (change (change t ~at:k' v') ~at:k v)
-            end);
-    in
-    this_test_with begin
-      let open Generator in
-      (* where the two keys are not equal *)
-      bind_choice int (fun choice ->
-        let k = Choice.value choice in
-        let k_gen' = Choice.updated_gen choice ~keep:`All_choices_except_this_choice in
-        tuple2 t_gen (tuple2 k_gen' (tuple2 string string))
-        >>| fun (t, (k', (v, v'))) ->
-        t, (k, v), (k', v'))
-    end;
-    this_test_with begin
-      let open Generator in
-      (* where the two keys are equal *)
-      tuple2 t_gen (tuple2 int (tuple2 string string))
-      >>| fun (t, (k, (v, v'))) ->
-      t, (k, v), (k, v')
-    end;
-  ;;
+        Generator.(tuple2 t_gen t_gen)
+        ~sexp_of:[%sexp_of: t * t]
+        ~f:(fun (x, y) ->
+          [%test_result: int]
+            ~expect:(Int.neg ([%compare: t] y x))
+            ([%compare: t] x y))
+    ;;
+    let%test_unit "compare: transitive" =
+      let transitive_rule c_a c_b =
+        if c_a = 0 then Some c_b
+        else if c_b = 0 then Some c_a
+        else if c_a = c_b then Some c_a
+        else None
+      in
+      Quickcheck.test
+        Generator.(tuple3 t_gen t_gen t_gen)
+        ~sexp_of:[%sexp_of: t * t * t]
+        ~f:(fun (x, y, z) ->
+          let a = [%compare: t] x y in
+          let b = [%compare: t] y z in
+          Option.iter (transitive_rule a b)
+            ~f:([%test_result: int]
+                  ~expect:([%compare: t] x z)))
+    ;;
 
-  TEST_UNIT "find rules: base" =
-    Quickcheck.test point_gen ~sexp_of:<:sexp_of< point >>
-      ~f:(fun (k, v) ->
-        <:test_result< string >> ~expect:v
-          (find (Int_key.always v) k));
-  ;;
-  TEST_UNIT "find rules: one change" =
-    Quickcheck.test
-      (Generator.tuple2 point_gen point_gen)
-      ~sexp_of:<:sexp_of< point * point >>
-      ~f:(fun ((l, c), (k, a)) ->
-        <:test_result< string >>
-          ~expect:(if l >= k then a else c)
-          (find (change (Int_key.always c) ~at:k a) l));
-  ;;
-  TEST_UNIT "find rules: n+2 changes" =
-    Quickcheck.test
-      Generator.(tuple2 (tuple2 t_gen int) (tuple2 point_gen point_gen))
-      ~sexp_of:<:sexp_of< (t * int) * (point * point) >>
-      ~f:(fun ((t, l), ((k, a), (k', b))) ->
-        (* where k <= k' ... *)
-        let (k, a, k', b) =
-          if k > k' then
-            k', b, k, a
-          else
-            k, a, k', b
+    let%test_unit "Induction principle" =
+      Quickcheck.test t_gen ~sexp_of:sexp_of_t
+        ~f:(fun t ->
+          [%test_result: t] ~expect:t (
+            let { left_of_leftmost = i; value_right_of = c; } = t in
+            Map.fold c ~init:(always i ~comparator:(Map.comparator c))
+              ~f:(fun ~key:at ~data i_map -> change i_map ~at data)))
+    ;;
+
+    let%test_unit "sexp round-trip" =
+      Quickcheck.test t_gen ~sexp_of:sexp_of_t
+        ~f:(fun t ->
+          [%test_result: t] ~expect:t (t_of_sexp (sexp_of_t t)))
+    ;;
+
+    let%test_unit "change interchange" =
+      let this_test_with gen =
+        Quickcheck.test
+          gen
+          ~sexp_of:[%sexp_of: t * point * point]
+          ~f:(fun (t, (k, v), (k', v')) ->
+            [%test_result: t]
+              ~expect:(change (change t ~at:k v) ~at:k' v')
+              begin
+                if Int.equal k k' then
+                  (change t ~at:k v')
+                else
+                  (change (change t ~at:k' v') ~at:k v)
+              end);
+      in
+      this_test_with begin
+        let open Generator in
+        (* where the two keys are not equal *)
+        let unequal_keys =
+          bind_choice Int.gen (fun choice ->
+            let k = Choice.value choice in
+            let k_gen' =
+              Choice.updated_gen choice
+                ~keep:`All_choices_except_this_choice
+            in
+            tuple2 (singleton k) k_gen')
         in
-        <:test_result< string >>
-          ~expect:(
-            if l >= k' then
-              find (change t ~at:k' b) l
+        tuple4 t_gen unequal_keys Int.gen Int.gen
+        >>| fun (t, (k, k'), v, v') ->
+        t, (k, v), (k', v')
+      end;
+      this_test_with begin
+        let open Generator in
+        (* where the two keys are equal *)
+        tuple4 t_gen Int.gen Int.gen Int.gen
+        >>| fun (t, k, v, v') ->
+        t, (k, v), (k, v')
+      end
+    ;;
+
+    let%test_unit "find rules: base" =
+      Quickcheck.test point_gen ~sexp_of:[%sexp_of: point]
+        ~f:(fun (k, v) ->
+          [%test_result: int] ~expect:v
+            (find (Int_key.always v) k))
+    ;;
+    let%test_unit "find rules: one change" =
+      Quickcheck.test
+        (Generator.tuple2 point_gen point_gen)
+        ~sexp_of:[%sexp_of: point * point]
+        ~f:(fun ((l, c), (k, a)) ->
+          [%test_result: int]
+            ~expect:(if l >= k then a else c)
+            (find (change (Int_key.always c) ~at:k a) l))
+    ;;
+    let%test_unit "find rules: n+2 changes" =
+      Quickcheck.test
+        (Generator.tuple4 t_gen Int.gen point_gen point_gen)
+        ~sexp_of:[%sexp_of: t * int * point * point]
+        ~f:(fun (t, l, (k, a), (k', b)) ->
+          (* where k <= k' ... *)
+          let (k, a, k', b) =
+            if k > k' then
+              k', b, k, a
             else
-              find (change t ~at:k a) l)
-          (find (change (change t ~at:k a) ~at:k' b) l));
-  ;;
+              k, a, k', b
+          in
+          [%test_result: int]
+            ~expect:(
+              if l >= k' then
+                find (change t ~at:k' b) l
+              else
+                find (change t ~at:k a) l)
+            (find (change (change t ~at:k a) ~at:k' b) l))
+    ;;
 
-  TEST_UNIT "map laws: map id" =
-    Quickcheck.test t_gen ~sexp_of:<:sexp_of< t >>
-      ~f:(fun x ->
-        <:test_result< t >> ~expect:x
-          (map x ~f:Fn.id));
-  ;;
-  TEST_UNIT "map laws: map composition" =
-    let f x = `F x in
-    let g x = `G x in
+    let%test_unit "functor laws: map id" =
+      Quickcheck.test t_gen ~sexp_of:[%sexp_of: t]
+        ~f:(fun x ->
+          [%test_result: t] ~expect:x
+            (map x ~f:Fn.id))
+    ;;
+    let%test_unit "functor laws: map composition" =
+      let f x = `F x in
+      let g x = `G x in
 
-    Quickcheck.test t_gen ~sexp_of:<:sexp_of< t >>
-      ~f:(fun x ->
-        <:test_result< [ `G of [ `F of string ]] poly_t >>
-          ~expect:(map x ~f:(fun x -> g (f x)))
-          (map (map x ~f) ~f:g));
-  ;;
-  TEST_UNIT "map laws: always/pure" =
-    let f x = `F x in
+      Quickcheck.test t_gen ~sexp_of:[%sexp_of: t]
+        ~f:(fun x ->
+          [%test_result: [ `G of [ `F of int ]] poly_t]
+            ~expect:(map x ~f:(fun x -> g (f x)))
+            (map (map x ~f) ~f:g))
+    ;;
 
-    Quickcheck.test
-      Generator.string
-      ~sexp_of:<:sexp_of< string >>
-      ~f:(fun x ->
-        <:test_result< [ `F of string ] poly_t >>
-          ~expect:(Int_key.always (f x))
-          (map ~f (Int_key.always x)));
-  ;;
-  TEST_UNIT "map laws: find over map" =
-    let f x = `F x in
+    let return = Int_key.always
 
-    Quickcheck.test
-      Generator.(tuple2 t_gen int)
-      ~sexp_of:<:sexp_of< (t * int) >>
-      ~f:(fun (x, k) ->
-        <:test_result< [ `F of string ] >>
-          ~expect:(f (find x k))
-          (find (map x ~f) k));
-  ;;
+    let%test_unit "pointed functor law" =
+      let f x = `F x in
 
-  TEST_UNIT "map2 laws: always/pure" =
-    let f x y = `F (x, y) in
-
-    Quickcheck.test
-      Generator.(tuple2 string t_gen)
-      ~sexp_of:<:sexp_of< string * t >>
-      ~f:(fun (x, y) ->
-        <:test_result< [ `F of string * string ] poly_t >>
-          ~expect:(map ~f:(f x) y)
-          (map2 ~f (Int_key.always x) y));
-  ;;
-  TEST_UNIT "map2 laws: flip" =
-    let f x y = `F (x, y) in
-
-    Quickcheck.test
-      Generator.(tuple2 t_gen t_gen)
-      ~sexp_of:<:sexp_of< t * t >>
-      ~f:(fun (x, y) ->
-        <:test_result< [ `F of string * string ] poly_t >>
-          ~expect:(map2 ~f:(Fn.flip f) y x)
-          (map2 ~f x y));
-  ;;
-  TEST_UNIT "map2 laws: find over" =
-    let f x y = `F (x, y) in
-
-    Quickcheck.test
-      Generator.(tuple2 (tuple2 t_gen t_gen) int)
-      ~sexp_of:<:sexp_of< (t * t) * int >>
-      ~f:(fun ((x, y), k) ->
-        <:test_result< [ `F of string * string ] >>
-          ~expect:(f (find x k) (find y k))
-          (find (map2 ~f x y) k));
-  ;;
-  TEST_UNIT "map2 laws: associativity" =
-    let f x y z = `F (x, y, z) in
-
-    Quickcheck.test
-      Generator.(tuple2 t_gen (tuple2 t_gen t_gen))
-      ~sexp_of:<:sexp_of< t * (t * t) >>
-      ~f:(fun (x, (y, z)) ->
-        <:test_result< [ `F of string * string * string ] poly_t >>
-          ~expect:(map2 ~f:(fun x (y, z) -> f x y z) x (map2 ~f:(fun y z -> y, z) y z))
-          (map2 ~f:(fun f' z -> f' z) (map2 ~f x y) z));
-  ;;
-
-  let within interval k =
-    match interval with
-    | `Always -> true
-    | `Until high_key -> k < high_key
-    | `From low_key -> k >= low_key
-    | `Between (low_key, high_key) -> (k >= low_key) && (k < high_key)
-  ;;
-
-  let interval_gen : int Interval.t Generator.t =
-    Generator.(
-      variant4 unit int int (tuple2 int int))
-    |> Generator.map ~f:(function
-      | `A () -> `Always
-      | `B k -> `Until k
-      | `C k -> `From k
-      | `D (k, k') ->
-        if k' < k then
-          `Between (k', k)
-        else
-          `Between (k, k'))
-
-  TEST_UNIT "remove_changes_within: always" =
-    Quickcheck.test
-      Generator.(tuple2 interval_gen string)
-      ~sexp_of:<:sexp_of< int Interval.t * string >>
-      ~f:(fun (interval, x) ->
-        <:test_result< t >>
-          ~expect:(Int_key.always x)
-          (remove_changes_within (Int_key.always x) interval));
-  ;;
-  TEST_UNIT "remove_changes_within: change" =
-    Quickcheck.test
-      Generator.(tuple3 interval_gen t_gen point_gen)
-      ~sexp_of:<:sexp_of< int Interval.t * t * point >>
-      ~f:(fun (interval, t, (k, x)) ->
-        <:test_result< t >>
-          ~expect:(
-            let t' = remove_changes_within t interval in
-            if within interval k then t' else change t' ~at:k x)
-          (remove_changes_within (change t ~at:k x) interval));
-  ;;
-
-  TEST_UNIT "set_within" =
-    Quickcheck.test
-      Generator.(tuple4 t_gen interval_gen string int)
-      ~sexp_of:<:sexp_of< t * int Interval.t * string * int >>
-      ~f:(fun (t, interval, v, k) ->
-        <:test_result< string >>
-          ~expect:(if within interval k then v else find t k)
-          (find (set_within t interval v) k));
-  ;;
-
-  TEST_UNIT "map_within: constant function gives set_within" =
-    Quickcheck.test
-      Generator.(tuple3 t_gen interval_gen string)
-      ~sexp_of:<:sexp_of< t * int Interval.t * string >>
-      ~f:(fun (t, interval, v) ->
-        <:test_result< t >>
-          ~expect:(set_within t interval v)
-          (map_within t interval ~f:(Fn.const v)));
-  ;;
-  TEST_MODULE "map_within" = struct
-    type r =
-      | Base of string
-      | F of r
-    with compare, sexp
-
-    let base x = Base x
-    let f x = F x
-
-    TEST_UNIT =
       Quickcheck.test
-        Generator.(tuple3 t_gen interval_gen int)
-        ~sexp_of:<:sexp_of< t * int Interval.t * int >>
-        ~f:(fun (t, interval, k) ->
-          let t = map t ~f:base in
-          <:test_result< r >>
-            ~expect:(if within interval k then f (find t k) else find t k)
-            (find (map_within t interval ~f) k));
+        String.gen
+        ~sexp_of:[%sexp_of: string]
+        ~f:(fun x ->
+          [%test_result: [ `F of string ] poly_t]
+            ~expect:(return (f x))
+            (map ~f (return x)))
     ;;
-  end
 
-  TEST_UNIT "construct_preimage: reconstruction piecewise is identity" =
-    Quickcheck.test t_gen ~sexp_of:<:sexp_of< t >>
-      ~f:(fun t ->
-        construct_preimage t
-        |> Sequence.iter ~f:(fun (v, interval) ->
-          <:test_result< t >> ~expect:t
-            (set_within t interval v)))
-  ;;
-  TEST_UNIT "construct_preimage: full reconstruction" =
-    Quickcheck.test
-      Generator.(tuple2 string t_gen)
-      ~sexp_of:<:sexp_of< string * t >>
-      ~f:(fun (str, t) ->
-        <:test_result< t >> ~expect:t
-          (construct_preimage t
-           |> Sequence.fold ~init:(Int_key.always str)
-                ~f:(fun seq (v, interval) ->
-                  set_within seq interval v)))
-  ;;
-  TEST_UNIT "construct_preimage: multiple reconstruction" =
-    (* A more complex reconstruction which also ensures that the set
-       of intervals given do not overlap. *)
-    let cons x tail = x :: tail in
-    Quickcheck.test t_gen ~sexp_of:<:sexp_of< t >>
-      ~f:(fun t ->
-        let seq1 =
+    let%test_unit "find rules: map" =
+      let f x = `F x in
+
+      Quickcheck.test
+        (Generator.tuple2 t_gen Int.gen)
+        ~sexp_of:[%sexp_of: (t * int)]
+        ~f:(fun (x, k) ->
+          [%test_result: [ `F of int ]]
+            ~expect:(f (find x k))
+            (find (map x ~f) k))
+    ;;
+
+    let%test_unit "monad laws (via join): associativity" =
+      Quickcheck.test
+        (poly_t_gen (poly_t_gen (poly_t_gen Int.gen)))
+        ~sexp_of:[%sexp_of: int poly_t poly_t poly_t]
+        ~f:(fun x ->
+          [%test_result: int poly_t]
+            ~expect:(join (join x))
+            (join (map ~f:join x)));
+    ;;
+    let%test_unit "monad laws (via join): left/right identity" =
+      Quickcheck.test t_gen ~sexp_of:[%sexp_of: t]
+        ~f:(fun x ->
+          [%test_result: t] ~expect:x
+            (join (map ~f:Int_key.return x));
+          [%test_result: t] ~expect:x
+            (join (return x)););
+    ;;
+    let%test_unit "monad laws (via join): naturality" =
+      let f x = `F x in
+      Quickcheck.test
+        (poly_t_gen (poly_t_gen Int.gen))
+        ~sexp_of:[%sexp_of: int poly_t poly_t]
+        ~f:(fun x ->
+          [%test_result: [ `F of int ] poly_t]
+            ~expect:(map ~f (join x))
+            (join (map ~f:(map ~f) x)));
+    ;;
+
+    let%test_unit "commutative monad law (via join)" =
+      let f x y = `F (x, y) in
+      Quickcheck.test
+        (Generator.tuple2 t_gen t_gen)
+        ~sexp_of:[%sexp_of: t * t]
+        ~f:(fun (x, y) ->
+          [%test_result: [ `F of int * int ] poly_t]
+            ~expect:(join (map x ~f:(fun x -> map y ~f:(f x))))
+            (join (map y ~f:(fun y -> map x ~f:(fun x -> f x y)))));
+    ;;
+
+    let%test_unit "monad custom ops: ignore_m" =
+      Quickcheck.test t_gen ~sexp_of:[%sexp_of: t]
+        ~f:(fun x ->
+          [%test_result: unit poly_t]
+            ~expect:(map ~f:(Fn.const ()) x)
+            (Int_key.ignore_m x));
+    ;;
+    let%test_unit "monad custom ops: all_unit" =
+      Quickcheck.test
+        (List.gen (poly_t_gen (Unit.gen)))
+        ~sexp_of:[%sexp_of: unit poly_t list]
+        ~f:(fun x ->
+          [%test_result: unit poly_t]
+            ~expect:(Int_key.ignore_m (Int_key.all x))
+            (Int_key.all_ignore x));
+    ;;
+
+    let%test_unit "find rules: join" =
+      Quickcheck.test
+        (Generator.tuple2 (poly_t_gen (poly_t_gen Int.gen)) Int.gen)
+        ~sexp_of:[%sexp_of: int poly_t poly_t * int]
+        ~f:(fun (x, k) ->
+          [%test_result: int]
+            ~expect:(find (find x k) k)
+            (find (join x) k));
+    ;;
+
+    let%test_unit "map2 specified by join/map" =
+      let f x y = `F (x, y) in
+      Quickcheck.test
+        (Generator.tuple2 t_gen t_gen)
+        ~sexp_of:[%sexp_of: t * t]
+        ~f:(fun (x, y) ->
+          [%test_result: [ `F of int * int ] poly_t]
+            ~expect:(join (map x ~f:(fun x -> map y ~f:(f x))))
+            (map2 ~f x y));
+      (* Given the properties of map and join this also implies that:
+         map2 ~f (always x) y = map ~f:(f x) y
+         map2 ~f (map2 ~g x y) z =
+           map2 ~f:(fun x f -> f x) x (map2 ~f:(fun y z f -> f (g x y) z) y z)
+         map2 ~f x y = map2 ~f:(Fn.flip f) y x
+         find (map2 ~f x y) = f (find x) (find y)
+
+         As apply is defined by map2 this also implies the laws for
+         a commutative applicative functor.
+      *)
+    ;;
+
+    let within interval k =
+      match interval with
+      | `Always -> true
+      | `Until high_key -> k < high_key
+      | `From low_key -> k >= low_key
+      | `Between (low_key, high_key) -> (k >= low_key) && (k < high_key)
+    ;;
+
+    let interval_gen : int Interval.t Generator.t =
+      Generator.(
+        variant4 Unit.gen Int.gen Int.gen (tuple2 Int.gen Int.gen))
+      |> Generator.map ~f:(function
+        | `A () -> `Always
+        | `B k -> `Until k
+        | `C k -> `From k
+        | `D (k, k') ->
+          if k' < k then
+            `Between (k', k)
+          else
+            `Between (k, k'))
+
+    let%test_unit "remove_changes_within: always" =
+      Quickcheck.test
+        (Generator.tuple2 interval_gen Int.gen)
+        ~sexp_of:[%sexp_of: int Interval.t * int]
+        ~f:(fun (interval, x) ->
+          [%test_result: t]
+            ~expect:(Int_key.always x)
+            (remove_changes_within (Int_key.always x) interval))
+    ;;
+    let%test_unit "remove_changes_within: change" =
+      Quickcheck.test
+        Generator.(tuple3 interval_gen t_gen point_gen)
+        ~sexp_of:[%sexp_of: int Interval.t * t * point]
+        ~f:(fun (interval, t, (k, x)) ->
+          [%test_result: t]
+            ~expect:(
+              let t' = remove_changes_within t interval in
+              if within interval k then t' else change t' ~at:k x)
+            (remove_changes_within (change t ~at:k x) interval))
+    ;;
+
+    let%test_unit "set_within" =
+      Quickcheck.test
+        (Generator.tuple4 t_gen interval_gen Int.gen Int.gen)
+        ~sexp_of:[%sexp_of: t * int Interval.t * int * int]
+        ~f:(fun (t, interval, v, k) ->
+          [%test_result: int]
+            ~expect:(if within interval k then v else find t k)
+            (find (set_within t interval v) k))
+    ;;
+
+    let%test_unit "map_within: constant function gives set_within" =
+      Quickcheck.test
+        Generator.(tuple3 t_gen interval_gen Int.gen)
+        ~sexp_of:[%sexp_of: t * int Interval.t * int]
+        ~f:(fun (t, interval, v) ->
+          [%test_result: t]
+            ~expect:(set_within t interval v)
+            (map_within t interval ~f:(Fn.const v)))
+    ;;
+    let%test_module "map_within" = (
+      module struct
+        type 'a r =
+          | Base of 'a
+          | F of 'a r
+        [@@deriving compare, sexp]
+
+        let base x = Base x
+        let f x = F x
+
+        let%test_unit _ =
+          Quickcheck.test
+            (Generator.tuple3 t_gen interval_gen Int.gen)
+            ~sexp_of:[%sexp_of: t * int Interval.t * int]
+            ~f:(fun (t, interval, k) ->
+              let t = map t ~f:base in
+              [%test_result: int r]
+                ~expect:(if within interval k then f (find t k) else find t k)
+                (find (map_within t interval ~f) k))
+        ;;
+      end)
+
+    let%test_unit "construct_preimage: reconstruction piecewise is identity" =
+      Quickcheck.test t_gen ~sexp_of:[%sexp_of: t]
+        ~f:(fun t ->
           construct_preimage t
-          |> Sequence.fold ~init:(Int_key.always [])
-               ~f:(fun seq (v, interval) ->
-                 map_within seq interval ~f:(cons v))
-        in
-        <:test_result< t >> ~expect:t (
-          map seq1 ~f:(function
-            | [v] -> v
-            | [] | _ :: _ :: _ ->
-              Error.failwithp _here_
-                "Missing or multiple values at points"
-                seq1 <:sexp_of< string list poly_t >>)));
-  ;;
-end
+          |> Sequence.iter ~f:(fun (v, interval) ->
+            [%test_result: t] ~expect:t
+              (set_within t interval v)))
+    ;;
+    let%test_unit "construct_preimage: full reconstruction" =
+      Quickcheck.test
+        (Generator.tuple2 Int.gen t_gen)
+        ~sexp_of:[%sexp_of: int * t]
+        ~f:(fun (x, t) ->
+          [%test_result: t] ~expect:t
+            (construct_preimage t
+             |> Sequence.fold ~init:(Int_key.always x)
+                  ~f:(fun seq (v, interval) ->
+                    set_within seq interval v)))
+    ;;
+    let%test_unit "construct_preimage: multiple reconstruction" =
+      (* A more complex reconstruction which also ensures that the set
+         of intervals given do not overlap. *)
+      let cons x tail = x :: tail in
+      Quickcheck.test t_gen ~sexp_of:[%sexp_of: t]
+        ~f:(fun t ->
+          let seq1 =
+            construct_preimage t
+            |> Sequence.fold ~init:(Int_key.always [])
+                 ~f:(fun seq (v, interval) ->
+                   map_within seq interval ~f:(cons v))
+          in
+          [%test_result: t] ~expect:t (
+            map seq1 ~f:(function
+              | [v] -> v
+              | [] | _ :: _ :: _ ->
+                Error.failwithp [%here]
+                  "Missing or multiple values at points"
+                  seq1 [%sexp_of: int list poly_t])))
+    ;;
+  end)
 
-TEST_MODULE "Int test" = struct
-  module For_int = Make_with_boundary(Int)
+let%test_module "Int test" = (
+  module struct
+    module For_int = Make_with_boundary(Int)
 
-  let create (left_of_leftmost, values) =
-    For_int.create
-      ~left_of_leftmost
-      ~value_right_of:(For_int.Left_boundary.Map.of_alist_exn values)
+    let create (left_of_leftmost, values) =
+      For_int.create
+        ~left_of_leftmost
+        ~value_right_of:(For_int.Left_boundary.Map.of_alist_exn values)
 
-  TEST_UNIT "check sexp example" =
-    <:test_result< Sexp.t >>
-      ~expect:(Sexp.of_string "(Pre ((Exc 1) A) ((Inc 2) B))")
-      (<:sexp_of< [ `A | `B | `Pre ] For_int.t >> (
-         create (`Pre, [Exc 1, `A; Inc 2, `B])));
+    let%test_unit "check sexp example" =
+      [%test_result: Sexp.t]
+        ~expect:(Sexp.of_string "(Pre ((Exc 1) A) ((Inc 2) B))")
+        ([%sexp_of: [ `A | `B | `Pre ] For_int.t] (
+           create (`Pre, [Exc 1, `A; Inc 2, `B])))
     ;;
 
-  let l1 = [
-    Left_boundary.Exc 13, Some "e";
-    Inc 20, None;
-    Inc 1, Some "a";
-    Exc 1, None;
-    Exc 3, Some "b";
-    Inc 5, Some "c";
-    Exc 10, None;
-    Exc 11, None;
-    Inc 12, Some "d";
-  ]
+    let l1 = [
+      Left_boundary.Exc 13, Some "e";
+      Inc 20, None;
+      Inc 1, Some "a";
+      Exc 1, None;
+      Exc 3, Some "b";
+      Inc 5, Some "c";
+      Exc 10, None;
+      Exc 11, None;
+      Inc 12, Some "d";
+    ]
 
-  let t1 = create (None, l1)
+    let t1 = create (None, l1)
 
-  let test map key expected =
-    (For_int.find' map key) = expected
+    let test map key expected =
+      (For_int.find' map key) = expected
 
-  TEST "1/-10" = test t1 (-10) None
-  TEST "1/-4" = test t1 (-4) None
-  TEST "1/0" = test t1 0 None
-  TEST "1/1" = test t1 1 (Some "a")
-  TEST "1/2" = test t1 2 None
-  TEST "1/3" = test t1 3 None
-  TEST "1/4" = test t1 4 (Some "b")
-  TEST "1/5" = test t1 5 (Some "c")
-  TEST "1/6" = test t1 6 (Some "c")
-  TEST "1/9" = test t1 9 (Some "c")
-  TEST "1/10" = test t1 10 (Some "c")
-  TEST "1/11" = test t1 11 None
-  TEST "1/12" = test t1 12 (Some "d")
-  TEST "1/13" = test t1 13 (Some "d")
-  TEST "1/14" = test t1 14 (Some "e")
-  TEST "1/15" = test t1 15 (Some "e")
-  TEST "1/19" = test t1 19 (Some "e")
-  TEST "1/20" = test t1 20 None
-  TEST "1/47" = test t1 47 None
+    let%test "1/-10" = test t1 (-10) None
+    let%test "1/-4" = test t1 (-4) None
+    let%test "1/0" = test t1 0 None
+    let%test "1/1" = test t1 1 (Some "a")
+    let%test "1/2" = test t1 2 None
+    let%test "1/3" = test t1 3 None
+    let%test "1/4" = test t1 4 (Some "b")
+    let%test "1/5" = test t1 5 (Some "c")
+    let%test "1/6" = test t1 6 (Some "c")
+    let%test "1/9" = test t1 9 (Some "c")
+    let%test "1/10" = test t1 10 (Some "c")
+    let%test "1/11" = test t1 11 None
+    let%test "1/12" = test t1 12 (Some "d")
+    let%test "1/13" = test t1 13 (Some "d")
+    let%test "1/14" = test t1 14 (Some "e")
+    let%test "1/15" = test t1 15 (Some "e")
+    let%test "1/19" = test t1 19 (Some "e")
+    let%test "1/20" = test t1 20 None
+    let%test "1/47" = test t1 47 None
 
-  let l2 = l1 @ [
-    Exc (-1), Some "x";
-    Inc (-8), Some "y";
-    Exc (-4), None;
-  ]
+    let l2 = l1 @ [
+      Exc (-1), Some "x";
+      Inc (-8), Some "y";
+      Exc (-4), None;
+    ]
 
-  let t2 = create (Some "left", l2)
-  TEST "2/-10" = test t2 (-10) (Some "left")
-  TEST "2/-4" = test t2 (-4) (Some "y")
-  TEST "2/-3" = test t2 (-3) None
-  TEST "2/0" = test t2 0 (Some "x")
-  TEST "2/1" = test t2 1 (Some "a")
-  TEST "2/2" = test t2 2 None
-  TEST "2/3" = test t2 3 None
-  TEST "2/4" = test t2 4 (Some "b")
-  TEST "2/5" = test t2 5 (Some "c")
-  TEST "2/6" = test t2 6 (Some "c")
-  TEST "2/9" = test t2 9 (Some "c")
-  TEST "2/10" = test t2 10 (Some "c")
-  TEST "2/11" = test t2 11 None
-  TEST "2/12" = test t2 12 (Some "d")
-  TEST "2/13" = test t2 13 (Some "d")
-  TEST "2/14" = test t2 14 (Some "e")
-  TEST "2/15" = test t2 15 (Some "e")
-  TEST "2/19" = test t2 19 (Some "e")
-  TEST "2/20" = test t2 20 None
-  TEST "2/47" = test t2 47 None
+    let t2 = create (Some "left", l2)
+    let%test "2/-10" = test t2 (-10) (Some "left")
+    let%test "2/-4" = test t2 (-4) (Some "y")
+    let%test "2/-3" = test t2 (-3) None
+    let%test "2/0" = test t2 0 (Some "x")
+    let%test "2/1" = test t2 1 (Some "a")
+    let%test "2/2" = test t2 2 None
+    let%test "2/3" = test t2 3 None
+    let%test "2/4" = test t2 4 (Some "b")
+    let%test "2/5" = test t2 5 (Some "c")
+    let%test "2/6" = test t2 6 (Some "c")
+    let%test "2/9" = test t2 9 (Some "c")
+    let%test "2/10" = test t2 10 (Some "c")
+    let%test "2/11" = test t2 11 None
+    let%test "2/12" = test t2 12 (Some "d")
+    let%test "2/13" = test t2 13 (Some "d")
+    let%test "2/14" = test t2 14 (Some "e")
+    let%test "2/15" = test t2 15 (Some "e")
+    let%test "2/19" = test t2 19 (Some "e")
+    let%test "2/20" = test t2 20 None
+    let%test "2/47" = test t2 47 None
 
 
-  let cont1 = create (
-    "x", [
-      Left_boundary.
-        Exc 40, "a";
-      Exc (-2), "c";
-      Inc 3, "d";
-      Inc 10, "e";
-      Exc (-20), "b";
-    ])
+    let cont1 = create (
+      "x", [
+        Left_boundary.
+          Exc 40, "a";
+        Exc (-2), "c";
+        Inc 3, "d";
+        Inc 10, "e";
+        Exc (-20), "b";
+      ])
 
-  let test_cont map key expected =
-    (For_int.find' map key) = expected
+    let test_cont map key expected =
+      (For_int.find' map key) = expected
 
-  TEST "cont -100" = test_cont cont1 (-100) "x"
-  TEST "cont -40" = test_cont cont1 (-40) "x"
-  TEST "cont -21" = test_cont cont1 (-21) "x"
-  TEST "cont -20" = test_cont cont1 (-20) "x"
-  TEST "cont -19" = test_cont cont1 (-19) "b"
-  TEST "cont -4" = test_cont cont1 (-4) "b"
-  TEST "cont -3" = test_cont cont1 (-3) "b"
-  TEST "cont -2" = test_cont cont1 (-2) "b"
-  TEST "cont -1" = test_cont cont1 (-1) "c"
-  TEST "cont 0" = test_cont cont1 (0) "c"
-  TEST "cont 1" = test_cont cont1 (1) "c"
-  TEST "cont 2" = test_cont cont1 (2) "c"
-  TEST "cont 3" = test_cont cont1 (3) "d"
-  TEST "cont 4" = test_cont cont1 (4) "d"
-  TEST "cont 9" = test_cont cont1 (9) "d"
-  TEST "cont 10" = test_cont cont1 (10) "e"
-  TEST "cont 11" = test_cont cont1 (11) "e"
-  TEST "cont 99" = test_cont cont1 (99) "a"
+    let%test "cont -100" = test_cont cont1 (-100) "x"
+    let%test "cont -40" = test_cont cont1 (-40) "x"
+    let%test "cont -21" = test_cont cont1 (-21) "x"
+    let%test "cont -20" = test_cont cont1 (-20) "x"
+    let%test "cont -19" = test_cont cont1 (-19) "b"
+    let%test "cont -4" = test_cont cont1 (-4) "b"
+    let%test "cont -3" = test_cont cont1 (-3) "b"
+    let%test "cont -2" = test_cont cont1 (-2) "b"
+    let%test "cont -1" = test_cont cont1 (-1) "c"
+    let%test "cont 0" = test_cont cont1 (0) "c"
+    let%test "cont 1" = test_cont cont1 (1) "c"
+    let%test "cont 2" = test_cont cont1 (2) "c"
+    let%test "cont 3" = test_cont cont1 (3) "d"
+    let%test "cont 4" = test_cont cont1 (4) "d"
+    let%test "cont 9" = test_cont cont1 (9) "d"
+    let%test "cont 10" = test_cont cont1 (10) "e"
+    let%test "cont 11" = test_cont cont1 (11) "e"
+    let%test "cont 99" = test_cont cont1 (99) "a"
 
-  TEST "cont always" = test_cont (For_int.always "a") (-100) "a"
-end
+    let%test "cont always" = test_cont (For_int.always "a") (-100) "a"
+  end)
 

@@ -9,7 +9,7 @@ module Core_int64  = Int64
 module Core_string = String
 
 module type Basic = sig
-  type elt with sexp, bin_io
+  type elt [@@deriving sexp, bin_io]
   type t
 
   val length : t -> int
@@ -41,8 +41,8 @@ end
 module Make (B : Basic) = struct
   include B
 
-  exception Invalid_index of int with sexp
-  exception Invalid_slice of int * int with sexp
+  exception Invalid_index of int [@@deriving sexp]
+  exception Invalid_slice of int * int [@@deriving sexp]
 
   let valid_index t i = Int.(>=) i 0 && Int.(<) i (length t)
 
@@ -76,19 +76,19 @@ module Make (B : Basic) = struct
     loop 0 init
 
   include (Binable.Of_binable
-             (struct type t = elt array with bin_io end)
+             (struct type t = elt array [@@deriving bin_io] end)
              (struct
                type nonrec t = t
                let to_binable = to_array
                let of_binable = of_array
              end) : Binable.S with type t := t)
 
-  let t_of_sexp sexp = of_array (<:of_sexp< elt array >> sexp)
-  let sexp_of_t t = <:sexp_of< elt array >> (to_array t)
+  let t_of_sexp sexp = of_array ([%of_sexp: elt array] sexp)
+  let sexp_of_t t = [%sexp_of: elt array] (to_array t)
 end
 
 module type Basic_bigarray = sig
-  type elt with sexp, bin_io
+  type elt [@@deriving sexp, bin_io]
   type kind
   val kind : (elt, kind) Bigarray.kind
 end
@@ -138,193 +138,193 @@ module Test (T : T) = struct
   let array_equal xs ys = Array.equal xs ys ~equal:(=)
 
   (* If this fails then some of the other test results would be invalid *)
-  TEST "test_list long enough" = Int.(>) (Array.length test_array) 75
+  let%test "test_list long enough" = Int.(>) (Array.length test_array) 75
 
-  TEST "of_list o to_list = ident  (empty)" =
+  let%test "of_list o to_list = ident  (empty)" =
     list_equal (S.to_list (S.of_list [])) []
 
-  TEST "of_list o to_list = ident  (singleton)" =
+  let%test "of_list o to_list = ident  (singleton)" =
     let x = [test_elt] in
     list_equal (S.to_list (S.of_list x)) x
 
-  TEST "of_list o to_list = ident  (non-empty)" =
+  let%test "of_list o to_list = ident  (non-empty)" =
     list_equal (S.to_list (S.of_list test_list)) test_list
 
-  TEST "of_array o to_array = ident  (empty)" =
+  let%test "of_array o to_array = ident  (empty)" =
     array_equal (S.to_array (S.of_array (Array.empty ()))) (Array.empty ())
 
-  TEST "of_array o to_array = ident  (singleton)" =
+  let%test "of_array o to_array = ident  (singleton)" =
     let x = Array.create ~len:1 test_elt in
     array_equal (S.to_array (S.of_array x)) x
 
-  TEST "of_array o to_array = ident  (non-empty)" =
+  let%test "of_array o to_array = ident  (non-empty)" =
     array_equal (S.to_array (S.of_array test_array)) test_array
 
-  TEST "iter" =
+  let%test "iter" =
     let xs = ref [] in
     let ys = ref [] in
     List.iter test_list ~f:(fun x -> xs := x :: !xs);
     S.iter test_t ~f:(fun y -> ys := y :: !ys);
     list_equal !xs !ys
 
-  TEST "t_of_sexp o sexp_of_t = ident  (empty)" =
+  let%test "t_of_sexp o sexp_of_t = ident  (empty)" =
     let xs = S.of_array (Array.empty ()) in
     array_equal (S.to_array (S.t_of_sexp (S.sexp_of_t xs))) (S.to_array xs)
 
-  TEST "t_of_sexp o sexp_of_t = ident  (singleton)" =
+  let%test "t_of_sexp o sexp_of_t = ident  (singleton)" =
     let xs = S.of_array (Array.create ~len:1 test_elt) in
     array_equal (S.to_array (S.t_of_sexp (S.sexp_of_t xs))) (S.to_array xs)
 
-  TEST "t_of_sexp o sexp_of_t = ident  (non-empty)" =
+  let%test "t_of_sexp o sexp_of_t = ident  (non-empty)" =
     array_equal (S.to_array (S.t_of_sexp (S.sexp_of_t test_t))) (S.to_array test_t)
 
-  TEST "slice  (non-empty)" =
+  let%test "slice  (non-empty)" =
     list_equal (S.to_list (S.slice test_t ~pos:25 ~len:25))
       (List.sub (S.to_list test_t) ~pos:25 ~len:25)
 
-  TEST "slice twice  (non-empty)" =
+  let%test "slice twice  (non-empty)" =
     list_equal (S.to_list (S.slice (S.slice test_t ~pos:25 ~len:25) ~pos:10 ~len:5))
       (List.sub (List.sub (S.to_list test_t) ~pos:25 ~len:25) ~pos:10 ~len:5)
 
-  TEST "marshalable" =
+  let%test "marshalable" =
     array_equal (S.to_array test_t)
       (S.to_array (Marshal.from_string (Marshal.to_string test_t [Marshal.Closures]) 0))
 end
 
 module Char = Of_bigarray (struct
-  type elt = char with sexp, bin_io
+  type elt = char [@@deriving sexp, bin_io]
   type kind = Bigarray.int8_unsigned_elt
   let kind = Bigarray.char
 end)
 
-TEST_MODULE "char" = Test(struct
+let%test_module "char" = (module Test(struct
   type elt = char
   include (Core_char : Comparable.S with type t := elt)
   module S = (Char : S with type elt := elt)
   let test_list () = List.init 100 ~f:Core_char.of_int_exn
-end)
+end))
 
 module Int = Of_bigarray (struct
-  type elt = int with sexp, bin_io
+  type elt = int [@@deriving sexp, bin_io]
   type kind = Bigarray.int_elt
   let kind = Bigarray.int
 end)
 
-TEST_MODULE "int" = Test(struct
+let%test_module "int" = (module Test(struct
   type elt = int
   include (Core_int : Comparable.S with type t := elt)
   module S = (Int : S with type elt := elt)
   let test_list () = List.init 100 ~f:ident
-end)
+end))
 
 module Int8_unsigned = Of_bigarray (struct
-  type elt = int with sexp, bin_io
+  type elt = int [@@deriving sexp, bin_io]
   type kind = Bigarray.int8_unsigned_elt
   let kind = Bigarray.int8_unsigned
 end)
 
-TEST_MODULE "int8_unsigned" = Test(struct
+let%test_module "int8_unsigned" = (module Test(struct
   type elt = int
   include (Core_int : Comparable.S with type t := elt)
   module S = (Int8_unsigned : S with type elt := elt)
   let test_list () = List.init 100 ~f:ident
-end)
+end))
 
 module Int8 = Of_bigarray (struct
-  type elt = int with sexp, bin_io
+  type elt = int [@@deriving sexp, bin_io]
   type kind = Bigarray.int8_signed_elt
   let kind = Bigarray.int8_signed
 end)
 
-TEST_MODULE "int8" = Test(struct
+let%test_module "int8" = (module Test(struct
   type elt = int
   include (Core_int : Comparable.S with type t := elt)
   module S = (Int8 : S with type elt := elt)
   let test_list () = List.init 100 ~f:ident
-end)
+end))
 
 module Int16_unsigned = Of_bigarray (struct
-  type elt = int with sexp, bin_io
+  type elt = int [@@deriving sexp, bin_io]
   type kind = Bigarray.int16_unsigned_elt
   let kind = Bigarray.int16_unsigned
 end)
 
-TEST_MODULE "int16_unsigned" = Test(struct
+let%test_module "int16_unsigned" = (module Test(struct
   type elt = int
   include (Core_int : Comparable.S with type t := elt)
   module S = (Int16_unsigned : S with type elt := elt)
   let test_list () = List.init 100 ~f:ident
-end)
+end))
 
 module Int16 = Of_bigarray (struct
-  type elt = int with sexp, bin_io
+  type elt = int [@@deriving sexp, bin_io]
   type kind = Bigarray.int16_signed_elt
   let kind = Bigarray.int16_signed
 end)
 
-TEST_MODULE "int16" = Test(struct
+let%test_module "int16" = (module Test(struct
   type elt = int
   include (Core_int : Comparable.S with type t := elt)
   module S = (Int16 : S with type elt := elt)
   let test_list () = List.init 100 ~f:ident
-end)
+end))
 
 module Int32 = Of_bigarray (struct
-  type elt = int32 with sexp, bin_io
+  type elt = int32 [@@deriving sexp, bin_io]
   type kind = Bigarray.int32_elt
   let kind = Bigarray.int32
 end)
 
-TEST_MODULE "int32" = Test(struct
+let%test_module "int32" = (module Test(struct
   type elt = int32
   include (Core_int32 : Comparable.S with type t := elt)
   module S = (Int32 : S with type elt := elt)
   let test_list () = List.init 100 ~f:Core_int.to_int32_exn
-end)
+end))
 
 module Int64 = Of_bigarray (struct
-  type elt = int64 with sexp, bin_io
+  type elt = int64 [@@deriving sexp, bin_io]
   type kind = Bigarray.int64_elt
   let kind = Bigarray.int64
 end)
 
-TEST_MODULE "int64" = Test(struct
+let%test_module "int64" = (module Test(struct
   type elt = int64
   include (Core_int64 : Comparable.S with type t := elt)
   module S = (Int64 : S with type elt := elt)
   let test_list () = List.init 100 ~f:Core_int.to_int64
-end)
+end))
 
 module Float32 = Of_bigarray (struct
-  type elt = float with sexp, bin_io
+  type elt = float [@@deriving sexp, bin_io]
   type kind = Bigarray.float32_elt
   let kind = Bigarray.float32
 end)
 
-TEST_MODULE "float32" = Test(struct
+let%test_module "float32" = (module Test(struct
   type elt = float
   include (Core_float : Comparable.S with type t := elt)
   module S = (Float32 : S with type elt := elt)
   let test_list () = List.init 100 ~f:Core_float.of_int
-end)
+end))
 
 module Float = Of_bigarray (struct
-  type elt = float with sexp, bin_io
+  type elt = float [@@deriving sexp, bin_io]
   type kind = Bigarray.float64_elt
   let kind = Bigarray.float64
 end)
 
-TEST_MODULE "float" = Test(struct
+let%test_module "float" = (module Test(struct
   type elt = float
   include (Core_float : Comparable.S with type t := elt)
   module S = (Float : S with type elt := elt)
   let test_list () = List.init 100 ~f:Core_float.of_int
-end)
+end))
 
 module Bool = Make (struct
   open Bigarray
 
-  type elt = bool with sexp, bin_io
+  type elt = bool [@@deriving sexp, bin_io]
   type t = {
     data: (int64, int64_elt, c_layout) Array1.t;
     pos: int;
@@ -364,12 +364,12 @@ module Bool = Make (struct
   let unsafe_slice t ~pos ~len = { t with pos = t.pos + pos; len; }
 end)
 
-TEST_MODULE "bool" = Test(struct
+let%test_module "bool" = (module Test(struct
   type elt = bool
   include (Core_bool : Comparable.S with type t := elt)
   module S = (Bool : S with type elt := elt)
   let test_list () = List.init 100 ~f:(fun ix -> Core_int.(=) 0 (ix mod 2))
-end)
+end))
 
 module Tuple2 (A : Basic) (B : Basic) : sig
   type t
@@ -380,7 +380,7 @@ module Tuple2 (A : Basic) (B : Basic) : sig
 end = struct
   module T = struct
     type t = A.t * B.t
-    type elt = A.elt * B.elt with sexp, bin_io
+    type elt = A.elt * B.elt [@@deriving sexp, bin_io]
 
     let length (a, _) = A.length a
     let unsafe_get (a, b) ix = A.unsafe_get a ix, B.unsafe_get b ix
@@ -408,10 +408,10 @@ end = struct
 
   include (Make(T) : S with type elt := elt and type t := t)
 
-  let t_of_sexp sexp = of_array (<:of_sexp< (A.elt * B.elt) array >> sexp)
-  let sexp_of_t t = <:sexp_of< (A.elt * B.elt) array >> (to_array t)
+  let t_of_sexp sexp = of_array ([%of_sexp: (A.elt * B.elt) array] sexp)
+  let sexp_of_t t = [%sexp_of: (A.elt * B.elt) array] (to_array t)
 
-  exception Different_lengths with sexp
+  exception Different_lengths [@@deriving sexp]
 
   let zip_exn a b =
     if Core_int.(=) (A.length a) (B.length b)
@@ -421,7 +421,7 @@ end = struct
   let unzip (a, b) = a, b
 end
 
-TEST_MODULE "int*float" = struct
+let%test_module "int*float" = (module struct
   module T = Tuple2(Int)(Float)
 
   module Test = Test(struct
@@ -431,31 +431,31 @@ TEST_MODULE "int*float" = struct
     let test_list () = List.init 100 ~f:(fun i -> i, Core_float.of_int i)
   end)
 
-  TEST_MODULE = Test
+  let%test_module _ = (module Test)
 
   include Test
 
-  TEST "zip_exn o unzip = id  (empty)" =
+  let%test "zip_exn o unzip = id  (empty)" =
     let xs = T.of_list [] in
     let a, b = T.unzip xs in
     array_equal (T.to_array (T.zip_exn a b)) (T.to_array xs)
 
-  TEST "zip_exn o unzip = id  (singleton)" =
+  let%test "zip_exn o unzip = id  (singleton)" =
     let xs = T.of_list [test_elt] in
     let a, b = T.unzip xs in
     array_equal (T.to_array (T.zip_exn a b)) (T.to_array xs)
 
-  TEST "zip_exn o unzip = id  (non-empty)" =
+  let%test "zip_exn o unzip = id  (non-empty)" =
     let xs = T.of_list test_list in
     let a, b = T.unzip xs in
     array_equal (T.to_array (T.zip_exn a b)) (T.to_array xs)
-end
+end)
 
 module Of_binable (B : sig
   include Binable.S
   include Sexpable.S with type t := t
 end) = Make(struct
-  type elt = B.t with sexp, bin_io
+  type elt = B.t [@@deriving sexp, bin_io]
   type t = int array * Bin_prot.Common.buf
 
   let length (ps, _) = Array.length ps
@@ -477,18 +477,18 @@ end)
 
 module String = Of_binable(String)
 
-TEST_MODULE "string" = Test(struct
+let%test_module "string" = (module Test(struct
   type elt = string
   include (Core_string : Comparable.S with type t := elt)
   module S = (String : S with type elt := elt)
   let test_list () = List.init 100 ~f:Core_int.to_string
-end)
+end))
 
 module Of_packed_array(P : S) = struct
   module T = struct
     module Slices = Tuple2(Int)(Int)
 
-    type elt = P.t with sexp, bin_io
+    type elt = P.t [@@deriving sexp, bin_io]
     type t = Slices.t * P.t
 
     let length (ss, _) = Slices.length ss
@@ -547,11 +547,11 @@ module Of_packed_array(P : S) = struct
     end
 end
 
-TEST_MODULE "packed array of packed arrays of strings" = struct
+let%test_module "packed array of packed arrays of strings" = (module struct
   module T = struct
     type elt = String.t
     include Comparable.Make(struct
-      type t = String.t with sexp
+      type t = String.t [@@deriving sexp]
       let compare a b =
         List.compare Core_string.compare (String.to_list a) (String.to_list b)
     end)
@@ -567,10 +567,10 @@ TEST_MODULE "packed array of packed arrays of strings" = struct
         (List.concat_map (S.to_list test_t) ~f:String.to_list)
         ~equal:Core_string.equal
 
-    TEST "concat" = test_concat (S.of_list (test_list ()))
-    TEST "concat after slice" =
+    let%test "concat" = test_concat (S.of_list (test_list ()))
+    let%test "concat after slice" =
       test_concat (S.slice (S.of_list (test_list ())) ~pos:25 ~len:25)
   end
 
-  TEST_MODULE = Test(T)
-end
+  let%test_module _ = (module Test(T))
+end)

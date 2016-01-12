@@ -1,6 +1,6 @@
 open Core.Std
 
-INCLUDE "config.mlh"
+#import "config.mlh"
 
 type t =
   | Realtime
@@ -22,7 +22,7 @@ let to_string t =
   | Process_cpu    -> "Process_cpu"
   | Process_thread -> "Process_thread"
 
-IFDEF POSIX_TIMERS THEN
+#if JSC_POSIX_TIMERS
 
 external getres : t -> Int63.t = "caml_clock_getres" "noalloc"
 external gettime : t -> Int63.t = "caml_clock_gettime" "noalloc"
@@ -36,7 +36,7 @@ end = Int63
 let min_interval t =
   let canary_val = Int63.of_int 1_000_000 in
   let current_min = ref canary_val in
-  for _i = 1 to 10_000 do
+  for _ = 1 to 10_000 do
     let t1 = gettime t in
     let t2 = gettime t in
     let open Int63.Replace_polymorphic_compare in
@@ -51,7 +51,7 @@ let mean_gettime_cost ~measure ~using =
   assert (getres Process_cpu = Int63.one);
   let count = 10_000_000 in
   let start = gettime using in
-  for _i = 1 to count do
+  for _ = 1 to count do
     ignore (gettime measure);
   done;
   let stop = gettime using in
@@ -64,7 +64,7 @@ let gettime           = Ok gettime
 let min_interval      = Ok min_interval
 let mean_gettime_cost = Ok mean_gettime_cost
 
-ELSE
+#else
 
 let getres            = Or_error.unimplemented "Posix_clock.getres"
 let gettime           = Or_error.unimplemented "Posix_clock.gettime"
@@ -72,7 +72,7 @@ let gettime           = Or_error.unimplemented "Posix_clock.gettime"
 let min_interval      = Or_error.unimplemented "Posix_clock.min_interval"
 let mean_gettime_cost = Or_error.unimplemented "Posix_clock.mean_gettime_cost"
 
-ENDIF
+#endif
 
 
 
@@ -81,24 +81,24 @@ module Time_stamp_counter = struct
 
   let diff t1 t2 = t1 - t2
 
-  IFDEF ARCH_x86_64 THEN
+#if JSC_ARCH_x86_64
     external rdtsc : unit -> int = "caml_rdtsc" "noalloc"
-  ELSE IFDEF ARCH_i386 THEN
+#elif JSC_ARCH_i386
     external rdtsc : unit -> int = "caml_rdtsc" "noalloc"
-  ELSE
+#else
     let rdtsc () =
       failwith "Posix_clock.Time_stamp_counter.rdtsc \
                 is not implemented for this architecture."
-  ENDIF ENDIF
+#endif
 
-  IFDEF ARCH_x86_64 THEN
+#if JSC_ARCH_x86_64
     external rdtscp : unit -> int = "caml_rdtscp" "noalloc"
-  ELSE IFDEF ARCH_i386 THEN
+#elif JSC_ARCH_i386
     external rdtscp : unit -> int = "caml_rdtscp" "noalloc"
-  ELSE
+#else
     let rdtscp () =
       failwith "Posix_clock.Time_stamp_counter.rdtscp \
                 is not implemented for this architecture."
-  ENDIF ENDIF
+#endif
 
 end

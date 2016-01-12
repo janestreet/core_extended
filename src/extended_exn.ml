@@ -14,7 +14,7 @@ let rec unwrap = function
 
 module Exn_string = struct
   module T = struct
-    type t = string with sexp, bin_io
+    type t = string [@@deriving sexp, bin_io]
   end
   include T
   include Sexpable.To_stringable (T)

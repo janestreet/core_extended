@@ -12,7 +12,13 @@
 #include <string.h>
 #include <time.h>
 #include <sys/statvfs.h>
+
+#if defined (__FreeBSD__) || defined (__OpenBSD__)
+#include <ufs/ufs/quota.h>
+#else
 #include <sys/quota.h>
+#endif
+
 #include <sys/mount.h>
 
 #ifndef __USE_ISOC99
