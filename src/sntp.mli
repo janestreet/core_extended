@@ -1,6 +1,6 @@
 (** Simple Network Time Protocol *)
 
-open Core.Std ;;
+open! Core.Std ;;
 
 (** [query hostname] returns the difference between the clock on the
   local host and the clock on the host specified by [hostname].

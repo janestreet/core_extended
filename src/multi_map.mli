@@ -4,7 +4,7 @@
    This is a map that allows multiple binding. Each key can have several values
    associated to it.
 *)
-open Core.Std
+open! Core.Std
 
 type ('k,'v) t
 include Sexpable.S2 with type ('a,'b) t := ('a,'b) t

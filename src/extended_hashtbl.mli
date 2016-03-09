@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 module Access_control : sig
   type ('key,'data,-'z) any
@@ -72,10 +72,13 @@ module Access_control : sig
     -> ('k, 'b, [> read]) any
     -> f:(key:'k -> [ `Left of 'a | `Right of 'b | `Both of 'a * 'b ] -> 'c option)
     -> ('k, 'c, [< _ perms]) any
-  val merge_into:
-    f:(key:'a -> 'b -> 'b option -> 'b option)
-    -> src:('a, 'b, [> read]) any
+
+  type 'a merge_into_action = Remove | Set_to of 'a
+
+  val merge_into
+    :  src:('a, 'b, [> read]) any
     -> dst:('a, 'b) Read_write.t
+    -> f:(key:'a -> 'b -> 'b option -> 'b merge_into_action)
     -> unit
   val keys : ('a, 'b, [> read]) any -> 'a list
   val data : ('a, 'b, [> read]) any -> 'b list
@@ -87,5 +90,5 @@ module Access_control : sig
     -> ('b -> 'b -> bool)
     -> bool
   val to_alist : ('a, 'b, [> read]) any -> ('a * 'b) list
-  val incr : ?by:int -> ('a, int) Read_write.t -> 'a -> unit
+  val incr : ?by:int -> ?remove_if_zero:bool -> ('a, int) Read_write.t -> 'a -> unit
 end

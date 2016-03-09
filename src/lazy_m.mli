@@ -1,5 +1,5 @@
 (** A non-threadsafe reimplementation of [Lazy] *)
-open Core.Std.Interfaces
+open! Core.Std.Interfaces
 
 (** Lazy values reimplementation.
 

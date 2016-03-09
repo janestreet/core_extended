@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 (** a compiled finite discrete probability distribution that supports constant
     time sampling *)

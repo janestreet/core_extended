@@ -1,6 +1,6 @@
 (** Extensions to [Core.Core_String]. *)
 
-open Core.Std
+open! Core.Std
 
 (** [collate s1 s2] sorts string in an order that's usaully more suited for human
     consumption by treating ints specially, e.g. it will output:

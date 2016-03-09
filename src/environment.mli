@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 type t = (string, string) List.Assoc.t
 

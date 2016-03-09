@@ -1,5 +1,5 @@
 (** DEPRECATED: use Core.Std.Command instead *)
-open Core.Std
+open! Core.Std
 
 (** This module is a wrapper around Command that allows you to
     do away with accumulators. Here's an example:

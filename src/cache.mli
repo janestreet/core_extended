@@ -1,6 +1,6 @@
 (** Generic caching library *)
 
-open Core.Std
+open! Core.Std
 
 (** [memoize ~destruct ~expire f]
     memoizes the results of [f].

@@ -1,3 +1,7 @@
+## 113.33.00
+
+- Update to follow `core[_kernel]` evolution.
+
 ## 113.24.00
 
 N.B. Some interface changes occured in Core which are repercuted in this

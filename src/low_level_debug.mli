@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 
 (* Useful debugging functions working at a low level.

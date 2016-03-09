@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 (* A lazy list, but without memoization.
 

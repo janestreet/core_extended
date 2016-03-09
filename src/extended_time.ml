@@ -9,9 +9,9 @@ end
 module Extended_span = struct
   let to_string_hum (t : Time.Span.t) =
     let sign_str =
-      match Float.sign (t :> float) with
-      | Float.Sign.Neg -> "-"
-      | Float.Sign.Zero | Float.Sign.Pos -> ""
+      match Float.robust_sign (t :> float) with
+      | Neg -> "-"
+      | Zero | Pos -> ""
     in
     let rest =
       match Float.classify (t :> float) with

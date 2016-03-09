@@ -1,5 +1,5 @@
 
-open Core.Std
+open! Core.Std
 
 (** Lazy lists. *)
 

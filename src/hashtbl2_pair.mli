@@ -1,5 +1,4 @@
-open Core.Std
-open Hashtbl
+open! Core.Std
 
 module type Key = Hashtbl2.Key
 

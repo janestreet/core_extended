@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 (** Various system utility functions. *)
 

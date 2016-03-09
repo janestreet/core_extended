@@ -1,7 +1,7 @@
 (** DEPRECATED: use Core.Std.Command instead *)
 (** command-line parsing with hierarchical sub-commands *)
 
-open Core.Std
+open! Core.Std
 
 exception Invalid_arguments of string list
 

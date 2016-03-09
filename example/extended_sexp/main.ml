@@ -4,10 +4,10 @@ open Async.Std
 
 module Config = struct
   type t =
-    { systems : string Sexp.Comprehension.t
-    ; counterparty_numbers : int Sexp.Comprehension.t
-    ; chars : char Sexp.Comprehension.t
-    ; dates : Date.t Sexp.Comprehension.t
+    { systems              : string Core_extended.Std.Sexp.Comprehension.t
+    ; counterparty_numbers : int    Core_extended.Std.Sexp.Comprehension.t
+    ; chars                : char   Core_extended.Std.Sexp.Comprehension.t
+    ; dates                : Date.t Core_extended.Std.Sexp.Comprehension.t
     ;
     } [@@deriving sexp]
 

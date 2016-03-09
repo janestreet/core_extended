@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 (** Allows mutable float record fields where setting the value is much faster because it
     avoids write barrier.  Benchmarks show about eight times better performance for

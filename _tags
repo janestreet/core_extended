@@ -3,8 +3,8 @@
 # This prevents the implicit addition of -ppx options by ocamlfind
 <**/*.ml{,i}>: predicate(ppx_driver)
 <src/*.ml>: for-pack(Core_extended)
-<selector/src/*.ml{,i}>: pp(ppx-jane -dump-ast -inline-test-lib core_extended.selection)
-<src/*.ml{,i}>: pp(ppx-jane -dump-ast -inline-test-lib core_extended)
+<selector/src/*.ml{,i}>: pp(ppx-jane -dump-ast -inline-test-drop -bench-drop -inline-test-lib fake_for_drop)
+<src/*.ml{,i}>: pp(ppx-jane -dump-ast -inline-test-drop -bench-drop -inline-test-lib fake_for_drop)
 <src/*.ml{,i}>: pp_deps_for_src
 <janecheck/src/*.ml{,i}> : ugly_hack_to_workaround_ocamlbuild_nightmare
 # OASIS_START

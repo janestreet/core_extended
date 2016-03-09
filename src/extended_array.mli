@@ -1,5 +1,5 @@
 (** Extensions to [Core.Core_array]. *)
-open Core.Std
+open! Core.Std
 
 val foldi : init:'a -> 'b array -> f:(int -> 'a -> 'b -> 'a) -> 'a
 

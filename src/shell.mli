@@ -4,7 +4,7 @@
     be safer than just using [Unix.system] because it handles errors more
     strictly.
 *)
-open Core.Std
+open! Core.Std
 
 (** {6 Process handling }  *)
 (**

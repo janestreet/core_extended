@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 (**
    Extensions to [Core.Core_int64]

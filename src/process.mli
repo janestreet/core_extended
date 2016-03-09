@@ -5,7 +5,7 @@
    to dispatch processes.
 *)
 
-open Core.Std
+open! Core.Std
 
 module Status : sig
   type t =   [ `Timeout of Time.Span.t

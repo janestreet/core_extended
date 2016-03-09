@@ -1,5 +1,5 @@
 (** Another logging library.*)
-open Core.Std;;
+open! Core.Std;;
 
 type message = [ `Fatal | `Error | `Warn | `Info | `Debug ] * string
 type size = [ `Kb of int64 | `Mb of int64 | `Unlimited ]

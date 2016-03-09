@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 val full : unit -> string
 

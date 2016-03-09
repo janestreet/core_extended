@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 (* Implements types to be used in selection languages using Blang.
    The many nested types serve partially as documentation, but mostly
@@ -70,7 +70,6 @@ module String_list_selector : sig
 end
 
 module Stable : sig
-  open Core.Stable
 
   module Date_selector : sig
     module V1 : sig

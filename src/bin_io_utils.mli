@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 val load :
   ?pos : Int64.t -> ?len : Int64.t -> string -> 'a Bin_prot.Read.reader -> 'a

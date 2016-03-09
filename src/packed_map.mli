@@ -2,7 +2,7 @@
     key-value tuples which is sorted by key. Construction is very slow, but lookup is a
     reasonable speed. The main purpose is to be able to construct very large lookup tables
     that don't have much GC overhead. *)
-open Core.Std
+open! Core.Std
 
 module type Key = sig
   type t [@@deriving sexp, bin_io]

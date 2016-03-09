@@ -1,6 +1,6 @@
 (* A simple DSL for sets. *)
 
-open Core.Std
+open! Core.Std
 
 module Raw : sig
 

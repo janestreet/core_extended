@@ -1,4 +1,4 @@
-open Core.Std ;;
+open! Core.Std ;;
 
 (** [with_conn] opens a connection to the TCP service on [host] [port] and
   if successful calls [f] with In_channel.t and Out_channel.t as arguments.

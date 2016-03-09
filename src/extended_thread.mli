@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 (** Extensions to [Core.Core_thread] *)
 
 (** Behaves like [Thread.create] but exits the program if an exception trickles

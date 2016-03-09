@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 (** splay trees are binary search trees with a heuristic for moving recently accessed
     nodes closer to the root for easier access.  They have amortized O(log n)-time access

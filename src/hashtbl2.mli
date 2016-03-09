@@ -1,4 +1,4 @@
-open Core.Std
+open! Core.Std
 
 module type Key = sig
   type t [@@deriving compare, sexp_of]
