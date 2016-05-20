@@ -1,3 +1,11 @@
+## 113.43.00
+
+- Export the interval map module type.
+
+- Ocaml interface to the Unix pseudo-terminal functions
+
+- `Extended_list.fold_left_term` is no longer needed - we now have `List.fold_until`.
+
 ## 113.33.00
 
 - Update to follow `core[_kernel]` evolution.
