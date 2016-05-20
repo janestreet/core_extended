@@ -153,6 +153,9 @@ module Trie = Trie
 module Unix = struct
   include Core.Core_unix
   include Extended_unix
+  module Pty = struct
+    include Unix_pseudo_terminal
+  end
 end
 module Unix_utils = Unix_utils
 module Update_queue = Update_queue

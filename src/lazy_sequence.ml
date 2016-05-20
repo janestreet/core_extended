@@ -215,6 +215,9 @@ let fold t ~init ~f =
   in
   wrap_finallys finallys (fun () -> fold t ~init ~f)
 
+let fold_result t ~init ~f = Container.fold_result ~fold ~init ~f t
+let fold_until t ~init ~f = Container.fold_until ~fold ~init ~f t
+
 let foldi t ~init ~f =
   let finallys = ref [] in
   let rec foldi t i ~init ~f =

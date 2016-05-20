@@ -1,6 +1,6 @@
 open Core.Std
 
-#import "config.mlh"
+#import "config_ext.h"
 
 type mallinfo = {
   arena : int;
@@ -24,7 +24,7 @@ type opt =
 (*   | PERTURB *)
 [@@deriving sexp, bin_io]
 
-#if JSC_LINUX_EXT
+#ifdef JSC_LINUX_EXT
 
 external mallinfo     : unit -> mallinfo   = "malloc_mallinfo_stub"
 external mallopt      : opt -> int -> unit = "malloc_mallopt_stub"

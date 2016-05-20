@@ -7,18 +7,7 @@ let dev_mode = true
 
 let setup_preprocessor_deps = function
   | After_rules ->
-    dep ["pp_deps_for_src"] ["src/config.h"; "src/config.mlh"];
-  | _ -> ()
-
-let setup_core_config_import = function
-  | After_rules ->
-    let env  = BaseEnvLight.load () in
-    let core = BaseEnvLight.var_get "pkg_core" env in
-    rule "import core config for src"
-      ~prods:["src/config.h"; "src/config.mlh"]
-      (fun _ _ -> Seq [ cp (core / "config.h"  ) "src/config.h"
-                      ; cp (core / "config.mlh") "src/config.mlh"
-                      ])
+    dep ["pp_deps_for_src"] ["src/config_ext.h"];
   | _ -> ()
 
 let dispatch = function
@@ -72,7 +61,6 @@ let () =
     JS.pass_predicates_to_ocamldep hook;
     if dev_mode && not Sys.win32 then JS.track_external_deps hook;
     setup_preprocessor_deps hook;
-    setup_core_config_import hook;
     Ppx_driver_ocamlbuild.dispatch hook;
     dispatch hook;
     dispatch_default hook)

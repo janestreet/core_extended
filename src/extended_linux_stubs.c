@@ -1,4 +1,4 @@
-#include "config.h"
+#include "config_ext.h"
 
 #ifdef JSC_LINUX_EXT
 

@@ -238,7 +238,7 @@ module Test = struct
   let existing_data map =
     let data = Array.of_list (Map.keys map) in
     if Array.length data > 0 then
-      Some (data.(Random.int (Array.length data)))
+      Some (Array.random_element_exn data)
     else
       None
   ;;

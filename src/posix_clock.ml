@@ -1,6 +1,6 @@
 open Core.Std
 
-#import "config.mlh"
+#import "config_ext.h"
 
 type t =
   | Realtime
@@ -22,7 +22,7 @@ let to_string t =
   | Process_cpu    -> "Process_cpu"
   | Process_thread -> "Process_thread"
 
-#if JSC_POSIX_TIMERS
+#ifdef JSC_POSIX_TIMERS
 
 external getres : t -> Int63.t = "caml_clock_getres" "noalloc"
 external gettime : t -> Int63.t = "caml_clock_gettime" "noalloc"
@@ -81,9 +81,9 @@ module Time_stamp_counter = struct
 
   let diff t1 t2 = t1 - t2
 
-#if JSC_ARCH_x86_64
+#ifdef JSC_ARCH_x86_64
     external rdtsc : unit -> int = "caml_rdtsc" "noalloc"
-#elif JSC_ARCH_i386
+#elifdef JSC_ARCH_i386
     external rdtsc : unit -> int = "caml_rdtsc" "noalloc"
 #else
     let rdtsc () =
@@ -91,9 +91,9 @@ module Time_stamp_counter = struct
                 is not implemented for this architecture."
 #endif
 
-#if JSC_ARCH_x86_64
+#ifdef JSC_ARCH_x86_64
     external rdtscp : unit -> int = "caml_rdtscp" "noalloc"
-#elif JSC_ARCH_i386
+#elifdef JSC_ARCH_i386
     external rdtscp : unit -> int = "caml_rdtscp" "noalloc"
 #else
     let rdtscp () =

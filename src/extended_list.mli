@@ -1,4 +1,4 @@
-(** Extensions to [Core.Core_list].*)
+(** Extensions to [Core.Std.List].*)
 
 (** [of_option o] returns a list that is empty if [o] is None, otherwise it is a singleton
     list. Useful to get filter_map-like behavior in the context of something like a
@@ -21,12 +21,6 @@ val classify : ?equal:('b -> 'b -> bool) -> f:('a -> 'b) -> 'a list ->
     incrementing counter, starting at [n], with the elements of [xs].
     e.g.  enumerate_from 1 [a,b,c]  =  [a,1; b,2; c,3] *)
 val enumerate_from : int -> 'a list -> ('a * int) list
-
-(** fold_left_term is like fold_left, except that you can halt early.
-    The function to be folded should return a bool along with the new
-    accumulator.  True indicates that it should continue, false means
-    it should halt *)
-val fold_left_term : 'a list -> f:('b -> 'a -> [`Final of 'b | `Continue of 'b]) -> init:'b -> 'b
 
 (** A combination of [map] and [fold]. Applies a function to each element of the input
     list, building up an accumulator, returning both the final state of the accumulator

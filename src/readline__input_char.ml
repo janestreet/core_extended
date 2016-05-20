@@ -15,7 +15,10 @@ type t = [
   | `Eof
   | `Unknown_escape of (string*int option*int option) ]
 
-let char () = input_char stdin
+let char () =
+  match In_channel.input_char In_channel.stdin with
+  | Some c -> c
+  | None -> raise End_of_file
 
 (**
    An Ecma escape sequence is two characters separated by one or two optional

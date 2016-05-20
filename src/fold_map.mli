@@ -57,20 +57,20 @@ module type S = sig
   val set       : key:'a -> data:out_value -> 'a t -> 'a t
   val mem       : 'a t -> 'a -> bool
 
-  val iter      : 'a t -> f:(key:'a -> data:out_value -> unit) -> unit
-    [@@ocaml.deprecated "[since 2015-10] Use iteri instead"]
-
+  val iter_keys : 'a t -> f:('a -> unit) -> unit
+  val iter      : 'a t -> f:(out_value -> unit) -> unit
   val iteri     : 'a t -> f:(key:'a -> data:out_value -> unit) -> unit
+
   val fold      :
     'a t
     -> init:'b
     -> f:(key:'a -> data:out_value -> 'b -> 'b)
     -> 'b
 
-  val filter   : 'a t -> f:(key:'a -> data:out_value -> bool) -> 'a t
-    [@@ocaml.deprecated "[since 2015-10] Use filteri instead"]
+  val filter_keys : 'a t -> f:('a -> bool) -> 'a t
+  val filter      : 'a t -> f:(out_value -> bool) -> 'a t
+  val filteri     : 'a t -> f:(key:'a -> data:out_value -> bool) -> 'a t
 
-  val filteri   : 'a t -> f:(key:'a -> data:out_value -> bool) -> 'a t
   val keys      : 'a t -> 'a list
   val data      : _ t -> out_value list
   val to_alist  : ?key_order:[`Increasing|`Decreasing] -> 'a t -> ('a * out_value) list
@@ -137,26 +137,20 @@ module type S2 = sig
   val set       : key:'a -> data:'b out_value -> ('a,'b) t -> ('a,'b) t
   val mem       : ('a,_) t -> 'a -> bool
 
-  val iter     : ('a,'b) t -> f:(key:'a -> data:'b out_value -> unit) -> unit
-    [@@ocaml.deprecated "[since 2015-10] Use iteri instead"]
-
+  val iter_keys : ('a, _) t -> f:('a -> unit) -> unit
+  val iter      : ( _,'b) t -> f:('b out_value -> unit) -> unit
   val iteri     : ('a,'b) t -> f:(key:'a -> data:'b out_value -> unit) -> unit
+
   val fold      :
     ('a,'b) t
     -> init:'c
     -> f:(key:'a -> data:'b out_value -> 'c -> 'c)
     -> 'c
 
-  val filter   :
-    ('a,'b) t
-    -> f:(key:'a -> data:'b out_value -> bool)
-    -> ('a,'b) t
-    [@@ocaml.deprecated "[since 2015-10] Use filteri instead"]
+  val filter_keys : ('a,'b) t -> f:('a -> bool) -> ('a,'b) t
+  val filter      : ('a,'b) t -> f:('b out_value -> bool) -> ('a,'b) t
+  val filteri     : ('a,'b) t -> f:(key:'a -> data:'b out_value -> bool) -> ('a,'b) t
 
-  val filteri   :
-    ('a,'b) t
-    -> f:(key:'a -> data:'b out_value -> bool)
-    -> ('a,'b) t
   val keys      : ('a,_) t -> 'a list
   val data      : (_,'b) t -> 'b out_value list
   val to_alist  : ?key_order:[`Increasing|`Decreasing] -> ('a,'b) t -> ('a * 'b out_value) list

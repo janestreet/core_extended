@@ -57,7 +57,7 @@ let create ?(pos = Pos_int.zero) ?(close_on_eof=false)
       Known 1, Pos_int.zero
     else if Pos_int.(>) pos Pos_int.zero then
       begin
-        LargeFile.seek_in file pos;
+        In_channel.seek file pos;
         Unknown, pos
       end
     else
@@ -96,9 +96,9 @@ let possibly_reopen lbuf =
   then
     raise File_truncated_or_deleted;
   if lbuf.closed then begin
-    lbuf.file <- open_in_bin lbuf.name;
+    lbuf.file <- In_channel.create lbuf.name;
     lbuf.closed <- false;
-    LargeFile.seek_in lbuf.file lbuf.pos;
+    In_channel.seek lbuf.file lbuf.pos;
   end
 ;;
 
@@ -108,7 +108,7 @@ let reopen_if_deleted lbuf =
     if lbuf.inode <> inode then begin
       try
         close lbuf;
-        lbuf.file <- open_in_bin lbuf.name;
+        lbuf.file <- In_channel.create lbuf.name;
         lbuf.inode <- inode;
         lbuf.closed <- false;
         lbuf.pos <- Pos_int.zero;
@@ -128,7 +128,7 @@ exception Too_many_null_retries [@@deriving sexp];;
 let try_read_lnum_verbose lbuf =
   try
     possibly_reopen lbuf;
-    let line = input_line lbuf.file in
+    let line = In_channel.input_line_exn lbuf.file in
     begin match lbuf.null_hack with
     | `Off -> ()
     | `Retry | `Retry_then_fail as nhm ->
@@ -145,13 +145,16 @@ let try_read_lnum_verbose lbuf =
       end else
         lbuf.null_retries <- 0;
     end;
-    lbuf.pos <- LargeFile.pos_in lbuf.file;
+    lbuf.pos <- In_channel.pos lbuf.file;
     let last_char =
-      try LargeFile.seek_in lbuf.file (Pos_int.(-) lbuf.pos Pos_int.one); input_char lbuf.file
+      try
+        In_channel.seek lbuf.file (Pos_int.(-) lbuf.pos Pos_int.one);
+        match In_channel.input_char lbuf.file with
+        | None -> raise End_of_file | Some l -> l
       with End_of_file ->
         failwith "Linebuf.try_read_lnum: unexpected EOF, file may have been truncated"
     in
-    LargeFile.seek_in lbuf.file lbuf.pos;
+    In_channel.seek lbuf.file lbuf.pos;
     if last_char = '\n'
     then (* we're at the end of the line *)
       let lnum = lbuf.lnum in
@@ -224,18 +227,18 @@ let rec read lbuf =
       read lbuf
 
 let tail lbuf =
-  let file_size = LargeFile.in_channel_length lbuf.file in
+  let file_size = In_channel.length lbuf.file in
   if file_size = Pos_int.zero then () else
     begin
       lbuf.pos <- Pos_int.(-) file_size Pos_int.one;
-      LargeFile.seek_in lbuf.file lbuf.pos;
+      In_channel.seek lbuf.file lbuf.pos;
       lbuf.lnum <- Unknown;
       ignore (read lbuf)
     end
 
 let unsafe_tail lbuf =
-  lbuf.pos <- LargeFile.in_channel_length lbuf.file;
-  LargeFile.seek_in lbuf.file lbuf.pos;
+  lbuf.pos <- In_channel.length lbuf.file;
+  In_channel.seek lbuf.file lbuf.pos;
   lbuf.lnum <- Unknown;
   ignore (try_read lbuf)
 
@@ -245,10 +248,10 @@ let name t =
 
 let reset t =
   close t;
-  t.file <- open_in_bin t.name;
+  t.file <- In_channel.create t.name;
   t.inode <- (Unix.fstat (Unix.descr_of_in_channel t.file)).Unix.st_ino;
   t.closed <- false;
   t.pos <- Pos_int.zero;
   t.lnum <- Known 1;
-  LargeFile.seek_in t.file t.pos
+  In_channel.seek t.file t.pos
 ;;

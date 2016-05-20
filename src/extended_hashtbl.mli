@@ -23,12 +23,12 @@ module Access_control : sig
   val copy : ('a, 'b, [> read]) any -> ('a, 'b, [< _ perms]) any
   val fold :
     ('a, 'b, [> read]) any -> init:'c -> f:(key:'a -> data:'b -> 'c -> 'c) -> 'c
-  val iter_vals : ('a, 'b, [> read]) any -> f:('b -> unit) -> unit
 
-  val iter : ('a, 'b, [> read]) any -> f:(key:'a -> data:'b -> unit) -> unit
-    [@@ocaml.deprecated "[since 2015-10] Use iteri instead"]
-
+  val iter_keys : ('a, 'b, [> read]) any -> f:('a -> unit) -> unit
+  val iter  : ('a, 'b, [> read]) any -> f:('b -> unit) -> unit
   val iteri : ('a, 'b, [> read]) any -> f:(key:'a -> data:'b -> unit) -> unit
+  val iter_vals : ('a, 'b, [> read]) any -> f:('b -> unit) -> unit
+    [@@deprecated "[since 2016-04] Use iter instead"]
   val existsi : ('a, 'b, [> read]) any -> f:(key: 'a -> data:'b -> bool) -> bool
   val exists : ('a, 'b, [> read]) any -> f:('b -> bool) -> bool
   val length : (_, _, _) any -> int
@@ -59,11 +59,10 @@ module Access_control : sig
     -> f:(key:'a -> data:'b -> 'c option)
     -> ('a, 'c, [< _ perms]) any
 
-  val filter : ('a, 'b, [> read]) any -> f:('b -> bool) -> ('a, 'b, [< _ perms]) any
+  val filter_keys : ('a, 'b, [> read]) any -> f:('a -> bool) -> ('a, 'b, [< _ perms]) any
+  val filter      : ('a, 'b, [> read]) any -> f:('b -> bool) -> ('a, 'b, [< _ perms]) any
   val filteri
-    :  ('a, 'b, [> read]) any
-    -> f:(key:'a -> data:'b -> bool)
-    -> ('a, 'b, [< _ perms]) any
+    : ('a, 'b, [> read]) any -> f:(key:'a -> data:'b -> bool) -> ('a, 'b, [< _ perms]) any
   val find_or_add : ('a, 'b) Read_write.t -> 'a -> default:(unit -> 'b) -> 'b
   val find : ('a, 'b, [> read]) any -> 'a -> 'b option
   val find_exn : ('a, 'b, [> read]) any -> 'a -> 'b

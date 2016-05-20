@@ -62,7 +62,7 @@ module Make (B : Basic) = struct
 
   let to_list t = List.init (length t) ~f:(fun i -> unsafe_get t i)
 
-  let empty = of_array (Array.empty ())
+  let empty = of_array [||]
 
   let iter t ~f = for i = 0 to length t - 1 do f (unsafe_get t i) done
 
@@ -151,7 +151,7 @@ module Test (T : T) = struct
     list_equal (S.to_list (S.of_list test_list)) test_list
 
   let%test "of_array o to_array = ident  (empty)" =
-    array_equal (S.to_array (S.of_array (Array.empty ()))) (Array.empty ())
+    array_equal (S.to_array (S.of_array [||])) [||]
 
   let%test "of_array o to_array = ident  (singleton)" =
     let x = Array.create ~len:1 test_elt in
@@ -168,7 +168,7 @@ module Test (T : T) = struct
     list_equal !xs !ys
 
   let%test "t_of_sexp o sexp_of_t = ident  (empty)" =
-    let xs = S.of_array (Array.empty ()) in
+    let xs = S.of_array [||] in
     array_equal (S.to_array (S.t_of_sexp (S.sexp_of_t xs))) (S.to_array xs)
 
   let%test "t_of_sexp o sexp_of_t = ident  (singleton)" =
@@ -504,7 +504,7 @@ module Of_packed_array(P : S) = struct
       let slices = Array.create ~len (0, 0) in
       let buf =
         if Core_int.(=) buf_size 0
-        then Array.empty ()
+        then [||]
         else begin
           (* No bounds check is necessary in this loop because buf_size <> 0 only when at
              least one element of the array is nonempty. *)

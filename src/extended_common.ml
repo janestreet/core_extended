@@ -20,13 +20,14 @@ let file_content_ne f1 f2 =
         ->
       let input_nbchar ic =
         let rec loop () =
-          match input_char ic with
-          | ' ' | '\t' | '\n' -> loop ()
-          | c -> Some c
+          match In_channel.input_char ic with
+          | Some (' ' | '\t' | '\n') -> loop ()
+          | Some c -> Some c
+          | None -> None
         in
-        try loop () with End_of_file -> None
+        loop ()
       in
-      protectx (open_in f1,open_in f2)
+      protectx (In_channel.create f1, In_channel.create f2)
         ~finally:(fun (ic1,ic2) -> In_channel.close ic1; In_channel.close ic2)
         ~f:(fun (ic1,ic2) ->
           let rec loop () =
@@ -65,7 +66,7 @@ let write_wrap ?(mode:[`Clobber|`Append|`Atomic|`Atomic_update]=`Clobber) ~f fna
               res)
         ~finally:Unix.unlink
   | `Clobber ->
-      protectx (open_out fname) ~f ~finally:Out_channel.close
+      protectx (Out_channel.create fname) ~f ~finally:Out_channel.close
   | `Append ->
-      protectx (open_out_gen [Open_append;Open_creat] 0o666 fname)
+      protectx (Out_channel.create ~append:true ~perm:0o666 fname)
         ~f ~finally:Out_channel.close

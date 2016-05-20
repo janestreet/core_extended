@@ -67,7 +67,7 @@ let file_size ?follow_symlinks path =
 ;;
 
 let scroll_lock ixon =
-  let stdin_fd = Unix.descr_of_in_channel stdin in
+  let stdin_fd = Unix.descr_of_in_channel In_channel.stdin in
   let open Unix.Terminal_io in
   tcsetattr
     { (tcgetattr stdin_fd) with c_ixon = ixon }

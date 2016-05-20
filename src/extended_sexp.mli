@@ -35,13 +35,13 @@ val comment : string -> string
 (** {3 Various} *)
 module Diff : sig
   type t
-  val print : ?oc:out_channel -> t -> unit
+  val print : ?oc:Out_channel.t -> t -> unit
   val to_buffer : t -> Buffer.t
   val to_string : t -> string
   val of_sexps : original:Sexp.t -> updated:Sexp.t -> t option
 end
 
-val print_diff : ?oc:out_channel -> original:Sexp.t -> updated:Sexp.t -> unit -> unit
+val print_diff : ?oc:Out_channel.t -> original:Sexp.t -> updated:Sexp.t -> unit -> unit
 
 (** Returns a smaller sexp by replacing sections with "...".  Will try to show parts of the
    sexp "near" sub_sexp.

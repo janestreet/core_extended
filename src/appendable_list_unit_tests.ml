@@ -22,6 +22,8 @@ let%test_module _ = (module (struct
   ;;
 
   let of_list = of_list
+  let fold_result = fold_result
+  let fold_until = fold_until
 
   let%test_unit "of_list" =
     let n = 10 in

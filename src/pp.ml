@@ -54,7 +54,7 @@ let sdoc_to_string sdoc =
         )
 
 let sdoc_to_file oc doc =
-    let pstr = output_string oc in
+    let pstr = Out_channel.output_string oc in
     let rec loop = function
         | SNil          -> ()
         | SText(s,d)    -> pstr s; loop d

@@ -203,7 +203,7 @@ let rec nth xs i =
 
 let to_array t =
   match Lazy_m.force t with
-  | Empty -> Array.empty ()
+  | Empty -> [||]
   | Cons(x, xs) ->
       let ary = Array.create ~len:(length t) x in
       let i = ref 1 in

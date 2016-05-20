@@ -337,6 +337,11 @@ end
 module type M = sig
   include Operations
 
+  module type S = S
+    with type ('k, 'v, 'cmp) interval_map := ('k, 'v, 'cmp) t
+  module type S_with_boundary = S_with_boundary
+    with type ('k, 'v, 'cmp) interval_map := ('k, 'v, 'cmp) t
+
   (* [Make] creates an interval map which directly uses some key type.
 
      As we use the normal form of map type to construct this, we pass in
@@ -348,7 +353,6 @@ module type M = sig
   module Make (T : Type_with_map_module) : S
     with type Key.t = T.Map.Key.t
      and type Key.comparator_witness = T.Map.Key.comparator_witness
-     and type ('k, 'v, 'cmp) interval_map := ('k, 'v, 'cmp) t
 
   (* Note on the sexp format of generated interval_map types:
      This type is not serialised as the above record, but rather in a manner similar to
@@ -370,5 +374,4 @@ module type M = sig
   *)
   module Make_with_boundary (Key : Key) : S_with_boundary
     with type key := Key.t
-     and type ('k, 'v, 'cmp) interval_map := ('k, 'v, 'cmp) t
 end

@@ -6,6 +6,11 @@ type ('k, 'v, 'cmp) t = {
   value_right_of    : ('k, 'v, 'cmp) Map.t;
 } [@@deriving fields]
 
+module type S = S
+  with type ('k, 'v, 'cmp) interval_map := ('k, 'v, 'cmp) t
+module type S_with_boundary = S_with_boundary
+  with type ('k, 'v, 'cmp) interval_map := ('k, 'v, 'cmp) t
+
 let comparator t = Map.comparator t.value_right_of
 let comparing_with t = (comparator t).Comparator.compare
 
@@ -359,8 +364,9 @@ end
 
 let gen k_gen a_gen ~comparator =
   let open Quickcheck.Generator in
-  tuple2 a_gen (List.gen' k_gen ~unique:true)
+  tuple2 a_gen (List.gen k_gen)
   >>= fun (initial_value, changes_keys) ->
+  let changes_keys = List.dedup changes_keys ~compare:comparator.Comparator.compare in
   List.gen' a_gen ~length:(`Exactly (List.length changes_keys))
   >>| fun changes_vals ->
   create ~left_of_leftmost:initial_value
@@ -476,13 +482,7 @@ let%test_module "Quickcheck tests." = (
         let open Generator in
         (* where the two keys are not equal *)
         let unequal_keys =
-          bind_choice Int.gen (fun choice ->
-            let k = Choice.value choice in
-            let k_gen' =
-              Choice.updated_gen choice
-                ~keep:`All_choices_except_this_choice
-            in
-            tuple2 (singleton k) k_gen')
+          filter (tuple2 Int.gen Int.gen) ~f:(fun (k, k') -> k <> k')
         in
         tuple4 t_gen unequal_keys Int.gen Int.gen
         >>| fun (t, (k, k'), v, v') ->

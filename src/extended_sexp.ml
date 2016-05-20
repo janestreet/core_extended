@@ -51,7 +51,7 @@ let to_string_hum' sexp = Pp.to_string (format sexp)
 module Diff :
 sig
   type t
-  val print : ?oc:out_channel -> t -> unit
+  val print : ?oc:Out_channel.t -> t -> unit
   val to_buffer : t -> Buffer.t
   val to_string : t -> string
   val of_sexps : original:Sexp.t -> updated:Sexp.t -> t option

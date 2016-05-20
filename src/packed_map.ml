@@ -148,7 +148,7 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
         x := Some (key, data);
         true));
       match !x with
-      | None -> Array.empty ()
+      | None -> [||]
       | Some kv -> Array.create ~len kv
     in
     let ix = ref 0 in

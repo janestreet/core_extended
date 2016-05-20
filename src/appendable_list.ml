@@ -72,6 +72,12 @@ let fold t ~init ~f =
   !acc
 ;;
 
+let fold_result t ~init ~f = Container.fold_result ~fold ~init ~f t
+;;
+
+let fold_until t ~init ~f = Container.fold_until ~fold ~init ~f t
+;;
+
 let length t =
   let count = ref 0 in
   iter t ~f:(fun _ -> incr count);

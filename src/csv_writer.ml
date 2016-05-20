@@ -154,8 +154,8 @@ let rec output_lines_loop ~quote ~sep ~buff oc = function
         buff
       in
       ignore (line_blit_loop ~quote ~sep ~dst:buff ~pos:0 spec:int);
-      output oc buff 0 len;
-      output_string oc "\r\n";
+      Out_channel.output oc ~buf:buff ~pos:0 ~len;
+      Out_channel.output_string oc "\r\n";
       output_lines_loop ~quote ~sep ~buff oc t
 
 let line_to_string ?(quote='"') ?(sep=',') l =

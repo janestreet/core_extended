@@ -4,12 +4,12 @@ let (~:) l = String.concat l
 let (~%) = sprintf
 
 let print = print_string
-let fprint = output_string
-let eprint x = output_string stderr x
+let fprint = Out_channel.output_string
+let eprint x = Out_channel.output_string Out_channel.stderr x
 
-let printl s = print s; print "\n"; flush stdout
-let fprintl f s = fprint f s; fprint f "\n"; flush stdout
-let eprintl s = eprint s; eprint "\n"; flush stderr
+let printl s = print s; print "\n"; Out_channel.flush stdout
+let fprintl f s = fprint f s; fprint f "\n"; Out_channel.flush stdout
+let eprintl s = eprint s; eprint "\n"; Out_channel.flush stderr
 
 let pad side ?(fill=' ') n s =
   let orig_len = String.length s in

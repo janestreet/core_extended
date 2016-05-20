@@ -25,7 +25,7 @@ let print ~prompt ~map_out v =
   Term.save_cursor();
   print_string (map_out (SZ.right_contents v.line));
   Term.unsave_cursor();
-  flush stdout
+  Out_channel.flush stdout
 
 type input = [ `Backspace
    | `Char of char
@@ -50,10 +50,10 @@ let complete ~f v =
       Term.bell();
       v
   | matches ->
-      (* TODO: Multiple entries on one line with console.*)
-      print_newline ();
-      List.iter matches ~f:print_endline;
-      v
+    (* TODO: Multiple entries on one line with console.*)
+    print_endline "";
+    List.iter matches ~f:print_endline;
+    v
 
 let backspace v =
   match SZ.drop_before v.line with

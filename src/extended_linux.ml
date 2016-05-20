@@ -1,6 +1,6 @@
 open Core.Std
 
-#import "config.mlh"
+#import "config_ext.h"
 
 type uids = {
   ruid:int;
@@ -9,7 +9,7 @@ type uids = {
 } [@@deriving sexp, bin_io]
 
 module Statfs = struct
-#if JSC_LINUX_EXT
+#ifdef JSC_LINUX_EXT
   module Raw = struct
     type t =
       {
@@ -49,7 +49,7 @@ module Statfs = struct
     }
   ;;
 
-#if JSC_LINUX_EXT
+#ifdef JSC_LINUX_EXT
   let of_rawstatfs raw =
     {
       f_type =
@@ -96,7 +96,7 @@ module Statfs = struct
 #endif
 end ;;
 
-#if JSC_LINUX_EXT
+#ifdef JSC_LINUX_EXT
 
 external setresuid : ruid:int -> euid:int -> suid:int -> unit = "linux_setresuid_stub"
 

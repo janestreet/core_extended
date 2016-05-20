@@ -1,4 +1,5 @@
-#include "config.h"
+#include "ocaml_utils.h"
+#include "config_ext.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -15,12 +16,6 @@
 
 #include <time.h>
 #include <stdint.h>
-
-#ifdef JSC_ARCH_SIXTYFOUR
-#  define caml_alloc_int63(v) Val_long(v)
-#else
-#  define caml_alloc_int63(v) caml_copy_int64(v)
-#endif
 
 clockid_t caml_clockid_t_of_caml (value clock_type) {
   switch (Int_val(clock_type)) {

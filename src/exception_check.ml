@@ -44,7 +44,7 @@ let create ?(listen_port = 65100) exns =
               remove fd
             in
             try
-              let line = input_line ic in
+              let line = In_channel.input_line_exn ic in
               Mutex.critical_section ctx.lock ~f:(fun () ->
                 match Hashtbl.find ctx.known_exceptions line with
                 | None -> ()

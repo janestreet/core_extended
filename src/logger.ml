@@ -11,7 +11,7 @@ type 'a t = {
     full_callback:(string Squeue.t -> unit) option;
     message_to_string:('a -> string);
     mutable filter:('a -> bool) option;
-    mutable oc:out_channel option;
+    mutable oc:Out_channel.t option;
     q:string Squeue.t;
   }
 type default_t = message t
@@ -43,7 +43,7 @@ let close log =
     begin
       (* really try to close the log, but at least force the bad file pointer
         out of scope so we don't use it again *)
-      close_out_noerr oc;
+      try Out_channel.close oc with _ -> ();
       log.oc <- None
     end
 ;;
@@ -112,8 +112,7 @@ let reopen_log log =
   if too_large log then roll log;
 
   (* return a file pointer to the end of the file *)
-  let oc = open_out_gen [Open_append; Open_creat; Open_wronly] log.mode
-             filename in
+  let oc = Out_channel.create ~append:true ~perm:log.mode filename in
   log.oc <- Some oc;
   oc
 ;;
@@ -183,8 +182,8 @@ let create ?(max_size=`Mb 50L)
         | Some oc -> if too_large log then reopen_log log else oc
       end
     in
-    output_string oc msg;
-    Pervasives.flush oc;
+    Out_channel.output_string oc msg;
+    Out_channel.flush oc;
   in
   ignore (Thread.create (fun () ->
     while true do

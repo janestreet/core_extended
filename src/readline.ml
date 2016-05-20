@@ -83,8 +83,8 @@ let mainloop ?text ~map_out ?completion ~prompt ~hist =
     IL.print ~prompt ~map_out v;
     match Readline__input_char.get () with
     | `Newline ->
-        print_newline ();
-        IL.contents v;
+      print_endline "";
+      IL.contents v;
     | #IL.input as in_v -> loop (IL.step ?completion v in_v)
   in
   try

@@ -31,16 +31,11 @@ val mem       : ('k, 'v) t -> 'k -> bool
 val keys      : ('k, 'v) t -> 'k list
   (** Returns all the non-empty keys in [m]. *)
 
-val iter     :
-  f:(key:'k -> data:'v -> unit)
-  -> ('k, 'v) t
-  -> unit
-  [@@ocaml.deprecated "[since 2015-10] Use iteri instead"]
+val iter     : f:(               'v -> unit) -> ( _, 'v) t -> unit
+val iteri    : f:(key:'k -> data:'v -> unit) -> ('k, 'v) t -> unit
 
-val iteri     :
-  f:(key:'k -> data:'v -> unit)
-  -> ('k, 'v) t
-  -> unit
+(* Only visits each key once, even if the key has multiple values *)
+val iter_keys: f:('k                -> unit) -> ('k,  _) t -> unit
 
 val map: f:('a -> 'b) -> ('k,'a) t -> ('k,'b) t
 
@@ -52,10 +47,11 @@ val fold      :
   -> init:'a
   -> 'a
 
-val filter : f:(key:'k -> data:'v -> bool) -> ('k,'v) t -> ('k,'v) t
-  [@@ocaml.deprecated "[since 2015-10] Use filteri instead"]
+val filter      : f:(               'v -> bool) -> ('k,'v) t -> ('k,'v) t
+val filteri     : f:(key:'k -> data:'v -> bool) -> ('k,'v) t -> ('k,'v) t
 
-val filteri : f:(key:'k -> data:'v -> bool) -> ('k,'v) t -> ('k,'v) t
+(* Only visits each key once, even if the key has multiple values *)
+val filter_keys : f:(    'k            -> bool) -> ('k,'v) t -> ('k,'v) t
 
 val reduce : f:('v list -> 'r) -> ('k,'v) t -> ('k,'r) Map.Poly.t
 

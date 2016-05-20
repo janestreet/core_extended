@@ -54,7 +54,7 @@ let save ?header ?perm file bin_writer_t v =
     if perm <> 0o600 then Unix.chmod tmp_name ~perm;
     Sys.rename tmp_name file
   with e ->
-    close_out_noerr oc;
+    try Out_channel.close oc with _ -> ();
     raise e
 
 let end_char = '\n'

@@ -73,17 +73,6 @@ let enumerate_from =
         in
         fun xs -> loop [] xs
 
-let fold_left_term lst ~f ~init =
-  let rec loop lst ~f ~acc =
-    match lst with
-    | [] -> acc
-    | hd :: tl ->
-        match f acc hd with
-        | `Final v -> v
-        | `Continue acc -> loop tl ~f ~acc
-  in
-  loop lst ~f ~acc:init
-
 let max ?(cmp=Pervasives.compare) l =
   List.reduce l
     ~f:(fun x y -> if cmp x y > 0 then x else y)

@@ -81,7 +81,7 @@ module Stable = struct
           match a with
           | List _ -> assert false
           | Atom s ->
-            if String.length s >= 1 && s.[0] = '/'
+            if Core.Std.(String.length s >= 1 && s.[0] = '/')
             then `Regexp (Regexp.V1.t_of_sexp a)
             else `Literal s
         in

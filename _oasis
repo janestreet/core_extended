@@ -2,7 +2,7 @@ OASISFormat:           0.4
 OCamlVersion:          >= 4.02.3
 FindlibVersion:        >= 1.3.2
 Name:                  core_extended
-Version:               113.33.03
+Version:               113.43+70
 Synopsis:              Extra components that are not as closely vetted or as stable as Core
 Authors:               Jane Street Group, LLC <opensource@janestreet.com>
 Copyrights:            (C) 2008-2016 Jane Street Group LLC <opensource@janestreet.com>
@@ -22,6 +22,9 @@ Description:
   The Core suite of libraries is an industrial strength alternative to
   OCaml's standard library that was developed by Jane Street, the
   largest industrial user of OCaml.
+
+PostConfCommand: src/discover.sh src/config_ext.h `ocamlfind query core`/config.h
+PreDistCleanCommand: $rm src/config_ext.h
 
 Library core_extended
   Path:         src
@@ -131,6 +134,7 @@ Library core_extended
                 Tcp,
                 Timed_function,
                 Trie,
+                Unix_pseudo_terminal,
                 Unix_utils,
                 Update_queue
   BuildDepends: bin_prot,
@@ -146,7 +150,7 @@ Library core_extended
                 textutils,
                 typerep,
                 variantslib
-  CSources:     config.h,
+  CSources:     config_ext.h,
                 extended_int_stubs.c,
                 extended_linux_stubs.c,
                 extended_unix_stubs.c,
@@ -155,7 +159,8 @@ Library core_extended
                 linebuf_stubs.c,
                 low_level_debug_stubs.c,
                 malloc_stubs.c,
-                posix_clock_stubs.c
+                posix_clock_stubs.c,
+                unix_pseudo_terminal_stubs.c
 
 Library selector
   Path:         selector/src
