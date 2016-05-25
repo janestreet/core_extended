@@ -474,6 +474,9 @@ module Meminfo = struct
       vmalloc_total : bigint;
       vmalloc_used  : bigint;
       vmalloc_chunk : bigint;
+
+      (* New kernel field in CentOS 7 *)
+      mem_available : bigint sexp_option;
     }
   [@@deriving fields, sexp] ;;
   let load_exn () =
@@ -519,8 +522,21 @@ module Meminfo = struct
       vmalloc_total = get "VmallocTotal";
       vmalloc_used  = get "VmallocUsed";
       vmalloc_chunk = get "VmallocChunk";
+
+      mem_available = Map.find map "MemAvailable";
     }
   ;;
+
+  let mem_available t =
+    (* Use the MemAvailable field in newer kernels that have it, otherwise
+       make a best efforts guess *)
+    match t.mem_available with
+    | Some ma -> ma
+    | None ->
+      let (+) = Big_int.add_big_int in
+      t.mem_free + t.buffers + t.cached
+  ;;
+
 end ;;
 
 (** Parse /proc/stat because vmstat is dumb *)

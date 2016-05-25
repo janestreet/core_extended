@@ -203,8 +203,13 @@ module Meminfo : sig
       vmalloc_total : bigint;
       vmalloc_used  : bigint;
       vmalloc_chunk : bigint;
+
+      (* New field in CentOS 7 *)
+      mem_available : bigint sexp_option;
     }
   [@@deriving fields, sexp] ;;
+
+  val mem_available : t -> bigint
 end ;;
 
 module Kstat : sig
