@@ -52,10 +52,18 @@ CAMLprim value caml_rdtsc( )
       return Val_int( ((unsigned long long)lo)|( ((unsigned long long)hi)<<32 ));
 }
 
+#if defined (JSC_ARCH_i386)
+#  define CLOBBERED_BY_RDTSCP "%ecx"
+#elif defined (JSC_ARCH_x86_64)
+#  define CLOBBERED_BY_RDTSCP "%rcx"
+#else
+#  error "rdtscp not supported"
+#endif
+
 CAMLprim value caml_rdtscp( )
 {
     unsigned hi, lo;
-    __asm__ __volatile__ ("rdtscp" : "=a"(lo), "=d"(hi));
+    __asm__ __volatile__ ("rdtscp" : "=a"(lo), "=d"(hi) :: CLOBBERED_BY_RDTSCP);
       return Val_int( ((unsigned long long)lo)|( ((unsigned long long)hi)<<32 ));
 }
 
