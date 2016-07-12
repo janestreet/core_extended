@@ -19,7 +19,7 @@ let cloexec_pipe () =
 
 module Process_info = struct
   type t = {
-    pid:int;
+    pid : Pid.t;
     stdin : Unix.File_descr.t;
     stdout : Unix.File_descr.t;
     stderr : Unix.File_descr.t;
@@ -53,7 +53,7 @@ let internal_create_process ?working_dir ?setuid ?setgid ~env ~prog ~args () =
     close_non_intr out_write;
     close_non_intr err_write;
     {
-      Process_info.pid = Pid.to_int pid;
+      Process_info.pid = pid;
       stdin = in_write;
       stdout = out_read;
       stderr = err_read
@@ -157,32 +157,34 @@ module Command_result = struct
   }
 end
 
+let waitpid_nohang pid =
+  match Unix.wait_nohang (`Pid pid) with
+  | None -> None
+  | Some (v, res) -> assert Pid.(v = pid); Some res
+
 (** wait for a given pid to exit;
     returns true when the process exits and false if the process is still runing
     after waiting for [span]
 *)
-let wait_for_exit ?(is_child=false) span pid =
+let wait_for_exit ~is_child span pid =
   let end_time = Time.add (Time.now ()) span in
   let exited () =
     if is_child then begin
-      (* Non interuptible when used with WNOHANG*)
-      match Caml.Unix.waitpid [Caml.Unix.WNOHANG] pid with
-      | 0,_  -> true
-      | v, _ -> assert (v=pid); false
+      match waitpid_nohang pid with
+      | None -> true
+      | Some _ -> false
     end else
-      try
-        (* The conversion function for signals is the identity on 0 so this is
-           the equivalent of calling the c kill with 0 (test whether a process
-           exists) *)
-        Caml.Unix.kill pid 0; (* Non interuptible *)
-        true
-      with Unix.Unix_error (ESRCH,_,_) -> false
+      (* This is the equivalent of calling the C kill with 0 (test whether a process
+         exists) *)
+      match Signal.send (Signal.of_system_int 0) (`Pid pid) with
+      | `Ok -> true
+      | `No_such_process -> false
   in
   let rec loop () =
     if Time.(>) (Time.now ()) end_time then
       false
-        (*We need to explicitely waitpid the child otherwise we are sending
-          signals to a zombie*)
+      (*We need to explicitely waitpid the child otherwise we are sending
+        signals to a zombie*)
     else if not (exited ()) then true
     else begin
       Time.pause (sec 0.1);
@@ -192,26 +194,31 @@ let wait_for_exit ?(is_child=false) span pid =
   loop ()
 
 let kill
-    ?is_child
-    ?(wait_for=sec 2.0)
-    ?(signal=Caml.Sys.sigterm)
-    pid
-    =
-  Caml.Unix.kill pid signal;
-  if not (wait_for_exit ?is_child wait_for pid) then begin
+      ?(is_child=false)
+      ?(wait_for=sec 2.0)
+      ?(signal = Signal.term)
+      pid
+  =
+  Signal.send_exn signal (`Pid pid);
+  if not (wait_for_exit ~is_child wait_for pid) then begin
     begin
-      try
-        Caml.Unix.kill Caml.Sys.sigkill pid
-      with Unix.Unix_error (ESRCH,_,_) -> ()
+      match
+        Signal.send Signal.kill (`Pid pid)
+      with
+      | `No_such_process ->
+        if is_child then
+          failwith "Process.kill got `No_such_process even though the process was a \
+                    child we never waited for"
+      | `Ok -> ()
     end;
-    if not (wait_for_exit wait_for pid) then begin
-      failwithf "Process.kill failed to kill %i \
-             (or the process wasn't collected by its parent)"
-        pid
+    if not (wait_for_exit ~is_child wait_for pid) then begin
+      failwithf "Process.kill failed to kill %i%s"
+        (Pid.to_int pid)
+        (if is_child then "" else
+           " (or the process wasn't collected by its parent)")
         ()
     end
   end
-
 
 type t = {
   mutable open_fds : Unix.File_descr.t list;
@@ -222,7 +229,7 @@ type t = {
   in_cnt           : String.t;
   in_len           : int;
   out_callbacks    : (Unix.File_descr.t*(string -> int -> unit)) list;
-  pid              : int;
+  pid              : Pid.t;
   mutable in_pos   : int;
 }
 
@@ -376,15 +383,14 @@ let rec run_loop ~start_time ~timeout state =
     finish_reading state;
     `Timeout elapsed
   | None | Some _ ->
-    match Caml.Unix.waitpid [Caml.Unix.WNOHANG] state.pid with
-    | 0,_ -> run_loop ~start_time ~timeout state
-    | _, status ->
+    match waitpid_nohang state.pid with
+    | None -> run_loop ~start_time ~timeout state
+    | Some status ->
       finish_reading state;
       match status with
-      | Caml.Unix.WEXITED i   -> `Exited i
-      | Caml.Unix.WSIGNALED s -> `Signaled (Signal.of_caml_int s)
-      | Caml.Unix.WSTOPPED _  -> assert false
-
+      | Ok () -> `Exited 0
+      | Error (`Exit_non_zero i) -> `Exited i
+      | Error (`Signal s) -> `Signaled s
 
 let run
     ?timeout
@@ -437,13 +443,12 @@ let run
      stderr_tail = Tail_buffer.contents stderr_tail }
 
 (* Externally export this *)
-let kill ?is_child ?wait_for ?signal pid =
-  let signal = Option.map ~f:Signal.to_caml_int signal in
+let kill ?is_child ?wait_for ?(signal=Signal.term) pid =
   kill
     ?is_child
     ?wait_for
-    ?signal
-    (Pid.to_int pid)
+    ~signal
+    pid
 
 let%test_module _ = (module struct
   let with_fds n ~f =

@@ -33,6 +33,9 @@ end
     on them in another.
     @raises Failure if the target program hangs for more that [wait_for] after
     receiving the [sigkill].
+
+    caveat: [is_child:false] (the default) is racy: it can both send signals to wrong
+    processes and it can also fail to notice that the target died.
 *)
 val kill :
   ?is_child:bool ->
@@ -41,6 +44,11 @@ val kill :
   Pid.t
   -> unit
 
+(**
+   Runs the process.
+
+   [stdoutf s len] and [stderrf s len] should only inspect the [String.subo s ~len]
+   component of [s]. *)
 val run :
   ?timeout:Time.Span.t
   -> ?use_extra_path:bool

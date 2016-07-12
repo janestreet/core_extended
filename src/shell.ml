@@ -239,29 +239,32 @@ module Process = struct
     }
 
   let fold_lines (type ret) (type v)
-      ?eol
-      ~(init:v)
-      ~(f: v -> string -> (v * [`Continue | `Stop]))
-      ~(flush:v -> ret)
-      () : ret acc
-      =
+        ?eol
+        ~(init:v)
+        ~(f: v -> string -> (v * [`Continue | `Stop]))
+        ~(flush:v -> ret)
+        () : ret acc
+    =
     let acc = ref init
     and continue = ref `Continue in
-    let lb = Line_buffer.create
-      ?eol
-      (fun line ->
-        let acc_v,continue_v = f !acc line in
-        acc := acc_v;
-        continue := continue_v)
+    let lb =
+      Line_buffer.create
+        ?eol
+        (fun line ->
+           match !continue with
+           | `Stop -> ()
+           | `Continue ->
+             let acc_v,continue_v = f !acc line in
+             acc := acc_v;
+             continue := continue_v)
     in
     { add_stdout =
         (fun s len ->
-          Line_buffer.add_substring lb s ~pos:0 ~len;
-          !continue);
+           Line_buffer.add_substring lb s ~pos:0 ~len;
+           !continue);
       add_stderr = (fun _ _ -> `Continue);
       flush = (fun () ->
-        if !continue = `Continue then
-          Line_buffer.flush lb;
+        Line_buffer.flush lb;
         flush !acc) }
 
   let lines ?eol () =
@@ -286,6 +289,12 @@ module Process = struct
     aux_head ~flush:(function Some x -> x | None -> raise Empty_head) ?eol ()
 
 end
+
+let%test_unit _ =
+  [%test_result: string] ~expect:"hello"
+    (Process.run
+       (Process.cmd "echo" ["hello\nworld"])
+       (Process.head_exn ()))
 
 type 'a with_process_flags =
   ?use_extra_path:bool

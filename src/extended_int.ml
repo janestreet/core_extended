@@ -9,7 +9,7 @@ end
 
 include Number.Make_verified_std (Verified_spec)
 
-external gcd : int -> int -> int = "core_extended_extended_int_gcd" "noalloc"
+external gcd : int -> int -> int = "core_extended_extended_int_gcd" [@@noalloc]
 
 let%test _ = gcd 120 72 = 24
 let%test _ = gcd 13 17 = 1

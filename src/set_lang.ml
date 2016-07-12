@@ -54,6 +54,8 @@ let rec union2 t1 t2 =
     -> union2 (Set s) (union2 t1 t2)
 
   | Set s, t
+    when Set.is_empty s -> t
+
   | t, Set s
     when Set.is_empty s -> t
 
@@ -81,10 +83,14 @@ let rec inter2 t1 t2 =
     -> i s1 s2
 
   | Inter (Set s, t1), t2
+    -> inter2 (Set s) (inter2 t1 t2)
+
   | t1, Inter (Set s, t2)
     -> inter2 (Set s) (inter2 t1 t2)
 
   | Set s, _
+    when Set.is_empty s -> Set s
+
   | _, Set s
     when Set.is_empty s -> Set s
 
@@ -167,6 +173,9 @@ let rec invariant = function
   | Union (Set s, _)
   | Inter (Set s, _)
   | Diff  (Set s, _)
+    when Set.is_empty s
+    -> assert false
+
   | Union (_, Set s)
   | Inter (_, Set s)
   | Diff  (_, Set s)

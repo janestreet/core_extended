@@ -363,8 +363,9 @@ module Make_with_boundary (Key : Key) = struct
 end
 
 let gen k_gen a_gen ~comparator =
-  let open Quickcheck.Generator in
-  tuple2 a_gen (List.gen k_gen)
+  let module G = Quickcheck.Generator in
+  let open G.Monad_infix in
+  G.tuple2 a_gen (List.gen k_gen)
   >>= fun (initial_value, changes_keys) ->
   let changes_keys = List.dedup changes_keys ~compare:comparator.Comparator.compare in
   List.gen' a_gen ~length:(`Exactly (List.length changes_keys))
