@@ -487,7 +487,7 @@ module Autocomplete_ = struct
       ] [@@deriving sexp]
 
     let to_string action =
-      sexp_of_t action |! Sexp.to_string |! String.lowercase
+      sexp_of_t action |> Sexp.to_string |> String.lowercase
   end
 
   let escape_for_bash string =
@@ -527,7 +527,7 @@ module Autocomplete_ = struct
         else actions
       in
       List.map ~f:(fun action -> single_command action key) actions
-      |!  String.concat ~sep:"\n"
+      |>  String.concat ~sep:"\n"
     in
     fun actions command_line ->
       let result =
@@ -535,7 +535,7 @@ module Autocomplete_ = struct
         | [] -> command actions ""
         | key :: _ -> command actions key
       in
-      String.split ~on:'\n' result |! List.map ~f:escape_for_bash
+      String.split ~on:'\n' result |> List.map ~f:escape_for_bash
   ;;
 end
 
@@ -736,9 +736,9 @@ complete -F %s %s" fname fname Sys.argv.(0)
       match command_line with
       | [key] ->
         Hashtbl.keys grp.subcommands
-        |! filter_matching_prefixes_and_print ~autocomplete:None ~key ~command_line
+        |> filter_matching_prefixes_and_print ~autocomplete:None ~key ~command_line
       | [] -> (* We are at the root and all the options are requested *)
-          Hashtbl.keys grp.subcommands |! print_list
+          Hashtbl.keys grp.subcommands |> print_list
       | key :: argv ->
         match Hashtbl.find grp.subcommands key with
         | None -> ()

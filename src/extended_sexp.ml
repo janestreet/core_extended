@@ -220,7 +220,7 @@ module Summarize = struct
               if phys_equal sexp dot_dot_dot && phys_equal hd dot_dot_dot
               then accum
               else sexp :: accum
-          ) |! List.rev
+          ) |> List.rev
         in
         (* replace "(...)" with just "..." *)
         if sexps = [ dot_dot_dot ] then dot_dot_dot

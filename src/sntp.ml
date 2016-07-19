@@ -72,7 +72,7 @@ module Internal = struct
         float_to_buf buf 40 (Unix.gettimeofday ());
 
         Unix.sendto s ~buf ~pos:0 ~len:(String.length buf) ~mode:[] ~addr
-        |! ignore;
+        |> ignore;
 
         let sfds =
           Unix.select
@@ -86,7 +86,7 @@ module Internal = struct
         | s :: [] ->
             begin
               Unix.recvfrom s ~buf ~pos:0 ~len:(String.length buf) ~mode:[]
-              |! ignore;
+              |> ignore;
 
               let client_recv = Unix.gettimeofday () in
               Some {

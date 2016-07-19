@@ -53,8 +53,8 @@ module Modify = struct
         in
         let bytes = make_nullable_arg_type ~zero:(Quota.bytes Int63.zero)
           (fun s -> s
-                    |! Byte_units.of_string |! Byte_units.bytes
-                    |! Int63.of_float |! Quota.bytes)
+                    |> Byte_units.of_string |> Byte_units.bytes
+                    |> Int63.of_float |> Quota.bytes)
         in
         let inodes = make_nullable_arg_type ~zero:(Quota.inodes Int63.zero)
           (fun s -> Quota.inodes (Int63.of_string s))

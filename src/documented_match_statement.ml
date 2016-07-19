@@ -73,7 +73,7 @@ let documentation t ~input_to_string ~title =
     List.map t.specific_cases ~f:(fun case ->
       String.concat ~sep:", " (List.map ~f:input_to_string case.pattern),
       case.documentation
-    ) |! to_multiline_doc
+    ) |> to_multiline_doc
   in
   let catchall_case_lines =
     to_multiline_doc (

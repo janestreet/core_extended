@@ -54,8 +54,8 @@ module Env = struct
 
   let to_string_array env =
     String.Map.to_alist env
-    |! List.map ~f:(fun (k,v) -> k^"="^v)
-    |! List.to_array
+    |> List.map ~f:(fun (k,v) -> k^"="^v)
+    |> List.to_array
 end
 
 let fork_exec
@@ -81,7 +81,7 @@ let fork_exec
       List.fold_left l
         ~init
         ~f:(fun env (key,data) -> Env.add ~key ~data env)
-      |! Env.to_string_array)
+      |> Env.to_string_array)
 
   and full_prog =
     if path_lookup then
@@ -179,7 +179,7 @@ module Inet_port = struct
       None
 
   let of_string_exn x =
-    Int.of_string x |! of_int_exn
+    Int.of_string x |> of_int_exn
 
   let of_string x =
     try
@@ -193,8 +193,8 @@ module Inet_port = struct
   let to_int x =
     x
 
-  let t_of_sexp sexp = String.t_of_sexp sexp |! of_string_exn
-  let sexp_of_t t = to_string t |! String.sexp_of_t
+  let t_of_sexp sexp = String.t_of_sexp sexp |> of_string_exn
+  let sexp_of_t t = to_string t |> String.sexp_of_t
 
   let _flag = Command.Spec.Arg_type.create of_string_exn
 end
@@ -226,19 +226,19 @@ module Mac_address = struct
         | a::b::rest ->
           let x = String.of_char_list [a; b] in
           loop (x :: acc) rest
-        | [] -> List.rev acc |! String.concat ~sep:":"
+        | [] -> List.rev acc |> String.concat ~sep:":"
         | _ -> assert false
       in
       loop [] (String.to_list t)
 
     let to_string_cisco t =
       let lst = String.to_list t in
-      let a = List.take lst 4 |! String.of_char_list
-      and b = List.take (List.drop lst 4) 4 |! String.of_char_list
-      and c = List.drop lst 8 |! String.of_char_list in
+      let a = List.take lst 4 |> String.of_char_list
+      and b = List.take (List.drop lst 4) 4 |> String.of_char_list
+      and c = List.drop lst 8 |> String.of_char_list in
       String.concat ~sep:"." [a; b; c]
-    let t_of_sexp sexp = String.t_of_sexp sexp |! of_string
-    let sexp_of_t t = to_string t |! String.sexp_of_t
+    let t_of_sexp sexp = String.t_of_sexp sexp |> of_string
+    let sexp_of_t t = to_string t |> String.sexp_of_t
     let hash = String.hash
 
     let _flag = Command.Spec.Arg_type.create of_string

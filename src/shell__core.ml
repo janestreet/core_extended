@@ -5,9 +5,9 @@ let extra_path = ref ["/bin";"/usr/bin";"/usr/local/bin"]
 let get_path ?(use_extra_path=true) () =
   let env_path =
     Sys.getenv "PATH"
-    |! Option.map ~f:(String.split ~on:':')
-    |! Option.value ~default:[]
-    |! List.filter ~f:(( <> ) "")
+    |> Option.map ~f:(String.split ~on:':')
+    |> Option.value ~default:[]
+    |> List.filter ~f:(( <> ) "")
   in
   let path = if use_extra_path then
       env_path @ !extra_path

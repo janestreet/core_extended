@@ -9,7 +9,7 @@ let commands_only () =
        characters. As we don't actually know what is a flag or a
        filename and what is part of the command name we apply a heuristic.
     *)
-  let cmd = Sys.argv.(0) |! Filename.basename in
+  let cmd = Sys.argv.(0) |> Filename.basename in
   let args = List.tl_exn (Array.to_list Sys.argv) in
   let rec loop res args =
     match args with

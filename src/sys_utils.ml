@@ -8,7 +8,7 @@ let get_gen env_vars defaults =
     | p::ps ->
       (* ignore options given in env vars (e.g., emacsclient -c). String.split always
          returns list of at least 1 element. *)
-      let p_no_opts = String.split ~on:' ' p |! List.hd_exn in
+      let p_no_opts = String.split ~on:' ' p |> List.hd_exn in
       match Shell.which p_no_opts with
       | Some _ -> Some p
       | None -> first_valid ps
@@ -19,7 +19,7 @@ let get_editor () = get_gen ["EDITOR"; "VISUAL"] ["vim"; "emacs"; "nano"] ;;
 
 let get_editor_exn () =
   get_editor ()
-  |! Option.value_exn
+  |> Option.value_exn
     ~message:"No valid editors found! Try setting EDITOR environment variable."
 ;;
 
@@ -29,7 +29,7 @@ let page_contents ?pager ?(pager_options=[])?(tmp_name="sys_utils.page_contents"
   let tmp_file = Filename.temp_file tmp_name ".txt" in
   let pager = match pager with
     | Some p -> p
-    | None -> get_pager () |! Option.value_exn
+    | None -> get_pager () |> Option.value_exn
       ~message:"Couldn't find pager - very weird. Try setting PAGER variable?"
   in
   Exn.protect ~f:(fun () ->
@@ -65,7 +65,7 @@ let diff ?(options=["-d";"-u"]) s1 s2 =
       Shell.run_full ~expect:[0;1] "/usr/bin/diff" (options @ ["--"; f1; f2])))
 
 let ip_of_name name =
-  Unix.Inet_addr.of_string_or_getbyname name |! Unix.Inet_addr.to_string
+  Unix.Inet_addr.of_string_or_getbyname name |> Unix.Inet_addr.to_string
 
 let getbyname_ip () = ip_of_name (Unix.gethostname ())
 
@@ -216,7 +216,7 @@ module Cpu_use = struct
     { jiffies = Big_int.add_big_int utime stime;
       time = Time.now () }
 
-  let fds_of_proc proc = proc.P.fds |! Option.value_map ~f:List.length ~default:0
+  let fds_of_proc proc = proc.P.fds |> Option.value_map ~f:List.length ~default:0
 
   let get ?(pid=Unix.getpid ()) () =
     let proc0 = Procfs.with_pid_exn pid in

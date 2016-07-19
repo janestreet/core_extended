@@ -80,9 +80,9 @@ let wrap_block_signals f =
 
 let getppid_exn pid =
   In_channel.read_lines ("/proc/" ^ Pid.to_string pid ^ "/status")
-  |! List.find_exn ~f:(String.is_prefix ~prefix:"PPid:")
-  |! String.split ~on:'\t'
-  |! function
+  |> List.find_exn ~f:(String.is_prefix ~prefix:"PPid:")
+  |> String.split ~on:'\t'
+  |> function
       | ["PPid:"; ppid] -> Pid.of_string ppid
       | _ -> failwithf "couldn't parse ppid from /proc/%s/status" (Pid.to_string pid) ()
 

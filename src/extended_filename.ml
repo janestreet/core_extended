@@ -33,7 +33,7 @@ let normalize_path p =
       | _ -> path_element :: acc
           (* accumulate regular dirs or chains of ... at the beginning of a
              relative path*))
-  |! List.rev
+  |> List.rev
 
 let make_relative ?to_ f =
   if to_ = None && is_relative f then

@@ -72,24 +72,24 @@ module Process = struct
     let of_string s =
       let map =
         String.split s ~on:'\n'
-        |! List.map ~f:String.strip
-        |! List.filter ~f:(fun line -> line <> "")
-        |! List.fold ~init:String.Map.empty ~f:(fun map line ->
+        |> List.map ~f:String.strip
+        |> List.filter ~f:(fun line -> line <> "")
+        |> List.fold ~init:String.Map.empty ~f:(fun map line ->
           match
             String.strip line
-            |! String.lowercase
-            |! String.split ~on:' '
-            |! List.filter ~f:(fun s -> s <> "")
-            |! List.rev
+            |> String.lowercase
+            |> String.split ~on:' '
+            |> List.filter ~f:(fun s -> s <> "")
+            |> List.rev
           with
           | ("units" | "seconds" | "bytes" | "processes" | "locks" | "signals" | "files")
             :: hard_limit :: soft_limit :: name ->
-              let key = List.rev name |! String.concat ~sep:" " in
+              let key = List.rev name |> String.concat ~sep:" " in
               Map.add map ~key ~data:(soft_limit, hard_limit)
 
           (* priorities don't have an entry in the "Units" column *)
           | hard_limit :: soft_limit :: name ->
-              let key = List.rev name |! String.concat ~sep:" " in
+              let key = List.rev name |> String.concat ~sep:" " in
               Map.add map ~key ~data:(soft_limit, hard_limit)
 
           | _ -> failwithf "Procfs.Limits.of_string bad format: %s" line ()
@@ -105,7 +105,7 @@ module Process = struct
           if x = "unlimited" then `unlimited
           else `limited (Big_int.big_int_of_string x)
         in
-        { Rlimit.soft = fst data |! value; hard = snd data |! value }
+        { Rlimit.soft = fst data |> value; hard = snd data |> value }
       in
       {
         cpu_time          = get "max cpu time";
@@ -359,8 +359,8 @@ module Process = struct
     let slurp_dir fn = slurp Sys.readdir fn in
 
     let required x = Option.value_exn x in
-    let require_str f = slurp_file f |! required in
-    let require_int f = slurp_file f |! required |! String.strip |! Int.of_string in
+    let require_str f = slurp_file f |> required in
+    let require_int f = slurp_file f |> required |> String.strip |> Int.of_string in
     let cmdline = require_str "cmdline" in
   (*
    * Process command name varies
@@ -386,7 +386,7 @@ module Process = struct
       (if cmdline = "" then Stat.comm stat
       else
         String.tr ~target:'\x00' ~replacement:' ' cmdline)
-      |! String.strip
+      |> String.strip
     in
     let task_stats =
       Array.fold (required (slurp_dir "task"))
@@ -402,15 +402,15 @@ module Process = struct
       try
         Some (
           Sys.readdir (sprintf "/proc/%s/fd" (Pid.to_string pid))
-          |! Array.to_list
-          |! List.filter_map ~f:(fun fd_str ->
+          |> Array.to_list
+          |> List.filter_map ~f:(fun fd_str ->
             let fd = Int.of_string fd_str in
             slurp Unix.readlink ("fd/" ^ fd_str)
-              |! Option.map ~f:(fun path ->
+              |> Option.map ~f:(fun path ->
                 let parse inode = (* "[123]" -> 123 *)
-                  inode |!
-                  String.chop_prefix_exn ~prefix:"[" |!
-                  String.chop_suffix_exn ~suffix:"]" |!
+                  inode |>
+                  String.chop_prefix_exn ~prefix:"[" |>
+                  String.chop_suffix_exn ~suffix:"]" |>
                   Inode.of_string
                 in
                 { Fd.
@@ -483,14 +483,14 @@ module Meminfo = struct
     let of_kb = Big_int.mult_int_big_int 1024 in
     let map =
       In_channel.read_lines "/proc/meminfo"
-      |! List.fold ~init:String.Map.empty ~f:(fun map line ->
+      |> List.fold ~init:String.Map.empty ~f:(fun map line ->
         match String.strip line
-              |! String.tr ~target:':' ~replacement:' '
-              |! String.split ~on:' '
-              |! List.filter ~f:(fun s -> s <> "")
+              |> String.tr ~target:':' ~replacement:' '
+              |> String.split ~on:' '
+              |> List.filter ~f:(fun s -> s <> "")
         with
         | key :: value :: "kB" :: [] ->
-            let data = Big_int.big_int_of_string value |! of_kb in
+            let data = Big_int.big_int_of_string value |> of_kb in
             Map.add map ~key ~data
         | _ -> map (* ignore weird lines *)
       )
@@ -611,10 +611,10 @@ module Kstat = struct
 
   let load_exn () =
     In_channel.read_lines "/proc/stat"
-    |! List.fold ~init:[] ~f:(fun accum line ->
+    |> List.fold ~init:[] ~f:(fun accum line ->
       match String.strip line
-            |! String.split ~on:' '
-            |! List.filter ~f:(fun s -> s <> "")
+            |> String.split ~on:' '
+            |> List.filter ~f:(fun s -> s <> "")
       with
       | "cpu" :: rest ->
         (All, (parse_line rest)) :: accum
@@ -653,8 +653,8 @@ end
 
 let get_all_procs () =
   Sys.readdir "/proc"
-  |! Array.to_list
-  |! List.filter_map ~f:(fun pid ->
+  |> Array.to_list
+  |> List.filter_map ~f:(fun pid ->
     (* Failures usually aren't a fatal *system* condition.
        procfs queries on Linux simply are not consistent.
        They're generally thwarted by terminating processes.
@@ -675,7 +675,7 @@ let with_username_exn name = with_uid (Unix.Passwd.getbyname_exn name).Unix.Pass
 let with_username name = Option.try_with (fun () -> with_username_exn name) ;;
 
 let get_uptime () =
-  match string_of_file "/proc/uptime" |! String.split ~on:' ' with
+  match string_of_file "/proc/uptime" |> String.split ~on:' ' with
   | secs_since_boot :: _ -> Float.of_string secs_since_boot
   | _ -> failwithf "Error parsing /proc/uptime" ()
 ;;
@@ -861,7 +861,7 @@ module Net = struct
     | _ -> failwithf "Net.Route.of_string: unsupported format: %s" str ()
 
   let raw_route_list () =
-    let routes = In_channel.with_file "/proc/net/route" ~f:In_channel.input_lines |!
+    let routes = In_channel.with_file "/proc/net/route" ~f:In_channel.input_lines |>
     List.tl_exn in
     List.filter_map routes ~f:(of_string)
 
@@ -955,8 +955,8 @@ module Net = struct
 
     let of_line_exn line =
       match String.tr ~target:':' ~replacement:' ' line
-         |! String.split ~on:' '
-         |! List.filter ~f:(fun x -> x <> "") with
+         |> String.split ~on:' '
+         |> List.filter ~f:(fun x -> x <> "") with
           | [sl; local_address; local_port; remote_address; remote_port; st;
             tx_queue; rx_queue; tr;tm_when; retrnsmt; uid; timeout; inode;
             plus; some; other; state; i; guess; lol] ->
@@ -1036,7 +1036,7 @@ module Mount = struct
   [@@deriving fields] ;;
 
   let of_string s =
-    match String.split ~on:' ' s |! List.filter ~f:(fun s -> s <> "") with
+    match String.split ~on:' ' s |> List.filter ~f:(fun s -> s <> "") with
     | [ spec; file; vfstype; mntops; freq; passno ] ->
       { spec;
         file;
@@ -1050,29 +1050,29 @@ end
 
 let mounts () =
   In_channel.with_file "/proc/mounts" ~f:In_channel.input_lines
-  |! List.map ~f:Mount.of_string
+  |> List.map ~f:Mount.of_string
 ;;
 
 let mounts_of_fstab () =
   In_channel.with_file "/etc/fstab" ~f:In_channel.input_lines
   (* strip comments *)
-  |! List.map ~f:(fun line -> (* filter '#' *)
+  |> List.map ~f:(fun line -> (* filter '#' *)
     match String.split ~on:'#' line with
     | [] -> "" | content :: _comment -> content)
   (* turn tabs into spaces *)
-  |! List.map ~f:(String.tr ~target:'\t' ~replacement:' ')
+  |> List.map ~f:(String.tr ~target:'\t' ~replacement:' ')
   (* chop padding *)
-  |! List.map ~f:String.strip
-  |! List.filter ~f:(fun line -> line <> "")
-  |! List.map ~f:Mount.of_string
+  |> List.map ~f:String.strip
+  |> List.filter ~f:(fun line -> line <> "")
+  |> List.map ~f:Mount.of_string
 ;;
 
 let supported_filesystems () =
   In_channel.with_file "/proc/filesystems" ~f:In_channel.input_lines
-  |! List.map ~f:(fun line ->
-    match String.split ~on:'\t' line |! List.rev with
+  |> List.map ~f:(fun line ->
+    match String.split ~on:'\t' line |> List.rev with
     | vfstype :: _ -> vfstype
     | _ -> failwithf "Procfs.supported_filesystems: bad format: %s" line ())
 ;;
 
-let uptime () = get_uptime () |! Time.Span.of_float ;;
+let uptime () = get_uptime () |> Time.Span.of_float ;;
