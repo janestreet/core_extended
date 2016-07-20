@@ -92,7 +92,16 @@ CAMLprim value getloadavg_stub (value v_unit __unused)
   CAMLreturn(v_ret);
 }
 
-#if !(defined _LINUX_QUOTA_VERSION) /* BSD, Mac OS */
+#if defined (__FreeBSD__) || defined (__OpenBSD__) /* BSD */
+
+#  define quota_control(device, cmd, id, parg)  \
+     quotactl((device), (cmd), (id), (parg))
+#  define QUOTA_BYTES_PER_SPACE_UNIT 1
+#  define QUOTA_SPACE_USED(quota) ((quota).dqb_curblocks)
+#  define QUOTA_MODIFY_COMMAND Q_SETQUOTA
+#  define QUOTA_SET_VALID_FIELDS(quota) ((void)quota)
+
+#elif !(defined _LINUX_QUOTA_VERSION) /* Mac OS */
 
 #  define quota_control(device, cmd, id, parg)  \
      quotactl((device), (cmd), (id), (parg))
