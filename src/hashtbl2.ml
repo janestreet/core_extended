@@ -33,6 +33,12 @@ let mem1 t key1 =
   Hashtbl.mem t.by_key1 key1
 ;;
 
+let mem t key1 key2 =
+  match Hashtbl.find_exn t.by_key1 key1 with
+  | exception _ -> false
+  | by_key2 -> Hashtbl.mem by_key2 key2
+;;
+
 let iter t ~f =
   Hashtbl.iteri t.by_key1 ~f:(fun ~key:key1 ~data:by_key2 ->
     Hashtbl.iteri by_key2 ~f:(fun ~key:key2 ~data ->

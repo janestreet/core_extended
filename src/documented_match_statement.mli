@@ -48,16 +48,22 @@ val map_pattern : ('input1, 'output) t ->
 (** [prepend ~specific_cases t] matches on [specific_cases] before moving on to [t].
 
     A common situation is representing
-    let f t x =
-    match x with
-    | `A -> ...
-    | `B -> ...
-    | _ -> {t with field = g t.field x}
+
+    {[
+      let f t x =
+        match x with
+        | `A -> ...
+        | `B -> ...
+        | _ -> {t with field = g t.field x}
+    ]}
 
     which can be done by combining [prepend] and [map]:
-    let f' =
-    prepend ~specific_cases:[{pattern = `A;...};{pattern = `B;...}]
-    (map g' ~f:(fun h t -> {t with field = h t.field}))
+
+    {[
+      let f' =
+        prepend ~specific_cases:[{pattern = `A;...};{pattern = `B;...}]
+        (map g' ~f:(fun h t -> {t with field = h t.field}))
+    ]}
 *)
 val prepend :
   specific_cases:('input, unit -> 'output) case list ->

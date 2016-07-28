@@ -96,7 +96,7 @@ CAMLprim value getloadavg_stub (value v_unit __unused)
 
 #  define quota_control(device, cmd, id, parg)  \
      quotactl((device), (cmd), (id), (parg))
-#  define QUOTA_BYTES_PER_SPACE_UNIT 1
+#  define QUOTA_BYTES_PER_SPACE_UNIT DEV_BSIZE
 #  define QUOTA_SPACE_USED(quota) ((quota).dqb_curblocks)
 #  define QUOTA_MODIFY_COMMAND Q_SETQUOTA
 #  define QUOTA_SET_VALID_FIELDS(quota) ((void)quota)

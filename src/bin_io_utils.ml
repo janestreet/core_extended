@@ -118,6 +118,8 @@ let of_line s bin_t =
 module Serialized = struct
   type 'a t = string
 
+  let bin_shape_t t = t
+
   let create { Bin_prot.Type_class. size; write } a =
     let size = size a in
     let buf = Bigstring.create size in
@@ -176,14 +178,21 @@ module Serialized = struct
     ; write = (fun buf ~pos t -> bin_write_t buf ~pos (fst t))
     }
 
-  let bin_t { Bin_prot.Type_class. writer = bin_writer_a; reader = bin_reader_a } =
+  let bin_t { Bin_prot.Type_class. writer = bin_writer_a; reader = bin_reader_a
+            ; shape = bin_shape_a } =
     { Bin_prot.Type_class. writer = bin_writer_t bin_writer_a
-    ; reader = bin_reader_t bin_reader_a }
+    ; reader = bin_reader_t bin_reader_a
+    ; shape = bin_shape_t bin_shape_a
+    }
 
   let bin_t_with_value
-    { Bin_prot.Type_class. writer = bin_writer_a; reader = bin_reader_a } =
+    { Bin_prot.Type_class. writer = bin_writer_a; reader = bin_reader_a
+    ; shape = bin_shape_a } =
     { Bin_prot.Type_class.writer = bin_writer_t_with_value bin_writer_a
     ; reader = bin_reader_t_with_value bin_reader_a
+    ; shape = bin_shape_t bin_shape_a
+    (* This is a case where we actually want the same shape because ['a Serialized.t] has
+       the same binary serialization as ['a].  *)
     }
 
   module Make (B : Binable) = struct
@@ -191,6 +200,8 @@ module Serialized = struct
 
     let create bt = create B.bin_writer_t bt
     let value t = value t B.bin_reader_t
+
+    let bin_shape_t = B.bin_shape_t
 
     let bin_size_t = bin_size_t
     let bin_write_t = bin_write_t

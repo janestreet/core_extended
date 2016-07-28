@@ -33,14 +33,13 @@ let failure which s =
 
 let add_years d i = Date.add_months d (12 * i)
 
-let parse_date dt =
-  let zone = Time.Zone.local in
+let parse_date ?relative_to:(today=Date.today ~zone:Time.Zone.local) dt =
   let dt' = String.lowercase dt in
   let failure () = failure `date dt in
   match dt' with
-  | "today" -> Date.today ~zone
-  | "yesterday" -> Date.add_days (Date.today ~zone) (-1)
-  | "tomorrow" -> Date.add_days (Date.today ~zone) 1
+  | "today" -> today
+  | "yesterday" -> Date.add_days today (-1)
+  | "tomorrow" ->  Date.add_days today 1
   | _ ->
     try
       Date.of_string dt
@@ -49,21 +48,41 @@ let parse_date dt =
       try
         match String.split_on_chars dt' ~on:[ ' '; '\t'; '\n'; '\r'; '_' ] with
         | [num; "days"]
-        | [num; "days";     "hence"] -> Date.add_days     (Date.today ~zone) (parse_int num)
+        | [num; "days";     "hence"] -> Date.add_days     today (parse_int num)
         | [num; "weekdays"]
-        | [num; "weekdays"; "hence"] -> Date.add_weekdays (Date.today ~zone) (parse_int num)
+        | [num; "weekdays"; "hence"] -> Date.add_weekdays today (parse_int num)
         | [num; "months"]
-        | [num; "months";   "hence"] -> Date.add_months   (Date.today ~zone) (parse_int num)
+        | [num; "months";   "hence"] -> Date.add_months   today (parse_int num)
         | [num; "years"]
-        | [num; "years";    "hence"] -> add_years         (Date.today ~zone) (parse_int num)
-        | [num; "days";     "ago"] ->   Date.add_days     (Date.today ~zone) ( -(parse_int num))
-        | [num; "weekdays"; "ago"] ->   Date.add_weekdays (Date.today ~zone) ( -(parse_int num))
-        | [num; "months";   "ago"] ->   Date.add_months   (Date.today ~zone) ( -(parse_int num))
-        | [num; "years";    "ago"] ->   add_years         (Date.today ~zone) ( -(parse_int num))
+        | [num; "years";    "hence"] -> add_years         today (parse_int num)
+        | [num; "days";     "ago"] ->   Date.add_days     today ( -(parse_int num))
+        | [num; "weekdays"; "ago"] ->   Date.add_weekdays today ( -(parse_int num))
+        | [num; "months";   "ago"] ->   Date.add_months   today ( -(parse_int num))
+        | [num; "years";    "ago"] ->   add_years         today ( -(parse_int num))
         | _ ->
           failure ()
       with
       | _ -> failure ()
+
+let%test_unit _ =
+  let date = Date.of_string "1911-01-30" in
+  List.iter ~f:(fun (input, y, m, d) ->
+    [%test_result: Date.t]
+      ~expect:(Date.create_exn ~y ~m ~d)
+      (parse_date ~relative_to:date input))
+    [ "2016-07-22"      , 2016, Month.Jul, 22
+    ; "1969-06-20"      , 1969, Jun, 20
+    ; "today"           , 1911, Jan, 30
+    ; "tomorrow"        , 1911, Jan, 31
+    ; "yesterday"       , 1911, Jan, 29
+    ; "two days ago"    , 1911, Jan, 28
+    ; "2 days ago"      , 1911, Jan, 28
+    ; "2 days hence"    , 1911, Feb, 01
+    ; "1 months hence"  , 1911, Feb, 28
+    ; "2 months hence"  , 1911, Mar, 30
+    ; "twenty years ago", 1891, Jan, 30
+    ; "1011 years hence", 2922, Jan, 30
+    ]
 
 let parse_time ts =
   let failure () = failure `time ts in

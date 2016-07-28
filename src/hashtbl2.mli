@@ -22,6 +22,8 @@ val find : ('key1, 'key2, 'data) t -> 'key1 -> 'key2 -> 'data option
 
 val find1 : ('key1, 'key2, 'data) t -> 'key1 -> ('key2, 'data) Hashtbl.t option
 
+val mem : ('key1, 'key2, 'data) t -> 'key1 -> 'key2 -> bool
+
 (** [mem1 t key1] is true iff \exists key2 s.t. [find t key1 key2] is not None **)
 val mem1 : ('key1, 'key2, 'data) t -> 'key1 -> bool
 
