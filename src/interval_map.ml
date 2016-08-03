@@ -327,7 +327,7 @@ module Make(T : Type_with_map_module) = struct
     let return = always
 
     let apply f x = map2 ~f:(fun f x -> f x) f x
-    let bind x f = join (map ~f x)
+    let bind x ~f = join (map ~f x)
 
     let map = `Custom map
   end

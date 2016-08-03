@@ -84,7 +84,7 @@ let%test_module _ = (module (struct
         List.fold_right xs ~init:empty ~f:(fun t acc -> append t acc)
       in
       let ts_join () = join (of_list xs) in
-      let ts_bind () = bind (of_list xss) of_list in
+      let ts_bind () = bind (of_list xss) ~f:of_list in
       let expect = List.concat xss in
       let f_map i = float (i * 100) in
       let expect_f_map = List.map expect ~f:f_map in

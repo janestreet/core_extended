@@ -17,7 +17,7 @@ module Base : sig
   val map : [> `Custom of ('a t -> f:('a -> 'b) -> 'b t) ]
   val append : 'a t -> 'a t -> 'a t
   val concat : 'a t t -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val bind : 'a t -> f:('a -> 'b t) -> 'b t
 end = struct
   type 'a t = 'a lazy_list
 
@@ -35,7 +35,7 @@ end = struct
     | Cons (x, xs) -> Lazy_m.force (append x (concat xs)))
   ;;
 
-  let bind m f = concat (map ~f m)
+  let bind m ~f = concat (map ~f m)
 
   let map = `Custom map
 
@@ -83,7 +83,7 @@ let rec find ~f t =
   | Cons(x, xs) -> if f x then Some x else find ~f xs
 ;;
 
-let rec filter ~f t = Lazy_m.bind t (function
+let rec filter ~f t = Lazy_m.bind t ~f:(function
   | Empty -> empty ()
   | Cons(x, xs) ->
       if f x then
@@ -92,13 +92,13 @@ let rec filter ~f t = Lazy_m.bind t (function
         filter ~f xs
 );;
 
-let rec filter_opt t = Lazy_m.bind t (function
+let rec filter_opt t = Lazy_m.bind t ~f:(function
   | Empty -> empty ()
   | Cons(Some x, xs) -> cons x (filter_opt xs)
   | Cons(None, xs) -> filter_opt xs
 );;
 
-let rec filter_map ~f t = Lazy_m.bind t (function
+let rec filter_map ~f t = Lazy_m.bind t ~f:(function
   | Empty -> empty ()
   | Cons(x, xs) ->
       match f x with
@@ -211,9 +211,9 @@ let to_array t =
       ary
 ;;
 
-let rec merge ~cmp xlst ylst = Lazy_m.bind xlst (function
+let rec merge ~cmp xlst ylst = Lazy_m.bind xlst ~f:(function
   | Empty -> ylst
-  | Cons(x, xs) -> Lazy_m.bind ylst (function
+  | Cons(x, xs) -> Lazy_m.bind ylst ~f:(function
       | Empty -> xlst
       | Cons(y, ys) ->
           if (cmp x y) <= 0 then
@@ -223,9 +223,9 @@ let rec merge ~cmp xlst ylst = Lazy_m.bind xlst (function
   )
 );;
 
-let rec unify ~cmp xlst ylst = Lazy_m.bind xlst (function
+let rec unify ~cmp xlst ylst = Lazy_m.bind xlst ~f:(function
   | Empty -> map ylst ~f:(fun y -> `Right y)
-  | Cons(x, xs) -> Lazy_m.bind ylst (function
+  | Cons(x, xs) -> Lazy_m.bind ylst ~f:(function
       | Empty -> map xlst ~f:(fun x -> `Left x)
       | Cons(y, ys) ->
           match cmp x y with

@@ -376,8 +376,8 @@ module Mount_entry = struct
             | _ -> assert false
           in
           try
-            let dump_freq = Option.bind dump_freq parse_optional_int in
-            let fsck_pass = Option.bind fsck_pass parse_optional_int in
+            let dump_freq = Option.bind dump_freq ~f:parse_optional_int in
+            let fsck_pass = Option.bind fsck_pass ~f:parse_optional_int in
             if String.equal fstype "ignore"
             then Ok (None)
             else Ok (Some { fsname; directory; fstype;

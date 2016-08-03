@@ -171,7 +171,7 @@ let rec next t =
     (* each function in this bind returns None if the file should be skipped, and
        Some f i if it thinks it's ok to emit - possibly updating the state or
        transforming f along the way *)
-    let (>>=) = Option.bind in
+    let (>>=) t f = Option.bind t ~f in
     let skip =
       try
         stat path >>= is_new >>= handle_dirs >>= filter

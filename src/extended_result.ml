@@ -10,7 +10,7 @@ module Error = struct
     (struct
       include T
 
-      let bind x f = match x with
+      let bind x ~f = match x with
         | Error x -> f x
         | Ok _ as x -> x
 
@@ -35,7 +35,7 @@ module Exn = struct
 
     let return x = Ok x
 
-    let bind (t : 'a t) f =
+    let bind (t : 'a t) ~f =
       match t with
       | Ok x -> f x
       | Error e -> Error e

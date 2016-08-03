@@ -187,7 +187,7 @@ let rec non_closure_apply_and_tail_rec_bind nodes acc ~f =
   end
 ;;
 
-let bind t f = non_closure_apply_and_tail_rec_bind (List_stack.singleton t) empty ~f
+let bind t ~f = non_closure_apply_and_tail_rec_bind (List_stack.singleton t) empty ~f
 
 let sexp_of_t (type a) (sexp_of_a : a -> Sexp.t) (t : a t) =
   to_list t |> [%sexp_of: a list]
@@ -232,7 +232,7 @@ include struct
   let ignore_m = ignore_m
   let join = join
   let bind = bind
-  let (>>=) = bind
+  let (>>=) t f = bind t ~f
   let (>>|) = (>>|)
   let return = return
   let all = all

@@ -559,7 +559,7 @@ module Comprehension = struct
       let str = String.of_char_list cs in
       (* Matches str {a .. z} and returns |str, a, z| *)
       let r = Re2.create_exn "^{ *([a-zA-Z]) *\\.\\. *([a-zA-Z]) *}$" in
-      Option.bind (extract_opt ~rex:r str) (fun matches ->
+      Option.bind (extract_opt ~rex:r str) ~f:(fun matches ->
         let str1, str2 = matches.(1), matches.(2) in
         match String.length str1, String.length str2 with
         | 1, 1 -> let c1, c2 = str1.[0], str2.[0] in
@@ -606,7 +606,7 @@ module Comprehension = struct
       (* Sets look like {5, 11.. 23, 16, 1 .. 5 .. 2}, so as long as the first
        * non-blank character is a digit we've found one*)
       let r = Re2.create_exn "^{ *([0-9].*) *}$" in
-      Option.bind (extract_opt ~rex:r str) (fun matches ->
+      Option.bind (extract_opt ~rex:r str) ~f:(fun matches ->
         let separated = matches.(1) in
         let strs = String.split ~on:',' separated in
         match List.map strs ~f:(fun str -> find_range (String.to_list str)) with

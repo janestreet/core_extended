@@ -40,7 +40,7 @@ include Monad.Make (struct
   type 'a t = 'a lazy_m
   let return x = of_val x
   let map t ~f = of_fun (fun () -> f (force t))
-  let bind m f = of_fun (fun () -> force (f (force m)))
+  let bind m ~f = of_fun (fun () -> force (f (force m)))
   let map = `Custom map
 end)
 
