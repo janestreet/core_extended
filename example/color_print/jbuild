@@ -1,0 +1,5 @@
+(executables
+ ((names (test_colors))
+  (libraries (core
+              core_extended
+              ))))

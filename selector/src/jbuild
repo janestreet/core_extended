@@ -1,0 +1,7 @@
+(library
+ ((name selector)
+  (public_name core_extended.selection)
+  (libraries
+   (re2
+    core))
+  (wrapped false)))

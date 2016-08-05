@@ -1,0 +1,28 @@
+(rule
+ ((targets (config_ext.h))
+  (deps (discover.sh ${ROOT}/lib/core/src/config.h))
+  (action "./${<} config_ext.h ${ROOT}/lib/core/src/config.h")))
+
+(library
+ ((name core_extended)
+  (public_name core_extended)
+  (libraries
+   (bin_prot
+    core
+    fieldslib
+    re2
+    sexplib
+    sexplib_num
+    textutils))
+  (library_flags (-cclib -lpthread -cclib -lrt))
+  (c_names
+   (extended_int_stubs
+    extended_linux_stubs
+    extended_unix_stubs
+    fork_exec
+    linebuf_stubs
+    low_level_debug_stubs
+    malloc_stubs
+    posix_clock_stubs
+    unix_pseudo_terminal_stubs))
+  (preprocessor_deps (config_ext.h))))

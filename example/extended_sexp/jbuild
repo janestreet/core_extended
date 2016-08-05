@@ -1,0 +1,7 @@
+(executables
+ ((names (main))
+  (libraries (async
+                    core
+                    core_extended
+                    fieldslib
+                    sexplib))))

@@ -1,0 +1,4 @@
+(executables
+ ((names (quotactl))
+  (libraries (core
+                    core_extended))))
