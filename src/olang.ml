@@ -63,8 +63,6 @@ let%test_module _ = (module struct
 
   module Term = struct
     include (Flang : (module type of Flang) with type 'a t := 'a Flang.t)
-    module X = Flang.Eval (Float)
-    let eval = X.eval
     type t = Term0.t Flang.t [@@deriving sexp, compare]
 
     let x = base (`V "x")
@@ -101,6 +99,9 @@ let%test_module _ = (module struct
   let sexp3 = Sexp.of_string "(min x (max x (abs x)))"
   let term3 = Term.(min x (max x (abs x)))
 
+  let sexp4 = Sexp.of_string "(ln (exp x))"
+  let term4 = Term.(ln (exp x))
+
   let%test_unit "sexp term1" =
     [%test_result: Term.t] ~expect:term1 (Term.t_of_sexp sexp1)
 
@@ -109,6 +110,9 @@ let%test_module _ = (module struct
 
   let%test_unit "sexp term3" =
     [%test_result: Term.t] ~expect:term3 (Term.t_of_sexp sexp3)
+
+  let%test_unit "sexp term4" =
+    [%test_result: Term.t] ~expect:term4 (Term.t_of_sexp sexp4)
 
   let%test_unit "evaluate arithmetic" =
     let test = [%test_result: Float.t] ~equal:Float.(=.) in

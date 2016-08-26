@@ -1,13 +1,4 @@
-(** The language of terms over a field. *)
-
-module type Ordered_field = sig
-  type t [@@deriving compare, sexp]
-  val zero : t
-  val ( + ) : t -> t -> t
-  val ( - ) : t -> t -> t
-  val ( * ) : t -> t -> t
-  val ( / ) : t -> t -> t
-end
+(** The language of terms over floats. *)
 
 type 'a t = [
   | `Base of 'a
@@ -22,6 +13,8 @@ type 'a t = [
   | `Abs of 'a t
   | `Min of 'a t * 'a t
   | `Max of 'a t * 'a t
+  | `Exp of 'a t
+  | `Ln  of 'a t
 ] [@@deriving sexp, bin_io, compare]
 
 val base : 'a -> 'a t
@@ -34,9 +27,9 @@ val mult_list : 'a t list -> 'a t
 val abs : 'a t -> 'a t
 val min : 'a t -> 'a t -> 'a t
 val max : 'a t -> 'a t -> 'a t
+val exp : 'a t -> 'a t
+val ln  : 'a t -> 'a t
 
 val atoms : 'a t -> 'a list
 
-module Eval (F : Ordered_field) : sig
-  val eval : 'a t -> f:('a -> F.t) -> F.t
-end
+val eval : 'a t -> f:('a -> float) -> float
