@@ -201,14 +201,9 @@ let rec next t =
     with_next_dir (fun () -> next t)
   | `Handle current_handle ->
     let dirent =
-      try
-        `Dirent (Unix.readdir current_handle)
-      with
-      | e ->
-        closedir t;
-        match e with
-        | End_of_file -> `End_of_directory
-        | e -> raise e
+      match Unix.readdir_opt current_handle with
+      | Some fn -> `Dirent fn
+      | None -> closedir t; `End_of_directory
     in
     match dirent with
     | `End_of_directory -> with_next_dir (fun () -> next t)

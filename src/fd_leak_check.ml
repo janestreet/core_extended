@@ -35,19 +35,18 @@ let rlimit_nofile () =
 
 let get_num_open_fds () =
   let fd_dir = fd_dir () in
-  let cnt = ref 0 in
   try
     protectx (Unix.opendir ~restart:true fd_dir)
       ~f:(fun fd ->
-        while true; do
-          match Unix.readdir fd with
-          | "." | ".." -> ()
-          | _ -> incr cnt
-        done;
-        assert false)
-      ~finally:Unix.closedir;
-  with End_of_file -> !cnt
-     | Unix.Unix_error (EMFILE,_,_) -> rlimit_nofile ()
+        let rec loop cnt =
+          match Unix.readdir_opt fd with
+          | Some ("." | "..") -> loop cnt
+          | Some _ -> loop (cnt + 1)
+          | None -> cnt
+        in
+        loop 0)
+      ~finally:Unix.closedir
+  with Unix.Unix_error (EMFILE,_,_) -> rlimit_nofile ()
 
 let report_open_files_num num_open_fds =
   eprintf "Running emergency file descriptor dump:\n%!";
