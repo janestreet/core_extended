@@ -1,5 +1,18 @@
 open Core.Std
 
+module type Ordered_field_with_exponential = sig
+  type t [@@deriving compare]
+
+  val zero : t
+
+  val ( + ) : t -> t -> t
+  val ( - ) : t -> t -> t
+  val ( * ) : t -> t -> t
+  val ( / ) : t -> t -> t
+  val exp : t -> t
+  val log : t -> t
+end
+
 type 'a t = [
   | `Base of 'a
   | `Add  of 'a t * 'a t
@@ -13,20 +26,26 @@ type 'a t = [
   | `Ln  of 'a t
 ] [@@deriving sexp, bin_io, compare]
 
-let eval t ~f =
-  let rec eval = function
-    | `Base x      -> f x
-    | `Add  (x, y) -> (eval x) +. (eval y)
-    | `Sub  (x, y) -> (eval x) -. (eval y)
-    | `Mult (x, y) -> (eval x) *. (eval y)
-    | `Div  (x, y) -> (eval x) /. (eval y)
-    | `Min  (x, y) -> min (eval x) (eval y)
-    | `Max  (x, y) -> max (eval x) (eval y)
-    | `Abs x -> Float.abs (eval x)
-    | `Exp x -> exp (eval x)
-    | `Ln  x -> log (eval x)
-  in
-  eval t
+module Eval (F : Ordered_field_with_exponential) = struct
+  open F
+
+  let eval t ~f =
+    let rec eval = function
+      | `Base x      -> f x
+      | `Add  (x, y) -> (eval x) + (eval y)
+      | `Sub  (x, y) -> (eval x) - (eval y)
+      | `Mult (x, y) -> (eval x) * (eval y)
+      | `Div  (x, y) -> (eval x) / (eval y)
+      | `Min  (x, y) -> min (eval x) (eval y)
+      | `Max  (x, y) -> max (eval x) (eval y)
+      | `Abs x ->
+        let x' = eval x in
+        max x' (zero - x')
+      | `Exp x -> exp (eval x)
+      | `Ln  x -> log (eval x)
+    in
+    eval t
+end
 
 let base a   = `Base a
 let add  x y = `Add (x, y)

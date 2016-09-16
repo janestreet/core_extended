@@ -116,6 +116,11 @@ module Printc = Printc
 module Process = Process
 module Procfs = Procfs
 module Prod_or_test = Prod_or_test
+module type Profunctor = Profunctor_intf.Basic
+module Profunctor = struct
+  include Profunctor_intf
+  include Profunctor
+end
 module Posix_clock = Posix_clock
 module Random_selection = Random_selection
 module Readline = Readline

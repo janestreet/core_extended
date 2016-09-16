@@ -87,7 +87,7 @@ struct
       | _ -> assert false  (* impossible *)
     in
     let pairs = List.map ~f:to_pair sexp_list in
-    List.sort ~cmp:(fun (k1, _) (k2, _) -> compare k1 k2) pairs
+    List.sort ~cmp:(fun (k1, _) (k2, _) -> String.compare k1 k2) pairs
 
   let rec of_record_fields acc pairs_orig pairs_upd =
     match pairs_orig, pairs_upd with

@@ -63,6 +63,7 @@ let%test_module _ = (module struct
 
   module Term = struct
     include (Flang : (module type of Flang) with type 'a t := 'a Flang.t)
+    include Eval (Float)
     type t = Term0.t Flang.t [@@deriving sexp, compare]
 
     let x = base (`V "x")

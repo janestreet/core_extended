@@ -1,5 +1,18 @@
 (** The language of terms over floats. *)
 
+module type Ordered_field_with_exponential = sig
+  type t [@@deriving compare]
+
+  val zero : t
+
+  val ( + ) : t -> t -> t
+  val ( - ) : t -> t -> t
+  val ( * ) : t -> t -> t
+  val ( / ) : t -> t -> t
+  val exp : t -> t
+  val log : t -> t
+end
+
 type 'a t = [
   | `Base of 'a
   | `Add  of 'a t * 'a t
@@ -32,4 +45,6 @@ val ln  : 'a t -> 'a t
 
 val atoms : 'a t -> 'a list
 
-val eval : 'a t -> f:('a -> float) -> float
+module Eval (F : Ordered_field_with_exponential) : sig
+  val eval : 'a t -> f:('a -> F.t) -> F.t
+end
