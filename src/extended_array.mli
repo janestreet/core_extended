@@ -1,8 +1,6 @@
 (** Extensions to [Core.Core_array]. *)
 open! Core.Std
 
-val foldi : init:'a -> 'b array -> f:(int -> 'a -> 'b -> 'a) -> 'a
-
 (** makes a random split & subset of an array; p (the fraction that you want to split) is
    constrained to be [0, 1].  Note that the length of the first array will be the closest
    integer to the fraction you desired, meaning that each element is NOT selected with

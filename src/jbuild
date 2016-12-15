@@ -1,7 +1,7 @@
 (rule
  ((targets (config_ext.h))
-  (deps (discover.sh ${ROOT}/lib/core/src/config.h))
-  (action "./${<} config_ext.h ${ROOT}/lib/core/src/config.h")))
+  (deps    (discover.sh))
+  (action "./${<} config_ext.h ${findlib:core:config.h}")))
 
 (library
  ((name core_extended)
@@ -12,7 +12,7 @@
     fieldslib
     re2
     sexplib
-    sexplib_num
+    sexplib.num
     textutils))
   (library_flags (-cclib -lpthread -cclib -lrt))
   (c_names

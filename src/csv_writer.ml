@@ -144,7 +144,7 @@ let rec line_blit_loop ~quote ~sep ~dst ~pos = function
       dst.[pos] <- sep;
       line_blit_loop ~quote ~sep ~dst ~pos:(pos + 1) t
 
-let rec output_lines_loop ~quote ~sep ~buff oc = function
+let rec output_lines_loop ~quote ~sep ~buff ~eol oc = function
   | [] -> ()
   | h::t ->
       let spec,len = line_spec_loop ~quote ~sep [] 0 h in
@@ -155,8 +155,8 @@ let rec output_lines_loop ~quote ~sep ~buff oc = function
       in
       ignore (line_blit_loop ~quote ~sep ~dst:buff ~pos:0 spec:int);
       Out_channel.output oc ~buf:buff ~pos:0 ~len;
-      Out_channel.output_string oc "\r\n";
-      output_lines_loop ~quote ~sep ~buff oc t
+      Out_channel.output_string oc eol;
+      output_lines_loop ~quote ~sep ~buff ~eol oc t
 
 let line_to_string ?(quote='"') ?(sep=',') l =
   let spec,len = line_spec_loop ~quote ~sep [] 0 l in
@@ -193,5 +193,6 @@ let escape_field ?(quote='"') s =
         (quote_blit ~quote ~src:s ~src_pos:0 ~dst:res ~dst_pos:1 ~len :int);
       res
 
-let output_lines ?(quote='"') ?(sep=',') oc l =
-  output_lines_loop ~quote ~sep ~buff:(String.create 256) oc l
+let output_lines ?(quote='"') ?(sep=',') ?(eol=`Dos) oc l =
+  let eol = match eol with | `Dos -> "\r\n" | `Unix -> "\n" in
+  output_lines_loop ~quote ~sep ~buff:(String.create 256) ~eol oc l

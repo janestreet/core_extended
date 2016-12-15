@@ -4,4 +4,4 @@
   (libraries
    (re2
     core))
-  (wrapped false)))
+))

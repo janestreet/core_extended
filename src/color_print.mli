@@ -64,6 +64,8 @@ val rgb_sprintf  : ?override:bool -> r:float -> g:float -> b:float -> ('a, unit,
 val color_sprintf: ?override:bool -> color:color                   -> ('a, unit, string, string) format4 -> 'a
 
 (* Formatted printf. *)
+(* Note that flushing stdout with "%!" does not work with these functions.  If you need to
+   flush then you should use Out_channel.flush *)
 val bold_printf     : ?override:bool -> ('a, unit, string, unit) format4 -> 'a
 val underline_printf: ?override:bool -> ('a, unit, string, unit) format4 -> 'a
 val inverse_printf  : ?override:bool -> ('a, unit, string, unit) format4 -> 'a

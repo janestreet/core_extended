@@ -12,7 +12,6 @@ module Deprecated_bench = Deprecated_bench
 module Bin_io_utils = Bin_io_utils
 module Bitarray = Bitarray
 module Cache = Cache
-module Cbuffer = Cbuffer
 module Color_print = Color_print
 module Service_command = Service_command
 module Csv_writer = Csv_writer
@@ -84,7 +83,6 @@ module Thread = struct
   include Extended_thread
 end
 module Timed_function = Timed_function
-module Iter = Iter
 module Lazy_list = Lazy_list
 module Lazy_m = Lazy_m
 module Linebuf = Linebuf
@@ -165,4 +163,3 @@ module Unix = struct
 end
 module Unix_utils = Unix_utils
 module Update_queue = Update_queue
-

@@ -70,10 +70,17 @@ let documentation t ~input_to_string ~title =
     List.concat_map l ~f:to_multiline_doc
   in
   let specific_case_lines =
-    List.map t.specific_cases ~f:(fun case ->
-      String.concat ~sep:", " (List.map ~f:input_to_string case.pattern),
-      case.documentation
-    ) |> to_multiline_doc
+    List.map t.specific_cases ~f:(fun { pattern; documentation; value = _ } ->
+      (documentation, pattern)
+    )
+    |> String.Map.of_alist_multi
+    |> Map.map ~f:List.concat
+    |> Map.to_alist
+    |> List.map ~f:(fun (documentation, patterns) ->
+      String.concat ~sep:", " (List.map ~f:input_to_string patterns),
+      documentation
+    )
+    |> to_multiline_doc
   in
   let catchall_case_lines =
     to_multiline_doc (

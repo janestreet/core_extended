@@ -9,11 +9,15 @@
  *)
 
 
-(** Prints a valid csv file to a given channel (note that line are ended
-    "\r\n") *)
+(** Prints a valid csv file to a given channel.
+    The [eol] arg can be used to override the default line ending
+    of "\r\n" (DOS line endings).
+    Example ~eol:"\n" to get *nix line endings
+*)
 val output_lines :
   ?quote:char
   -> ?sep:char
+  -> ?eol:[`Dos | `Unix]
   -> out_channel
   -> string list list
   -> unit
