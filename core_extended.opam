@@ -18,6 +18,7 @@ depends: [
   "re2"
   "sexplib"
   "textutils"
+  "base-threads"
 ]
 available: [ ocaml-version >= "4.03.0" ]
 descr: "

@@ -13,8 +13,8 @@
     re2
     sexplib
     sexplib.num
-    textutils))
-  (library_flags (-cclib -lpthread -cclib -lrt))
+    textutils
+    threads))
   (c_names
    (extended_int_stubs
     extended_linux_stubs
