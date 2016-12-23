@@ -2,7 +2,7 @@ open Core.Std
 
 module Extended_date = struct
   let format ?(ofday=Time.Ofday.start_of_day) s t =
-    let zone = Time.Zone.local in
+    let zone = force Time.Zone.local in
     Time.format (Time.of_date_ofday t ofday ~zone) s ~zone
 end
 

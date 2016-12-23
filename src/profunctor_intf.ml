@@ -40,37 +40,77 @@ end
             ~surname:edit_string
             ~birthday:(B.field (Form.edit_date ~label:"birthday")))
     ]}
+
+    Is equivalent to: {[
+      let form : (t, t) Form.t =
+        let for_field field x = Form.contra_map x ~f:(Fields.get field) in
+        let edit_string field = for_field field (Form.edit_string ~label:(Field.name field)) in
+        Form.map
+          (Form.both (edit_string Field.forename) (Form.both (edit_string Field.surname)
+                                                     (for_field Field.birthday (Form.edit_date ~label:"birthday"))))
+          ~f:(fun (forename, (surname, birthday)) -> { forename; surname; birthday; })
+    ]}
 *)
 module type Record_builder = sig
   type ('a, 'b) profunctor
 
-  (** These types are exposed so the typechecker works, but
-      you shouldn't ever have to think about them. If you want
-      to know how they work then see the implementation.
+  (** These types have to be exposed so that the typechecker
+      can tell that the use of [Fields.make_creator] is well-typed.
+
+      However, you shouldn't really have to think about them.
   *)
   module Internal : sig
-    type unfilled = [ `Unfilled ]
-    type filled = [ `Filled ]
-    type input
-    type ('record, 'witness) accum
-    type ('record, 'witness, 'step) fold_step =
-      ('record, 'witness) accum -> (input -> 'step) * ('record, filled) accum
+    (** An internal state which is folded through the fields. *)
+    type ('record, 'out, 'all_fields) accum
+
+    (** Each part of the fold has a type of this form. *)
+    type ('record, 'field, 'head, 'tail, 'all_fields) fold_step =
+      ('record, 'head, 'all_fields) accum
+      -> ('all_fields -> 'field) * ('record, 'tail, 'all_fields) accum
+
+    (** A step of the fold over a single field has this type.
+
+        Each argument to [Fields.make_creator] should take that field
+        as an argument and return something of this type (see [field] below).
+    *)
+    type ('record, 'field, 'tail, 'all_fields) make_creator_one_field =
+      ('record, 'field, ('field, 'tail) Hlist.cons, 'tail, 'all_fields) fold_step
+
+    (** The overall fold of multiple steps created by applying
+        [Fields.make_creator] without an initial value should have a type
+        of this form. You then supply it as an argument to [build_for_record] below.
+
+        ['x] and ['xs] are types of the parts of the [('x, 'xs) Hlist.cons Hlist.t] which
+        contains the values of all the fields of the record type.
+    *)
+    type ('record, 'x, 'xs) make_creator_all_fields =
+      ('record, 'record, ('x, 'xs) Hlist.cons, Hlist.nil, ('x, 'xs) Hlist.cons) fold_step
   end
 
-  (** Perform the single step of the traversal.
+  (** Supply the term for one field.
+
+      The input end of this profunctor will be mapped to consume that field from
+      an input record, and the output end will be mapped and used with the output
+      ends of the other fields' profunctors to produce the record type.
+
       The type of this is designed to match up with [Fields.make_creator]
       (see the example).
   *)
-  val field : ('a, 'a) profunctor
-    -> ('record, 'a) Field.t
-    -> ('record, _, 'a) Internal.fold_step
+  val field : ('field, 'field) profunctor
+    -> ('record, 'field) Field.t
+    -> ('record, 'field, _, _) Internal.make_creator_one_field
 
-  (** Perform the overarching traversal.
+  (** Build the overarching profunctor for the whole record.
+
+      This takes a partial application of [Fields.make_creator] as its argument,
+      which supplies the profunctors to use for each field of the record. It
+      performs the needed mapping of the input and output ends.
+
       The type of this is designed to match up with [Fields.make_creator]
       (see the example).
   *)
   val build_for_record
-    : ('record, Internal.unfilled, 'record) Internal.fold_step
+    : ('record, _, _) Internal.make_creator_all_fields
     -> ('record, 'record) profunctor
 end
 

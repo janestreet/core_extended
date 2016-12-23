@@ -4,66 +4,60 @@ open Profunctor_intf
 
 open! Int.Replace_polymorphic_compare
 
-module Packing_description = struct
-  type 'values t =
-    | One_value : 'field Type_equal.Id.t -> 'field t
-    | Tuple : 'others t * 'field Type_equal.Id.t -> ('others * 'field) t
-
-  let rec get_value_exn : type packed a. packed t -> packed -> key:a Type_equal.Id.t -> a =
-    fun descr packed ~key:sought_key -> match descr with
-      | One_value key ->
-        begin match Type_equal.Id.same_witness key sought_key with
-        | Some Type_equal.T -> packed
-        | None -> failwith "There is a bug in Core_extended.Profunctor.Make_builder"
-        end
-      | Tuple (inner_descr, key) ->
-        begin match Type_equal.Id.same_witness key sought_key with
-        | Some Type_equal.T -> snd packed
-        | None -> get_value_exn inner_descr (fst packed) ~key:sought_key
-        end
-end
-
-module Packed_values = struct
-  type t = | Packed_values : 'packed Packing_description.t * 'packed -> t
-
-  let get_value_exn (Packed_values (descr, packed)) ~key =
-    Packing_description.get_value_exn descr packed ~key
-end
-
 module Record_builder(F : Strong) = struct
   module Internal = struct
-    type unfilled = [ `Unfilled ]
-    type filled = [ `Filled ]
+    module Hlist_F = struct
+      (** A profunctor returning an hlist. *)
+      type ('a, 'b) t =
+        | Nil : ('a, Hlist.nil) t
+        | Cons : ('a, ('x, 'xs) Hlist.cons Hlist.t) F.t -> ('a, ('x, 'xs) Hlist.cons) t
 
-    type input = Packed_values.t
+      let cons (type a b)
+            (left : (_, a) F.t) (right : (_, b) t)
+        : (_, (a, b) Hlist.cons) t
+        = match right with
+        | Nil -> Cons (F.map left ~f:(fun x -> Hlist.cons x Hlist.empty))
+        | Cons right -> Cons (F.both left right)
+      ;;
 
-    type ('record, 'witness) accum =
-      | Unfilled : (_, unfilled) accum
-      | Filled : 'fields Packing_description.t * ('record, 'fields) F.t -> ('record, filled) accum
+      let unpack (built : (_, (_, _) Hlist.cons) t) =
+        match built with | Cons x -> x
+      ;;
+    end
 
-    type ('record, 'witness, 'step) fold_step =
-      ('record, 'witness) accum -> (input -> 'step) * ('record, filled) accum
+    type ('record, 'out, 'all_fields) accum =
+      (('record, 'out) Hlist_F.t -> ('record, 'all_fields) Hlist_F.t)
+      * ('all_fields, 'out) Hlist.Suffix_index.t
+
+    type ('record, 'field, 'head, 'tail, 'all_fields) fold_step =
+      ('record, 'head, 'all_fields) accum
+      -> ('all_fields -> 'field) * ('record, 'tail, 'all_fields) accum
+
+    type ('record, 'field, 'tail, 'all_fields) make_creator_one_field =
+      ('record, 'field, ('field, 'tail) Hlist.cons, 'tail, 'all_fields) fold_step
+
+    type ('record, 'x, 'xs) make_creator_all_fields =
+      ('record, 'record, ('x, 'xs) Hlist.cons, Hlist.nil, ('x, 'xs) Hlist.cons) fold_step
   end
-  open Internal
 
-  let field (type fill_state) for_field field (acc : (_, fill_state) accum) =
-    let key = Type_equal.Id.create ~name:(Field.name field) sexp_of_opaque
-    and for_field = F.contra_map for_field ~f:(Field.get field)
+  let field profunctor field (build_hlist, suffix) =
+    let build_hlist =
+      let applicative = F.contra_map profunctor ~f:(Field.get field) in
+      fun tail -> build_hlist (Internal.Hlist_F.cons applicative tail)
+    and get_field =
+      let index = Hlist.Element_index.(within ~suffix first_element) in
+      fun hlist -> Hlist.nth hlist index
+    and suffix = Hlist.Suffix_index.tail_of suffix
     in
-    let new_acc =
-      match acc with
-      | Unfilled -> Filled (One_value key, for_field)
-      | Filled (packing, for_others) ->
-        Filled (Tuple (packing, key), F.both for_others for_field)
-    in
-    Packed_values.get_value_exn ~key, new_acc
+    get_field, (build_hlist, suffix)
   ;;
 
-  let build_for_record (builder : ('record, unfilled, 'record) fold_step) =
-    match builder Unfilled with
-    | from_packed, Filled (packing, for_record) ->
-      F.map for_record ~f:(fun packed ->
-        from_packed (Packed_values (packing, packed)))
+  let build_for_record folding =
+    let from_values, (build_up, _) =
+      folding (Fn.id, Hlist.Suffix_index.whole_list)
+    in
+    let built = Internal.Hlist_F.(unpack (build_up Nil)) in
+    F.map built ~f:from_values
   ;;
 end
 

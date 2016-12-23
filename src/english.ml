@@ -33,7 +33,7 @@ let failure which s =
 
 let add_years d i = Date.add_months d (12 * i)
 
-let parse_date ?relative_to:(today=Date.today ~zone:Time.Zone.local) dt =
+let parse_date ?relative_to:(today=Date.today ~zone:(force Time.Zone.local)) dt =
   let dt' = String.lowercase dt in
   let failure () = failure `date dt in
   match dt' with
