@@ -1,5 +1,5 @@
 open Core.Std
-
+open Expect_test_helpers
 
 module type T = sig
   val encode : string -> string
@@ -7,16 +7,19 @@ module type T = sig
 end
 
 module Make(D : sig
-    (* Usually [ '+' ] *)
     val char62 : char
-    (* Usually [ '/' ] *)
     val char63 : char
-    (* Usually [ '=' ] *)
-    val pad_char : char option
-    (* Usually [ Char.is_whitespace ] *)
+    val pad_char : [ `None
+                   | `Suggested of char
+                   | `Required of char ]
     val ignore_char : char -> bool
-
   end) = struct
+
+  let pad_char, allow_incorrect_padding =
+    match D.pad_char with
+    | `None -> None, true
+    | `Suggested c -> Some c, true
+    | `Required c -> Some c, false
 
   let encode_char i =
     if 0<=i && i<=25 then Char.of_int_exn (Char.to_int 'A' + i)
@@ -57,7 +60,7 @@ module Make(D : sig
           Int.(                                     c    |> bit_and 0x3f |> encode_char);
         loop ~i:(i+3) ~j:(j+4)
       end else begin
-        match String.length source % 3, D.pad_char with
+        match String.length source % 3, pad_char with
         | 0, _ -> dest
         | rest, None ->
           (* Remove extra bytes *)
@@ -77,11 +80,18 @@ module Make(D : sig
     loop ~i:0 ~j:0
 
   let decode source =
-    let unexpected_char c =
-      failwithf "Unexpected character '%c' while base64 decoding" c ()
+    let unexpected_char char =
+      raise_s [%message "Unexpected character while base64 decoding"
+                          (char : char) (source : string) ]
     in
     let incomplete () =
-      failwithf "Base64 encoded string is unexpectedly terminated" ()
+      raise_s [%message "Base64 encoded string is unexpectedly terminated"
+                          (source : string) ]
+    in
+    let fail_unless_allow_incorrect_padding () =
+      if not allow_incorrect_padding then
+        raise_s [%message "Base64 encoded string has incorrect padding"
+                            (source : string) ]
     in
     (* 3 extra bytes because the base64 encoding may have no padding *)
     let dest = Bytes.create ((Bytes.length source / 4 + 1) * 3) in
@@ -90,18 +100,19 @@ module Make(D : sig
         let c = String.get source i in
         if D.ignore_char c then
           read (i+1)
-        else if Some c = D.pad_char then
-          `End, i+1
+        else if Some c = pad_char then
+          `Pad, i+1
         else
           `Ok (decode_char c), i+1
       end else `End, i
     in
     let rec stop ~i =
       if i < String.length source then begin
-        if D.ignore_char (String.get source i) then
+        let c = String.get source i in
+        if D.ignore_char c || ((Some c = pad_char) && allow_incorrect_padding) then
           stop ~i:(i+1)
         else
-          unexpected_char (String.get source i)
+          unexpected_char c
       end;
     in
     let rec loop ~i ~j =
@@ -110,9 +121,18 @@ module Make(D : sig
       let c,i = read i in
       let d,i = read i in
       let a,b,c,d,n = match a,b,c,d with
+        (* 0/1/2 bytes of padding *)
         | `Ok a, `Ok b, `Ok c, `Ok d -> a,b,c,d,3
-        | `Ok a, `Ok b, `Ok c, `End  -> a,b,c,0,2
-        | `Ok a, `Ok b, `End,  `End  -> a,b,0,0,1
+        | `Ok a, `Ok b, `Ok c, `Pad  -> a,b,c,0,2
+        | `Ok a, `Ok b, `Pad,  `Pad  -> a,b,0,0,1
+        (* Missing 1/2 bytes of padding *)
+        | `Ok a, `Ok b, `Ok c, `End  ->
+          fail_unless_allow_incorrect_padding ();
+          a,b,c,0,2
+        | `Ok a, `Ok b, `End,  `End  ->
+          fail_unless_allow_incorrect_padding ();
+          a,b,0,0,1
+        (* End of input, no padding *)
         | `End,  `End,  `End,  `End  -> 0,0,0,0,0
         | _ -> incomplete ()
       in
@@ -136,7 +156,7 @@ end
 include Make(struct
     let char62 = '+'
     let char63 = '/'
-    let pad_char = Some '='
+    let pad_char = `Suggested '='
     let ignore_char = Char.is_whitespace
   end)
 
@@ -174,8 +194,12 @@ let%expect_test "Ignored characters" =
   printf "%s" (decode "Z m 9vY\nmFy");
   [%expect_exact {|foobar|}]
 
-let%expect_test "Forgiving" =
+let%expect_test "too little padding" =
   printf "%s" (decode "Zg");
+  [%expect_exact {|f|}]
+
+let%expect_test "too much padding" =
+  printf "%s" (decode "Zg===");
   [%expect_exact {|f|}]
 
 let%expect_test "encode char 62" =
@@ -197,11 +221,36 @@ let%expect_test "decode char 63" =
 let%test "Invalid characters" =
   try decode "Z_m-9vY" |> ignore; false with _ -> true
 
+module Padding_sensitive = struct
+  include Make(struct
+      let char62 = '+'
+      let char63 = '/'
+      let pad_char = `Required '='
+      let ignore_char = Char.is_whitespace
+    end)
+
+  let%expect_test "too little padding" =
+    show_raise (fun () -> printf "%s" (decode "Zg"));
+    [%expect {|
+        (raised (exn ("Base64 encoded string has incorrect padding" (source Zg))))
+    |}]
+
+  let%expect_test "too much padding" =
+    show_raise (fun () -> printf "%s" (decode "Zg==="));
+    [%expect {|
+        (raised (
+          exn (
+            "Unexpected character while base64 decoding"
+            (char   =)
+            (source Zg===))))
+    |}]
+end
+
 module Websafe = struct
   include Make(struct
       let  char62 = '-'
       let char63 = '_'
-      let pad_char = None
+      let pad_char = `None
       let ignore_char _ = false
     end)
 

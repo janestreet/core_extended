@@ -9,6 +9,7 @@
   (libraries
    (bin_prot
     core
+    expect_test_helpers
     fieldslib
     re2
     sexplib
