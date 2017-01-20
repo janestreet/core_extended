@@ -232,17 +232,16 @@ module Padding_sensitive = struct
   let%expect_test "too little padding" =
     show_raise (fun () -> printf "%s" (decode "Zg"));
     [%expect {|
-        (raised (exn ("Base64 encoded string has incorrect padding" (source Zg))))
+        (raised ("Base64 encoded string has incorrect padding" (source Zg)))
     |}]
 
   let%expect_test "too much padding" =
     show_raise (fun () -> printf "%s" (decode "Zg==="));
     [%expect {|
         (raised (
-          exn (
-            "Unexpected character while base64 decoding"
-            (char   =)
-            (source Zg===))))
+          "Unexpected character while base64 decoding"
+          (char   =)
+          (source Zg===)))
     |}]
 end
 
