@@ -1075,4 +1075,4 @@ let supported_filesystems () =
     | _ -> failwithf "Procfs.supported_filesystems: bad format: %s" line ())
 ;;
 
-let uptime () = get_uptime () |> Time.Span.of_float ;;
+let uptime () = get_uptime () |> Time.Span.of_sec ;;

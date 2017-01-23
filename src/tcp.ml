@@ -2,7 +2,7 @@ open Core.Std ;;
 
 exception Connect_timeout ;;
 
-let with_connection ?(timeout=(Time.Span.of_float 30.)) ~host ~port ~f () =
+let with_connection ?(timeout=(Time.Span.of_sec 30.)) ~host ~port ~f () =
   Exn.protectx
     (Unix.socket ~domain:Unix.PF_INET ~kind:Unix.SOCK_STREAM ~protocol:0)
     ~f:(fun sd ->

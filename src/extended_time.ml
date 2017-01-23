@@ -9,12 +9,12 @@ end
 module Extended_span = struct
   let to_string_hum (t : Time.Span.t) =
     let sign_str =
-      match Float.robust_sign (t :> float) with
+      match Float.robust_sign (Time.Span.to_sec t) with
       | Neg -> "-"
       | Zero | Pos -> ""
     in
     let rest =
-      match Float.classify (t :> float) with
+      match Float.classify (Time.Span.to_sec t) with
       | Float.Class.Subnormal | Float.Class.Zero -> "0:00:00.000"
       | Float.Class.Infinite -> "inf"
       | Float.Class.Nan -> "nan"

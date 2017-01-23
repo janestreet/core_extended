@@ -110,7 +110,7 @@ let query ?(timeout=Time.Span.of_sec 5.0) ?(port=123) hostname =
       let t21 = x.Internal.server_recv -. x.Internal.client_xmit in
       let t34 = x.Internal.server_xmit -. x.Internal.client_recv in
       let offset = (t21 +. t34) /. 2.0 in
-      `Offset (Time.Span.of_float offset)
+      `Offset (Time.Span.of_sec offset)
     end
   with e ->
     `Error e

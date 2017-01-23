@@ -25,7 +25,7 @@ let stat_time_exn f ?(follow_symlinks=true) path =
     then Unix.stat
     else Unix.lstat) path
   in
-  Time.of_float (f stat)
+  Time.of_span_since_epoch (Time.Span.of_sec (f stat))
 ;;
 
 let stat_time f ?follow_symlinks path =
