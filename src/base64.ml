@@ -93,7 +93,8 @@ module Make(D : sig
         raise_s [%message "Base64 encoded string has incorrect padding"
                             (source : string) ]
     in
-    (* 3 extra bytes because the base64 encoding may have no padding *)
+    (* 3 extra bytes because the base64 encoding may have no padding, but we go through
+       [loop] one extra time *)
     let dest = Bytes.create ((Bytes.length source / 4 + 1) * 3) in
     let rec read i =
       if i < String.length source then begin
@@ -132,6 +133,10 @@ module Make(D : sig
         | `Ok a, `Ok b, `End,  `End  ->
           fail_unless_allow_incorrect_padding ();
           a,b,0,0,1
+        (* Incorrect padding *)
+        | `Pad, _, _, _ ->
+          fail_unless_allow_incorrect_padding ();
+          0,0,0,0,0
         (* End of input, no padding *)
         | `End,  `End,  `End,  `End  -> 0,0,0,0,0
         | _ -> incomplete ()
@@ -201,6 +206,14 @@ let%expect_test "too little padding" =
 let%expect_test "too much padding" =
   printf "%s" (decode "Zg===");
   [%expect_exact {|f|}]
+
+let%expect_test "too much padding" =
+  printf "%s" (decode "aGlp====");
+  [%expect_exact {|hii|}]
+
+let%expect_test "characters after padding" =
+  printf "%s" (decode "aGlp=ZZZ");
+  [%expect_exact {|hii|}]
 
 let%expect_test "encode char 62" =
   printf "%s" (encode "\248");

@@ -19,13 +19,16 @@ module Make(D : sig
     val char62 : char
     (** Usually [ '/' ] *)
     val char63 : char
-    (** Usually [ `Suggested '=' ].
-        [`None]       - Padding is considered an error.
-        [`Suggested c] - Padding is not required, but will be included when encoding.
-        [`Required c] - Padding is required and will be included when encoding. *)
-    val pad_char : [ `None
-                   | `Suggested of char
-                   | `Required of char ]
+    (** Usually [ `Suggested '=' ]. *)
+    val pad_char :
+      (** Padding is not included when encoding. Padding errors are suppress when
+          decoding. *)
+      [ `None
+      (** Padding is included when encoding. Padding errors are suppressed when
+          decoding. *)
+      | `Suggested of char
+      (** Padding is included when encoding. Padding errors are raised when decoding. *)
+      | `Required of char ]
     (** Usually [ Char.is_whitespace ] *)
     val ignore_char : char -> bool
   end) : T
