@@ -1,5 +1,5 @@
 module Verified_spec = struct
-  include Core.Std.Int63
+  include Core.Int63
   let module_name = "Int63"
 end
 

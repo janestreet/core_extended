@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 
 module Access_control : sig
   type ('key,'data,-'z) any

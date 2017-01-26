@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 
 (**
    Extensions to [Core.Core_int64]
@@ -15,4 +15,4 @@ module Filesize : sig
   val of_string : string -> t
 end
 
-include Number.Verified_std with type repr = Core.Std.Int64.t
+include Number.Verified_std with type repr = Core.Int64.t

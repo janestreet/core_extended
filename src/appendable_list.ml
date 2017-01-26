@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 (* A Stack that suppors an efficient push_list operation *)
 module List_stack : sig

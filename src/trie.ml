@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 (* The type of things that can be put into a trie.  We are nice to consumers of the
    library by only requiring them to produce an iter function.  But this means that our

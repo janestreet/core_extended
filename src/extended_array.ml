@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let random_split ?random_state array ~p =
   let a = Array.copy array in

@@ -1,6 +1,6 @@
 (** Extensions to [Core.Core_String]. *)
 
-open! Core.Std
+open! Core
 
 (** [collate s1 s2] sorts string in an order that's usaully more suited for human
     consumption by treating ints specially, e.g. it will output:
@@ -39,7 +39,7 @@ val unescaped_res : ?strict:bool -> string -> (string,(int*string)) Result.t
  *)
 val squeeze : string -> string
 
-(** Use Core.Std.String.is_substring instead of this function.
+(** Use Core.String.is_substring instead of this function.
     This wrapper is here (for now) to maintain bug compatibility. *)
 val is_substring_deprecated : substring:string -> string -> bool
 

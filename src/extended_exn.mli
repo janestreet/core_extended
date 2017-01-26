@@ -1,6 +1,6 @@
 (** Extensions to [Core.Exn].*)
 
-open! Core.Std
+open! Core
 
 
 (** The [to_string] function is slightly tweaked to avoid escaping the string

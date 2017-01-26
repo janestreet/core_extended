@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 
 (**
    Process and system stats
@@ -363,9 +363,9 @@ module Net : sig
     type t =
       {
         sl : int;
-        local_address : Core.Std.Unix.Inet_addr.t;
+        local_address : Core.Unix.Inet_addr.t;
         local_port : Extended_unix.Inet_port.t;
-        remote_address : Core.Std.Unix.Inet_addr.t;
+        remote_address : Core.Unix.Inet_addr.t;
         remote_port : Extended_unix.Inet_port.t option; (* can be 0 if there's no
         connection. *)
         state : Tcp_state.t;

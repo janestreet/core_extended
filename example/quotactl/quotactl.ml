@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 module Quota = Core_extended.Std.Unix.Quota
 
 let id_kind_and_lookup = function

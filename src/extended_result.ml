@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 module Ok = Result
 
 module Error = struct

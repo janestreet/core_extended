@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 (* a single 63 bit chunk of the array, bounds checking is left to the main module. We can
    only use 62 bits, because of the sign bit *)

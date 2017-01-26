@@ -1,6 +1,6 @@
 (* Ansi colored printing module *)
 
-open! Core.Std
+open! Core
 
 (* Remove all special formatting and colors from string *)
 val normal: string -> string

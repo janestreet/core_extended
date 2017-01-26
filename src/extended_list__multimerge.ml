@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 let rec count__loop cnt el = function
   | [] -> cnt
   | h::t when h = el -> count__loop (cnt + 1) el t

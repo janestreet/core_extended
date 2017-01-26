@@ -2,7 +2,7 @@
 
 *)
 
-open! Core.Std;;
+open! Core;;
 
 val ls : string -> string list
 

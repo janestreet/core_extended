@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 module Filesize = struct
   type t = Int64.t [@@deriving bin_io]
@@ -61,7 +61,7 @@ module Filesize = struct
 end
 
 module Verified_spec = struct
-  include Core.Std.Int64
+  include Core.Int64
   let module_name = "Int64"
 end
 

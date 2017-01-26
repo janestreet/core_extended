@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 open Sexplib.Sexp
 module Re2 = Re2.Std.Re2
 

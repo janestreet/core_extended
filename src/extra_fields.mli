@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 
 exception Not_a_record_type of Sexp.t [@@deriving sexp]
 

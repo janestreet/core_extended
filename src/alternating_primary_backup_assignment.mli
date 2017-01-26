@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 
 (** role assignment for systems with a primary and backup instances that
     switch roles daily for ease of deploying new versions. *)

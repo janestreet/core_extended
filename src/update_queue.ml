@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 type ('perm, 'state) t = {
   mutable state : 'state option;

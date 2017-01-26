@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 include Fold_map.Make2_sexpable
 (struct

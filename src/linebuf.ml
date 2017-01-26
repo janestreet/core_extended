@@ -1,6 +1,6 @@
 (** A module for reading files.  *)
 
-open Core.Std
+open Core
 
 (* Integer we use for file positions in this module.  Makes it easier to switch between
    regular native integers and 64 bit integers. *)

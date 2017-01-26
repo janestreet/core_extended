@@ -1,5 +1,5 @@
 module Stable = struct
-  open Core.Stable
+  open Core.Core_stable
   open Sexplib.Type
 
   module Date_selector = struct
@@ -12,7 +12,7 @@ module Stable = struct
         [@@deriving bin_io, sexp]
 
       let t_of_sexp sexp =
-        let module Date = Core.Std.Date in
+        let module Date = Core.Date in
         match sexp with
         | Atom _ as d -> On (Date.t_of_sexp d)
         | List [Atom ">"; Atom _ as d]      -> GT (Date.t_of_sexp d)
@@ -51,7 +51,7 @@ module Stable = struct
         include Binable.Of_stringable.V1(T)
 
         let t_of_sexp sexp =
-          let open Core.Std in
+          let open Core in
           let fail () =
             of_sexp_error "expected string bounded with / on both sides" sexp
           in
@@ -81,7 +81,7 @@ module Stable = struct
           match a with
           | List _ -> assert false
           | Atom s ->
-            if Core.Std.(String.length s >= 1 && s.[0] = '/')
+            if Core.(String.length s >= 1 && s.[0] = '/')
             then `Regexp (Regexp.V1.t_of_sexp a)
             else `Literal s
         in
@@ -94,9 +94,9 @@ module Stable = struct
             end
           | List l ->
             Mixed
-              (Core.Std.List.map l ~f:(fun sexp ->
+              (Core.List.map l ~f:(fun sexp ->
                 match sexp with
-                | List _ -> Core.Std.of_sexp_error "expected Atom" sexp
+                | List _ -> Core.of_sexp_error "expected Atom" sexp
                 | Atom _ as a -> parse_atom a))
         with
         | e -> try t_of_sexp sexp with _ -> raise e
@@ -119,7 +119,7 @@ module Stable = struct
 end
 
 
-open Core.Std
+open Core
 
 
 

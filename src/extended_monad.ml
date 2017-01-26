@@ -1,6 +1,6 @@
-open Core.Std
+open Core
 
-module List = Core.Std.List
+module List = Core.List
 
 module type S = sig
   include Monad.S

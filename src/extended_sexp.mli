@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 (** Extensions to [Sexplib.Sexp].*)
 
 val is_atom : Sexp.t -> bool

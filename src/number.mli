@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 open Interfaces
 
 (** Specification of general number properties *)

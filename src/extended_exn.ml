@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let to_string = function
   | Failure s -> "Failure: " ^ s

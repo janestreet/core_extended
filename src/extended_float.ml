@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 (* in place string reversal *)
 let s_rev s =

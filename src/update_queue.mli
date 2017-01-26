@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 
 
 (** A ['state t] keeps track of updates of type ['state -> 'state] queued to it and runs

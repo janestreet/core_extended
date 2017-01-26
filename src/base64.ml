@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 open Expect_test_helpers
 
 module type T = sig
@@ -293,3 +293,122 @@ module Websafe = struct
   let%test "Invalid characters" =
     try decode "Z m\n9vY" |> ignore; false with _ -> true
 end
+
+let%test_unit "Samples that have been validated against a reference implementation (cryptokit)" =
+  List.iter
+    ~f:(fun (str, reference_encoded) ->
+      let encoded = encode str in
+      assert (String.equal encoded reference_encoded);
+      let decoded = decode encoded in
+      assert (String.equal decoded str))
+    [ "\198" , "xg=="
+    ; "!F" , "IUY="
+    ; "04H" , "MDRI"
+    ; "NF5G" , "TkY1Rw=="
+    ; "uMLrF" , "dU1MckY="
+    ; "Sh7I65" , "U2g3STY1"
+    ; "KT~yakA" , "S1R+eWFrQQ=="
+    ; "wQT3\2357pK" , "d1FUM+s3cEs="
+    ; "\2516=d)4\134UY" , "+zY9ZCk0hlVZ"
+    ; "4c1Unx]uX\151" , "NGMxVW54XXVYlw=="
+    ; "MfkL9aiTCGS" , "TWZrTDlhaVRDR1M="
+    ; "4HoDGZz6Lvdx" , "NEhvREdaejZMdmR4"
+    ; "ac3\241j6GJvFHZp" , "YWMz8Wo2R0p2RkhacA=="
+    ; "6e3IvsJ`l19u\172H" , "NmUzSXZzSmBsMTl1rEg="
+    ; "L\172h\131JTQfcE3fxd`" , "TKxog0pUUWZjRTNmeGRg"
+    ; "uu35\226rPEJX0oOood" , "dXUzNeJyUEVKWDBvT29vZA=="
+    ; "ZP9j\1748PQ7\139IipeDIm" , "WlA5aq44UFE3i0lpcGVESW0="
+    ; "J1uiOAj1WnzFu6XNyt" , "SjF1aU9BajFXbnpGdTZYTnl0"
+    ; "Sj\173wTSw4vEd\148RWBGRE&" , "U2qtd1RTdzR2RWSUUldCR1JFJg=="
+    ; "SOCPe6/Ol1H3cbMkKfKc" , "U09DUGU2L09sMUgzY2JNa0tmS2M="
+    ; "q0DhS\21884Sa21QwtkROBX7" , "cTBEaFPaODRTYTIxUXd0a1JPQlg3"
+    ; "bgyoLSUC9V\1355\211emdcEME3e" , "Ymd5b0xTVUM5Voc102VtZGNFTUUzZQ=="
+    ; "se4a66;K5cVuHo\250lwP9Cdt8" , "c2U0YTY2O0s1Y1Z1SG/6bHdQOUNkdDg="
+    ; "ueTlLL\159Ey\194FO2NzKHWY1iPaS" , "dWVUbExMn0V5wkZPMk56S0hXWTFpUGFT"
+    ; "fg\148wC-x4TH6a\1270iq6EbTDsBjQ" , "ZmeUd0MteDRUSDZhfzBpcTZFYlREc0JqUQ=="
+    ; "2jVgNu71AI\160LPKQ2Va1\229gvN0TU" , "MmpWZ051NzFBSaBMUEtRMlZhMeVndk4wVFU="
+    ; "4ViQIspFeZ5SF\209C2XU^vU7FTJV\168" , "NFZpUUlzcEZlWjVTRtFDMlhVXnZVN0ZUSlao"
+    ; "PFkmhDzyz?K7Z8SYI7sqjDottmly" , "UEZrbWhEenl6P0s3WjhTWUk3c3FqRG90dG1seQ=="
+    ; "Ub&ApeP3sYY9qHnqnKQ\152kXYbreIAG" , "VWImQXBlUDNzWVk5cUhucW5LUZhrWFlicmVJQUc="
+    ; "hEjk,9TMVZG8N\187f\0213MtyuOJIsaa\031Pr" , "aEVqayw5VE1WWkc4TrtmFTNNdHl1T0pJc2FhH1By"
+    ; "k>23KZqW53BHG0W4bYeh%rI9tFCfPgC" , "az4yM0tacVc1M0JIRzBXNGJZZWglckk5dEZDZlBnQw=="
+    ; "A" , "QQ=="
+    ; "hO" , "aE8="
+    ; "0Dv" , "MER2"
+    ; "q2Kf" , "cTJLZg=="
+    ; "5(adQ" , "NShhZFE="
+    ; "Terfzh" , "VGVyZnpo"
+    ; "3w0D\1492v" , "M3cwRJUydg=="
+    ; "gKAU+Jlu" , "Z0tBVStKbHU="
+    ; "ZS9d4HqJE" , "WlM5ZDRIcUpF"
+    ; "r\0079qTw\028H7l" , "cgc5cVR3HEg3bA=="
+    ; "-N0xybPdB\249n" , "LU4weHliUGRC+W4="
+    ; "Pio0X59ZC^p7" , "UGlvMFg1OVpDXnA3"
+    ; "W4190Mt\1451L\222np" , "VzQxOTBNdJExTN5ucA=="
+    ; "sjK67+/nsckrHI" , "c2pLNjcrL25zY2tySEk="
+    ; "f01f5TMpmmAtUa6" , "ZjAxZjVUTXBtbUF0VWE2"
+    ; "gGmrG\185KP2u9a5m0B" , "Z0dtcke5S1AydTlhNW0wQg=="
+    ; "YENPfihs\130RIWMp$p\\" , "WUVOUGZpaHOCUklXTXAkcFw="
+    ; "qBTJwIR#0bizDd0oow" , "cUJUSndJUiMwYml6RGQwb293"
+    ; "Hh4sq1R5sXZuary8bS\029" , "SGg0c3ExUjVzWFp1YXJ5OGJTHQ=="
+    ; "kDiz3nGVpqiERkIZ2U4X" , "a0RpejNuR1ZwcWlFUmtJWjJVNFg="
+    ; "B2KlIfFz4pqJx{6ZMnfXt" , "QjJLbElmRno0cHFKeHs2Wk1uZlh0"
+    ; "FQEfMw\178CX7X5N\131QmIK:+qm" , "RlFFZk13skNYN1g1ToNRbUlLOitxbQ=="
+    ; "KA1aDTQbWb.7wD7aj1ZEy\207P" , "S0ExYURUUWJXYi43d0Q3YWoxWkV5z1A="
+    ; "wxlyeI64fHvngQ^D7DTP58Te" , "d3hseWVJNjRmSHZuZ1FeRDdEVFA1OFRl"
+    ; "WpoIAyUeCYav8b\187ady\1288r\161f4\209" , "V3BvSUF5VWVDWWF2OGK7YWR5gDhyoWY00Q=="
+    ; "T\201o8|wGWNT\1867rLcMe1IyVp02fr" , "VMlvOHx3R1dOVLo3ckxjTWUxSXlWcDAyZnI="
+    ; "095xnOoBK1hMDTxkwCMB9:eH4vf" , "MDk1eG5Pb0JLMWhNRFR4a3dDTUI5OmVINHZm"
+    ; "g9c9JF$8\233agVmIg\236t\150BJ48nmLJV\219" , "ZzljOUpGJDjpYWdWbUln7HSWQko0OG5tTEpW2w=="
+    ; "Jxfv8P\135b7IuZ8LhgcOC0FSULb\2011wn" , "SnhmdjhQh2I3SXVaOExoZ2NPQzBGU1VMYskxd24="
+    ; "SxhqH4a3mB\184RNgmsJR6pGTg-1\2132Dr6" , "U3hocUg0YTNtQrhSTmdtc0pSNnBHVGctMdUyRHI2"
+    ; "\"B&XGT1Dg3G1nlS0z@B\129Z\195`bJO\136wwm1" , "IkImWEdUMURnM0cxbmxTMHpAQoFaw2BiSk+Id3dtMQ=="
+    ; "J" , "Sg=="
+    ; "ja" , "amE="
+    ; "IAU" , "SUFV"
+    ; "\157\137se" , "nYlzZQ=="
+    ; "pmrsi" , "cG1yc2k="
+    ; "x\182OH (" , "eLZPSCAo"
+    ; "wsD2r5d" , "d3NEMnI1ZA=="
+    ; "\148honhcWJ" , "lGhvbmhjV0o="
+    ; "0kFupp\130NA" , "MGtGdXBwgk5B"
+    ; "8q9RJ4D0\239R" , "OHE5Uko0RDDvUg=="
+    ; "B4aO2CFN9SW" , "QjRhTzJDRk45U1c="
+    ; "u\2352vgi\030H\\gGf" , "desydmdpHkhcZ0dm"
+    ; "2PlbwEnFxdRJq" , "MlBsYndFbkZ4ZFJKcQ=="
+    ; "4m%j\160ejo4Y00b8" , "NG0laqBlam80WTAwYjg="
+    ; "Du\180XUJJK\2361SAwAU" , "RHW0WFVKSkvsMVNBd0FV"
+    ; "Gq5h5tj7oGJNeI3T" , "R3E1aDV0ajdvR0pOZUkzVA=="
+    ; "iA\204b7JRSRE0sa\133<lB" , "aUHMYjdKUlNSRTBzYYU8bEI="
+    ; "WAb5U\\G7X:bFrsymPf" , "V0FiNVVcRzdYOmJGcnN5bVBm"
+    ; "6kxiA1GMA1Q69fx:h0\165" , "Nmt4aUExR01BMVE2OWZ4OmgwpQ=="
+    ; "eSFtN7pCtdqoh1Vywioo" , "ZVNGdE43cEN0ZHFvaDFWeXdpb28="
+    ; "iwKrIl_39APRHagaOlvmD" , "aXdLcklsXzM5QVBSSGFnYU9sdm1E"
+    ; "\016Brf4W6jDkADGaSLZl0t5L" , "EEJyZjRXNmpEa0FER2FTTFpsMHQ1TA=="
+    ; "Ks77q8F7eIdiV6c9V~DYSBA" , "S3M3N3E4RjdlSWRpVjZjOVZ+RFlTQkE="
+    ; "KItSmn3)3LUuCI9E8H08aFDB" , "S0l0U21uMykzTFV1Q0k5RThIMDhhRkRC"
+    ; "H:jsaqJb#W\255VI\199civ7aV8pJOM" , "SDpqc2FxSmIjV/9WScdjaXY3YVY4cEpPTQ=="
+    ; "E0\"SlC0mUlST\020alI\030i5v8qemoz" , "RTAiU2xDMG1VbFNUFGFsSR5pNXY4cWVtb3o="
+    ; "aGX5mLm\007BwXo9vvQ0T\199ikUbLeb\191" , "YUdYNW1MbQdCd1hvOXZ2UTBUx2lrVWJMZWK/"
+    ; "hOFc6wBFqXBtv\186V5MqeqzgOX8uVp" , "aE9GYzZ3QkZxWEJ0drpWNU1xZXF6Z09YOHVWcA=="
+    ; "xJXc6 JBAyxetAIo4Hq9MzqToyNAu" , "eEpYYzYgSkJBeXhldEFJbzRIcTlNenFUb3lOQXU="
+    ; "f4iZMK6gWY!=44\200W\190PZ VNLZGZpWt3" , "ZjRpWk1LNmdXWSE9NDTIV75QWiBWTkxaR1pwV3Qz"
+    ; "yt4\192xYNyAusB77t.\202'\202at4MD5ly^Em9" , "eXQ0wHhZTnlBdXNCNzd0LsonymF0NE1ENWx5XkVtOQ=="
+    ; "c" , "Yw=="
+    ; "XD" , "WEQ="
+    ; "\141G8" , "jUc4"
+    ; "qlef" , "cWxlZg=="
+    ; "nH\127lm" , "bkh/bG0="
+    ; "t6aTVY" , "dDZhVFZZ"
+    ; "R7ZNaHo" , "UjdaTmFIbw=="]
+;;
+
+let%test_unit "Round trips" =
+  Quickcheck.test
+    String.gen
+    ~sexp_of:[%sexp_of: string]
+    ~f:(fun string ->
+      let encoded = encode string in
+      let decoded = decode encoded in
+      [%test_eq: string ] string decoded)
+;;

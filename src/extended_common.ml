@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let run_main f =
   try

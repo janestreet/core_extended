@@ -1,6 +1,6 @@
 (** DEPRECATED: use the base/bench library instead *)
 
-open Core.Std
+open Core
 open Textutils.Std
 
 module Int63_arithmetic : sig
@@ -314,7 +314,7 @@ let time_cycles ~rdtscp =
   (List.fold_left ~f:(+) ~init:0 times) / (List.length times)
 
 let bench_basic =
-  let open Core.Std.Result.Monad_infix in
+  let open Core.Result.Monad_infix in
   (Ok Posix_clock.Time_stamp_counter.rdtsc) >>= fun rdtscp ->
   Posix_clock.gettime           >>= fun gettime ->
   Posix_clock.mean_gettime_cost >>= fun mean_gettime_cost ->

@@ -1,5 +1,5 @@
 
-open Core.Std
+open Core
 
 let of_option = function
   | None -> []

@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 module Sys  = Caml.Sys
 
 let rec temp_failure_retry f =
@@ -453,7 +453,7 @@ let kill ?is_child ?wait_for ?(signal=Signal.term) pid =
 let%test_module _ = (module struct
   let with_fds n ~f =
     let restore_max_fds =
-      let module RLimit = Core.Std.Unix.RLimit in
+      let module RLimit = Core.Unix.RLimit in
       let max_fds = RLimit.get RLimit.num_file_descriptors in
       match max_fds.RLimit.cur with
       | RLimit.Infinity -> None
@@ -467,7 +467,7 @@ let%test_module _ = (module struct
     let retval = Or_error.try_with f in
     List.iter fds ~f:(fun fd -> Unix.close fd);
     Option.iter restore_max_fds ~f:(fun max_fds ->
-      let module RLimit = Core.Std.Unix.RLimit in
+      let module RLimit = Core.Unix.RLimit in
       RLimit.set RLimit.num_file_descriptors max_fds);
     Or_error.ok_exn retval
 

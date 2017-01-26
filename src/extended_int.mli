@@ -1,4 +1,4 @@
-include Number.Verified_std with type repr = Core.Std.Int.t
+include Number.Verified_std with type repr = Core.Int.t
 
 (** Computes greatest common divisor for the given two integers, with convention
     that [gcd 0 0 = 0].

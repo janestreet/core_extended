@@ -3,7 +3,7 @@
 *)
 
 module Verified_spec = struct
-  include Core.Std.Int
+  include Core.Int
   let module_name = "Int"
 end
 

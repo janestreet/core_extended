@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let command ~lock_file ~name main =
   let start_main () =

@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 (* LCS.... *)
 let lcsTBL x y m n =

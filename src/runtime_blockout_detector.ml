@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let default_callback ~elapsed =
   eprintf !"tick thread stopped for %{Time.Span}\n%!" elapsed

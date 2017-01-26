@@ -1,4 +1,4 @@
-open Core.Std;;
+open Core;;
 
 let groups = Memo.unit
     (fun () ->

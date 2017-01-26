@@ -1,7 +1,7 @@
-(** DEPRECATED: use Core.Std.Command instead *)
+(** DEPRECATED: use Core.Command instead *)
 (** command-line parsing with hierarchical sub-commands *)
 
-open! Core.Std
+open! Core
 
 exception Invalid_arguments of string list
 
@@ -514,5 +514,5 @@ module Helpers : sig
   val no_anons : 'a -> string list -> 'a
 end
 
-val of_core_command : Core.Std.Command.t -> t
+val of_core_command : Core.Command.t -> t
 

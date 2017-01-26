@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 open Interfaces
 
 module type Spec_no_binable = sig

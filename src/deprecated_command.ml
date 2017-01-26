@@ -1,5 +1,5 @@
-(** DEPRECATED: use Core.Std.Command instead *)
-open Core.Std
+(** DEPRECATED: use Core.Command instead *)
+open Core
 open Textutils.Std
 
 open Printf
@@ -577,12 +577,12 @@ let summary = function
 let help ~cmd t =
   match t with
   | Core _ ->
-    (* This will be dealt with by the Core.Std.Command internally
+    (* This will be dealt with by the Core.Command internally
        this function is only called from within dispatch.
        during a call to dispatch, if we get to a point where our command is a Core
        (and would thus get into this branch),
-       we call Core.Std.Command.Deprecated.run, which punts the entire functionality
-       over to Core.Std.Command
+       we call Core.Command.Deprecated.run, which punts the entire functionality
+       over to Core.Command
     *)
     assert false
   | Group grp ->
@@ -633,7 +633,7 @@ let help_recursive ~cmd ~with_flags ~expand_dots t =
     (*  help_recursive is only called from within dispatch
         if we ever get to a Core variant (which would cause us to be in this branch),
         we would have gone into the | Core branch of dispatch,
-        which would punt responsibility over to Core.Std.Command
+        which would punt responsibility over to Core.Command
     *)
     assert false
   | Group grp ->
@@ -893,8 +893,8 @@ module Version = struct
   let add ?version ?build_info unversioned =
     let command =
         match unversioned with
-        | Core _ -> failwith "You have used a Core.Std.Command in a Command basic stub. \
-                              Please convert fully to Core.Std.Command"
+        | Core _ -> failwith "You have used a Core.Command in a Command basic stub. \
+                              Please convert fully to Core.Command"
         | Group grp ->
           group ~summary:grp.summary
             (("version", command ?version ?build_info ())

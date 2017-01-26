@@ -1,6 +1,6 @@
 (** reservoir sampling *)
 
-open! Core.Std
+open! Core
 
 type 'a t (** a random sample of ['a] values *)
 

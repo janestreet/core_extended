@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 (** Look for a newline in a given substring and returns its
     absolute position.

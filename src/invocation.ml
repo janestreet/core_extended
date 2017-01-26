@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let full () = String.concat (Array.to_list Sys.argv) ~sep:" "
 

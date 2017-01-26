@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
   (** Extension to the {Core.Result} *)
 
 module Ok: Monad.S2 with type ('a,'err) t = ('a,'err) Result.t

@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 module Core_bool   = Bool
 module Core_char   = Char

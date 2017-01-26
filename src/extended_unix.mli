@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 (** Extensions to [Core.Unix]. *)
 
 val fork_exec :

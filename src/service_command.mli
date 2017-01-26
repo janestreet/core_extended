@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 
 type slot = {
   lock_file : string;

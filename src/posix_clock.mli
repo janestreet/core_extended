@@ -1,6 +1,6 @@
 (* The functions in this module are implemented on systems that support posix timers *)
 
-open! Core.Std
+open! Core
 
 type t =
   | Realtime

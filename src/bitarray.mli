@@ -6,7 +6,7 @@
 
 type t
 
-include Core.Std.Sexpable with type t := t
+include Core.Sexpable with type t := t
 
 (** [create size] size must be less than ((word size - 2) * max array length) *)
 val create : int -> t

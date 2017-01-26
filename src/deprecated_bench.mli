@@ -1,12 +1,12 @@
 (** DEPRECATED: use the base/bench library instead *)
-open! Core.Std
+open! Core
 open Textutils
 
 
 (**
   Simple example:
 
-  open! Core.Std
+  open! Core
   module Bench = Core_extended.Bench
 
   let main () =

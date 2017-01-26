@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let extra_path = ref ["/bin";"/usr/bin";"/usr/local/bin"]
 

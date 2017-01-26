@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let get_gen env_vars defaults =
   let env_var_programs = List.filter_map env_vars ~f:Sys.getenv in

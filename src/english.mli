@@ -1,6 +1,6 @@
 (** Translating English into useful data structures *)
 
-open! Core.Std
+open! Core
 
 (** [parse_int s]: Like standard int_of_string, but try to convert the first
     twenty english numbers (eg. "one", "two", ... "twenty"). Only lowercase strings are

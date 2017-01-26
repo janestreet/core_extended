@@ -4,7 +4,7 @@
     list as its value, and adding a new key/value pair appends the value to the
     key's list. *)
 
-open! Core.Std
+open! Core
 
 (** Input signature of the functor {!Make} *)
 module type Foldable = sig

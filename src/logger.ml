@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 type message = [ `Fatal | `Error | `Warn | `Info | `Debug ] * string
 type size = [ `Kb of int64 | `Mb of int64 | `Unlimited ]

@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 module type Key = sig
   type t [@@deriving sexp, bin_io]

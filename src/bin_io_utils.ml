@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let load ?pos ?len file bin_read_t =
   let failwith s = failwith ("Core_extended.Bin_io_utils.load: " ^ s) in

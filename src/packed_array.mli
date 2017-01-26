@@ -3,7 +3,7 @@
     large array once and then read from it many times. Array access is reasonably
     efficient. Be warned, however, that construction can be excruciatingly slow and might
     even perform many intermediate allocations, depending on the type of array. *)
-open! Core.Std
+open! Core
 
 (** [Basic] is the minimal interface you need to provide to make a packed array for a new
     type. *)

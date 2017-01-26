@@ -1,4 +1,4 @@
-open Core.Std                           (*  *)
+open Core                           (*  *)
 
 module type Strategy = sig
   type 'a t

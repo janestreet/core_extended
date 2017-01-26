@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 open Textutils.Std
 
 type completer = (left:string -> right:string -> string list)

@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 type t = {
   known_exceptions : exn String.Table.t;

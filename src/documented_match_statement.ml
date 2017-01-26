@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 type ('input,'output) case = {
   pattern : 'input list;

@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 module Extended_date = struct
   let format ?(ofday=Time.Ofday.start_of_day) s t =

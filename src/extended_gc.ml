@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 (* execute function supressing compactions. the doc says:
    mutable max_overhead : int;

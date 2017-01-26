@@ -12,7 +12,7 @@
 
   Email adr validation?
 *)
-open Core.Std
+open Core
 
 (* Sadly enough not all mta implement the rfc properly so we need to sniff them
    out. There's no reliable way to do so but most distributions rely on symlinks.

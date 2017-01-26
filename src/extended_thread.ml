@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let safe_create f =
   Thread.create

@@ -1,5 +1,5 @@
 module Verified_spec = struct
-  include Core.Std.Nativeint
+  include Core.Nativeint
   let module_name = "Nativeint"
 end
 

@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 module type Ordered_field_with_exponential = sig
   type t [@@deriving compare]

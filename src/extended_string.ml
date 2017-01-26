@@ -1,4 +1,4 @@
-open Core.Std;;
+open Core;;
 
 (* Natural ordering like found in gnome nautilus, the mac finder etc...
    Refer to Mli for more documentation
@@ -421,7 +421,7 @@ let is_substring_deprecated ~substring:needle haystack =
     if String.length haystack = 0 then false
     else invalid_arg "index out of bounds"
   end else
-    Core.Std.String.is_substring ~substring:needle haystack
+    Core.String.is_substring ~substring:needle haystack
 
 let%test _ = is_substring_deprecated ~substring:"foo" "foo"
 let%test _ = not (is_substring_deprecated ~substring:"" "")

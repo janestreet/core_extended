@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 type t = { mutable v : float } [@@deriving bin_io, sexp]
 

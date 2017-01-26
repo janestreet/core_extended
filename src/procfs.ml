@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 open Sexplib_num.Std
 
 (* Learn more about this business by consulting proc(5) *)
@@ -933,9 +933,9 @@ module Net = struct
     type t =
       {
         sl : int;
-        local_address : Core.Std.Unix.Inet_addr.t;
+        local_address : Core.Unix.Inet_addr.t;
         local_port : Extended_unix.Inet_port.t;
-        remote_address : Core.Std.Unix.Inet_addr.t;
+        remote_address : Core.Unix.Inet_addr.t;
         remote_port : Extended_unix.Inet_port.t option;
         state : Tcp_state.t;
         tx_queue : int;

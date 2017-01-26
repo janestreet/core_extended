@@ -1,5 +1,5 @@
-(** DEPRECATED: use Core.Std.Command instead *)
-open Core.Std
+(** DEPRECATED: use Core.Command instead *)
+open Core
 
 module Anons_grammar : sig
   type t

@@ -6,7 +6,7 @@
     original paper: http://web.eecs.utk.edu/~vose/Publications/random.pdf
     decent exposition: http://www.keithschwarz.com/darts-dice-coins/
 *)
-open Core.Std
+open Core
 
 type 'a cell = Single of 'a | Branch of float * 'a * 'a
 

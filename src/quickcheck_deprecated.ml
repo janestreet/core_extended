@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 
 let rec foldn ~f ~init:acc i =

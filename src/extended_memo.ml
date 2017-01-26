@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let general_rec g =
   let fref = ref (fun _ -> assert false) in

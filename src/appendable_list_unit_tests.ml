@@ -1,5 +1,5 @@
 let%test_module _ = (module (struct
-  open Core.Std
+  open Core
   open Appendable_list
 
   type nonrec 'a t = 'a t [@@deriving sexp]

@@ -1,6 +1,6 @@
 (** Interface to Unix utility functions *)
 
-open! Core.Std
+open! Core
 
 (** {2 Handling RAM limits} *)
 

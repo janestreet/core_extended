@@ -1,4 +1,4 @@
-open! Core.Std
+open! Core
 
 (** A polymorphic data structure parametrized by ['a] to represent lists of elements of
     ['a] while supporting constant time append operations.

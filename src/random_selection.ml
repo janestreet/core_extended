@@ -3,7 +3,7 @@
    see http://hnr.dnsalias.net/wordpress/?p=43
 *)
 
-open Core.Std
+open Core
 
 type 'a t = {
   rand : int -> int;

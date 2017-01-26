@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 let parse_int = function
   | "one"       -> 1

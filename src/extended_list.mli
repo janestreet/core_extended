@@ -1,4 +1,4 @@
-(** Extensions to [Core.Std.List].*)
+(** Extensions to [Core.List].*)
 
 (** [of_option o] returns a list that is empty if [o] is None, otherwise it is a singleton
     list. Useful to get filter_map-like behavior in the context of something like a
