@@ -7,7 +7,6 @@ module Array = struct
   include Extended_array
 end
 module Atomic_edit = Atomic_edit
-module Base64 = Base64
 module Deprecated_bench = Deprecated_bench
 module Bin_io_utils = Bin_io_utils
 module Bitarray = Bitarray

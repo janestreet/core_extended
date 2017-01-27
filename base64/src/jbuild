@@ -1,0 +1,5 @@
+(library
+ ((name base64)
+  (public_name core_extended.base64)
+  (libraries
+   (core_kernel))))
