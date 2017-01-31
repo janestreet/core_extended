@@ -52,3 +52,4 @@ module Make(T : Key) : S
 module String_trie : S
   with type Key.t = String.t
   with type Part.t = Char.t
+

@@ -38,6 +38,9 @@ module type S = sig
   val empty : t
 end
 
+(** This is pretty pointless -- the GC will traverse a [Make(B).t] if and only if it would
+    traverse the corresponding [B.t].  There is no sense in which the returned module
+    implements a "packed" array. *)
 module Make (B : Basic) : S with type elt := B.elt and type t := B.t
 
 (** The representation of a packed array type created using [Of_binable] is a Bin_prot
