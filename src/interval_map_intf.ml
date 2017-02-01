@@ -1,4 +1,4 @@
-open Core_kernel.Std
+open Core_kernel
 
 (*
    This is to represent an unbounded sequence of keys where we specify what value is

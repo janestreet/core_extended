@@ -1,4 +1,4 @@
-open Core_kernel.Std
+open Core_kernel
 
 type openpt_flag =
   | O_RDWR                      (** Open for reading and writing *)

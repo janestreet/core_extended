@@ -1,4 +1,4 @@
-open Core_kernel.Std
+open Core_kernel
 open Interval_map_intf
 
 type ('k, 'v, 'cmp) t = {

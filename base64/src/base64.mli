@@ -1,5 +1,5 @@
 (** Simple library for encoding and decoding base64 strings *)
-open! Core_kernel.Std
+open! Core_kernel
 
 module type T = sig
   val encode : string -> string
