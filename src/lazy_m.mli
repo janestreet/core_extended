@@ -11,11 +11,6 @@ open! Core.Interfaces
     implementation is like ~30 clocks to force the lazy value the first
     time, and single-digit clocks to force it the second time.
 
-    The second one is that we can make lazy values a monad.  This is a
-    correctness issue, as a common mistake with laziness is not being
-    lazy enough.  This is much easier to get right if you're doing
-    monadic binding.
-
     There are two downsides to doing it this way.  One, you can't use
     lazy keyword.  And two, this implementation uses a little more memory
     per lazy value (it currently uses 5 words/lazy value).
