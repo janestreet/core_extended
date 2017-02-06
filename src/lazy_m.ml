@@ -23,9 +23,9 @@ let force t =
   | Unevaluated f ->
       begin
         t := Evaluating;
-        match (try `Val (f ()) with e -> `Exn e) with
-        | `Val v -> t := Evaluated_to_val v; v
-        | `Exn e -> t := Evaluated_to_exn e; raise e
+        match f () with
+        | v           -> t := Evaluated_to_val v; v
+        | exception e -> t := Evaluated_to_exn e; raise e
       end
   | Evaluating -> raise Undefined
 

@@ -28,7 +28,7 @@ module Make (M:Sexpable) = struct
     let used_fields = fields (M.sexp_of_t value) in
     let all_fields = fields sexp in
     let extra_fields = List.filter all_fields ~f:(fun field ->
-      not (List.mem used_fields field)
+      not (List.mem used_fields field ~equal:String.equal)
     )
     in
     {

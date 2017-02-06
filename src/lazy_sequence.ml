@@ -273,7 +273,7 @@ let for_all t ~f = not (exists t ~f:(fun x -> not (f x)))
 
 let is_empty t = not (exists t ~f:(fun _ -> true))
 
-let mem ?(equal = (=)) t elt = exists t ~f:(fun x -> equal x elt)
+let mem t elt ~equal = exists t ~f:(fun x -> equal x elt)
 
 let length t = Container.length ~fold t
 let count t ~f = Container.count ~fold t ~f
@@ -708,9 +708,9 @@ let%test _ = is_empty (seq []) = true
 let%test _ = is_empty (seq [1]) = false
 let%test _ = is_empty (seq [1;2;3]) = false
 let%test _ = is_empty (infinite_ints ()) = false
-let%test _ = mem (seq [3;4;5]) 6 = false
-let%test _ = mem (seq [3;6;5]) 6 = true
-let%test _ = mem (infinite_ints ()) 10 = true
+let%test _ = mem (seq [3;4;5]) 6 ~equal:Int.equal = false
+let%test _ = mem (seq [3;6;5]) 6 ~equal:Int.equal = true
+let%test _ = mem (infinite_ints ()) 10 ~equal:Int.equal = true
 let%test _ = length (seq []) = 0
 let%test _ = length (seq [3;4;6;9;10]) = 5
 let%test _ = count (seq []) ~f:iseven = 0

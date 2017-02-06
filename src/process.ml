@@ -234,7 +234,7 @@ type t = {
 }
 
 let close_pooled state fd =
-  if List.mem state.open_fds fd then
+  if List.mem state.open_fds fd ~equal:Unix.File_descr.equal then
     close_non_intr fd;
   state.open_fds <- List.filter ~f:((<>) fd) state.open_fds;
   state.out_fds  <- List.filter ~f:((<>) fd) state.out_fds;

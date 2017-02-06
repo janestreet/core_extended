@@ -1,6 +1,6 @@
 open Core
 open Core_extended.Std
-open Async.Std
+open Async
 
 module Config = struct
   type t =

@@ -325,7 +325,7 @@ end = struct
           | Sexp.List [Sexp.Atom name;sexp] -> name,sexp
           | _ -> assert false
         in
-        if not (List.mem T.explicit_sexp_option_fields name)
+        if not (List.mem T.explicit_sexp_option_fields name ~equal:String.equal)
         then Some field
         else
           match value with

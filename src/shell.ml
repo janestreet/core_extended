@@ -171,7 +171,7 @@ module Process = struct
         let r = f cmd stdoutf stderrf in
         let module Res = Process.Command_result in
         match r.Res.status with
-        | `Exited i when List.mem expect i -> acc.flush ()
+        | `Exited i when List.mem expect i ~equal:Int.equal -> acc.flush ()
         | status ->
           raise (Failed
                    { command = cmd;
@@ -189,8 +189,8 @@ module Process = struct
       let r = f cmd (fun _ _ -> ()) (fun _ _ -> ()) in
       let module Res = Process.Command_result in
       match r.Res.status with
-      | `Exited i when List.mem true_v i -> true
-      | `Exited i when List.mem false_v i -> false
+      | `Exited i when List.mem true_v  i ~equal:Int.equal -> true
+      | `Exited i when List.mem false_v i ~equal:Int.equal -> false
       | #status as status ->
         raise (Failed
                  { command = cmd;

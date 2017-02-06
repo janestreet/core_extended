@@ -27,7 +27,7 @@ let insert_edge (graph:'a graph) (node:'a) (child:'a) : 'a graph =
   let rec loop acc = function
     | [] -> (node,[child])::graph
     | (node',children)::l when node' = node ->
-        if List.mem children child then
+        if List.mem children child ~equal:Poly.equal then
           graph
         else
           (node,(child::children))::(List.rev_append l acc)
@@ -47,7 +47,7 @@ let children (graph:'a graph) (node:'a) : 'a list =
 (** A topological sort that will degrade nicely in the presence of cycles. *)
 let top_sort (graph:'a graph) : 'a list =
   let rec visit (dead,l) v =
-    if List.mem dead v then
+    if List.mem dead v ~equal:Poly.equal then
       (dead,l)
     else
       let dead,l =

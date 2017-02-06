@@ -147,7 +147,6 @@ module Time = struct
   include Core.Time
   include Extended_time
 end
-module Trie = Trie
 module Unix = struct
   include Core.Unix
   include Extended_unix
