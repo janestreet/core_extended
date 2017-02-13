@@ -1,6 +1,7 @@
 open Core_extended.Std
 
 let () =
+  let module Sendmail = Sendmail.Deprecated_use_async_smtp_std_simplemail in
   Sendmail.send ~subject:"mail test" ~recipients:["till@janestreet.com"]
     "this is a test\nand here comes the ispo \n\
   lorem:\n\
