@@ -5,3 +5,5 @@
    (re2
     core))
 ))
+
+(jbuild_version jane_street)

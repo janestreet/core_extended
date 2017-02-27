@@ -5,3 +5,5 @@
                     core_extended
                     fieldslib
                     sexplib))))
+
+(jbuild_version jane_street)

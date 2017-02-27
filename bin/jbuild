@@ -1,3 +1,5 @@
 (executables
  ((names (mail_test diff_sexp diff_sexps redcat))
   (libraries (core_extended))))
+
+(jbuild_version jane_street)

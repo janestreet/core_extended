@@ -27,3 +27,5 @@
     posix_clock_stubs
     unix_pseudo_terminal_stubs))
   (preprocessor_deps (config_ext.h))))
+
+(jbuild_version jane_street)
