@@ -271,7 +271,8 @@ let process_io ~read ~write state =
       if len = 0 then
         close_pooled state fd
       else
-        let callback = List.Assoc.find_exn state.out_callbacks fd in
+        let callback =
+          List.Assoc.find_exn ~equal:Unix.File_descr.equal state.out_callbacks fd in
         callback state.buf len)
 
 let available_fds =

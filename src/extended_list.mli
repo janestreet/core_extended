@@ -76,9 +76,11 @@ val multimerge_unique : 'a list list -> 'a list
    ]
 *)
 val square : ?null:'v -> ('k * 'v) list list -> 'k list * 'v list list
-val square_unique : ?null:'v ->
-  ('k * 'v) list list ->
-  'k list * 'v list list
+val square_unique
+  :  ?null:'v
+  -> ?equal:('k -> 'k -> bool)
+  -> ('k * 'v) list list
+  -> 'k list * 'v list list
 
 val equal : equal:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val compare : ('a -> 'b -> int) -> 'a list -> 'b list -> int

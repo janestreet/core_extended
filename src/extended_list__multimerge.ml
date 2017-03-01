@@ -36,13 +36,13 @@ let insert_edge (graph:'a graph) (node:'a) (child:'a) : 'a graph =
   loop [] graph
 
 let insert_node (graph:'a graph) (node:'a) : 'a graph =
-  if List.Assoc.mem graph node then
+  if List.Assoc.mem graph ~equal:Poly.equal node then
     graph
   else
     (node,[]) :: graph
 
 let children (graph:'a graph) (node:'a) : 'a list =
-  List.Assoc.find_exn graph node
+  List.Assoc.find_exn graph ~equal:Poly.equal node
 
 (** A topological sort that will degrade nicely in the presence of cycles. *)
 let top_sort (graph:'a graph) : 'a list =

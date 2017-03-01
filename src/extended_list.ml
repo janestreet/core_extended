@@ -36,16 +36,16 @@ let number = Extended_list__multimerge.number
 let multimerge = Extended_list__multimerge.multimerge
 let multimerge_unique = Extended_list__multimerge.multimerge_unique
 
-let square_unique ?null l =
+let square_unique ?null ?(equal = Poly.equal) l =
   let headers = List.map ~f:(List.map ~f:fst) l in
   let header = multimerge_unique headers in
   let find_col_value =
     match null with
     | None ->
-      fun row col_header -> List.Assoc.find_exn row col_header
+      fun row col_header -> List.Assoc.find_exn row ~equal col_header
     | Some default ->
       fun row col_header ->
-        Option.value (List.Assoc.find row col_header) ~default
+        Option.value (List.Assoc.find row ~equal col_header) ~default
   in
   let body =
     List.map l

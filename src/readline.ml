@@ -225,7 +225,7 @@ let choice choices =
       None
     else
       let sel_string = String.of_char (s.[pos]) in
-      if List.Assoc.mem assigned sel_string then
+      if List.Assoc.mem assigned ~equal:String.equal sel_string then
         choose_id_char assigned s (pos+1)
       else
         Some (sel_string,make_sel_string s pos)
@@ -249,7 +249,7 @@ let choice choices =
     with
     | None -> None
     | Some x ->
-      match List.Assoc.find choices (String.strip x) with
+      match List.Assoc.find choices ~equal:String.equal (String.strip x) with
       | Some _ as s -> s
       | None -> loop ()
   in

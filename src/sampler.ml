@@ -79,7 +79,7 @@ let%test_module _ = (module struct
     done
 
   let test_outcome key =
-    let prob = List.Assoc.find_exn probs key in
+    let prob = List.Assoc.find_exn probs ~equal:String.equal key in
     let count = !(Hashtbl.find_exn histogram key) in
     let percentage = float count /. float num_samples in
     if Float.abs (percentage -. prob) > 0.001 then
