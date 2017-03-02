@@ -1,5 +1,6 @@
 (executables
  ((names (mail_test diff_sexp diff_sexps redcat))
-  (libraries (core_extended))))
+  (libraries (core_extended))
+  (preprocess (pps (ppx_jane)))))
 
 (jbuild_version jane_street)

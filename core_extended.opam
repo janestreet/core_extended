@@ -12,7 +12,6 @@ depends: [
   "bin_prot"
   "core"
   "core_kernel"
-  "expect_test_helpers"
   "fieldslib"
   "jbuilder"
   "ppx_driver"

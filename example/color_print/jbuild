@@ -2,6 +2,7 @@
  ((names (test_colors))
   (libraries (core
               core_extended
-              ))))
+              ))
+  (preprocess (pps (ppx_jane)))))
 
 (jbuild_version jane_street)

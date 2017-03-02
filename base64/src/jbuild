@@ -2,6 +2,7 @@
  ((name base64)
   (public_name core_extended.base64)
   (libraries
-   (core_kernel))))
+   (core_kernel))
+  (preprocess (pps (ppx_jane)))))
 
 (jbuild_version jane_street)

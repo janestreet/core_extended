@@ -9,7 +9,6 @@
   (libraries
    (bin_prot
     core
-    expect_test_helpers
     fieldslib
     re2
     sexplib
@@ -26,6 +25,7 @@
     malloc_stubs
     posix_clock_stubs
     unix_pseudo_terminal_stubs))
-  (preprocessor_deps (config_ext.h))))
+  (preprocessor_deps (config_ext.h))
+  (preprocess (pps (ppx_jane)))))
 
 (jbuild_version jane_street)

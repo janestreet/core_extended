@@ -4,6 +4,7 @@
   (libraries
    (re2
     core))
+  (preprocess (pps (ppx_jane)))
 ))
 
 (jbuild_version jane_street)

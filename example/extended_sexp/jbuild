@@ -4,6 +4,7 @@
                     core
                     core_extended
                     fieldslib
-                    sexplib))))
+                    sexplib))
+  (preprocess (pps (ppx_jane)))))
 
 (jbuild_version jane_street)
