@@ -101,7 +101,7 @@ CAMLprim value getloadavg_stub (value v_unit __unused)
 #  define QUOTA_MODIFY_COMMAND Q_SETQUOTA
 #  define QUOTA_SET_VALID_FIELDS(quota) ((void)quota)
 
-#elif !(defined _LINUX_QUOTA_VERSION) /* Mac OS */
+#elif defined (__APPLE__) /* Mac OS */
 
 #  define quota_control(device, cmd, id, parg)  \
      quotactl((device), (cmd), (id), (parg))
@@ -110,7 +110,7 @@ CAMLprim value getloadavg_stub (value v_unit __unused)
 #  define QUOTA_MODIFY_COMMAND Q_SETQUOTA
 #  define QUOTA_SET_VALID_FIELDS(quota) ((void)quota)
 
-#elif _LINUX_QUOTA_VERSION < 2
+#elif defined (_LINUX_QUOTA_VERSION) && _LINUX_QUOTA_VERSION < 2
 
 #  define quota_control(device, cmd, id, parg)  \
      quotactl((cmd), (device), (id), (parg))
@@ -119,7 +119,7 @@ CAMLprim value getloadavg_stub (value v_unit __unused)
 #  define QUOTA_MODIFY_COMMAND Q_SETQLIM
 #  define QUOTA_SET_VALID_FIELDS(quota) ((void)quota)
 
-#else /* _LINUX_QUOTA_VERSION >= 2 */
+#else /* _LINUX_QUOTA_VERSION >= 2 or not defined, GLIBC 2.25+ */
 
 #  define quota_control(device, cmd, id, parg)  \
      quotactl((cmd), (device), (id), (parg))
