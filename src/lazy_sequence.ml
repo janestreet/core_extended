@@ -113,22 +113,26 @@ let filter_mapi t ~f =
 let filter t ~f =
   filter_map t ~f:(fun x -> if f x then Some x else None)
 
-let rec filter_fold_map t ~init ~f =
+let rec folding_filter_map t ~init ~f =
   match t with
   | Nil -> Nil
-  | Lazy tail -> Lazy (fun () -> filter_fold_map (tail ()) ~init ~f)
+  | Lazy tail -> Lazy (fun () -> folding_filter_map (tail ()) ~init ~f)
   | Protect (finally, tail) ->
-    Protect (finally, Lazy (fun () -> filter_fold_map tail ~init ~f))
+    Protect (finally, Lazy (fun () -> folding_filter_map tail ~init ~f))
   | Cons (x, tail) ->
     let (state,y) = f init x in
     match y with
-    | None -> Lazy (fun () -> filter_fold_map (tail ()) ~init:state ~f)
-    | Some y -> Cons (y, (fun () -> filter_fold_map (tail ()) ~init:state ~f))
+    | None -> Lazy (fun () -> folding_filter_map (tail ()) ~init:state ~f)
+    | Some y -> Cons (y, (fun () -> folding_filter_map (tail ()) ~init:state ~f))
 
-let fold_map t ~init ~f =
-  filter_fold_map t ~init ~f:(fun state x ->
+let filter_fold_map = folding_filter_map
+
+let folding_map t ~init ~f =
+  folding_filter_map t ~init ~f:(fun state x ->
     let (state,y) = f state x in
     (state, Some y))
+
+let fold_map = folding_map
 
 let rec filter_map_partial t ~f =
   match t with
@@ -897,4 +901,3 @@ let%test_unit _ =
   assert (length_if_at_most ~max:2 s = None);
   assert ((!opens,!closes) = (11,11)); (* Length if at most should open and close *)
   ()
-

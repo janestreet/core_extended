@@ -2,10 +2,10 @@ open Core
 
 type comparison = int
 
-(** cf Jane.Std.Common.ascending *)
+(** cf Jane.Common.ascending *)
 let cmp_fasc f = fun x y -> compare (f x) (f y)
 
-(** cf Jane.Std.Common.descending *)
+(** cf Jane.Common.descending *)
 let cmp_fdesc f = fun x y -> compare (f y) (f x)
 
 (** Given a function [f], returns a maximizer of [f]. *)

@@ -27,8 +27,12 @@ val mapi: 'a t -> f:(int -> 'a -> 'b) -> 'b t
 val filter: 'a t -> f:('a -> bool) -> 'a t
 val filter_map: 'a t -> f:('a -> 'b option) -> 'b t
 val filter_mapi: 'a t -> f:(int -> 'a -> 'b option) -> 'b t
+val folding_map: 'a t -> init:'state -> f:('state -> 'a -> ('state * 'b)) -> 'b t
 val fold_map: 'a t -> init:'state -> f:('state -> 'a -> ('state * 'b)) -> 'b t
+[@@deprecated "[since 2017-03] Use folding_map instead"]
+val folding_filter_map: 'a t -> init:'state -> f:('state -> 'a -> ('state * 'b option)) -> 'b t
 val filter_fold_map: 'a t -> init:'state -> f:('state -> 'a -> ('state * 'b option)) -> 'b t
+[@@deprecated "[since 2017-03] Use folding_filter_map instead"]
 val concat: 'a t t -> 'a t
 val concat_seq_list: 'a t list -> 'a t
 val concat_list_seq: 'a list t -> 'a t
@@ -168,4 +172,3 @@ val initialize: (unit -> 'a t) -> 'a t
    If additional elements are cons-ed on the head of returned sequence, only the
    original subsequence will be protected by the [finally]. *)
 val protect: finally:(unit -> unit) -> (unit -> 'a t) -> 'a t
-
