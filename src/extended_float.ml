@@ -18,7 +18,7 @@ let rpretty s =
   s_rev (Int_conversions.insert_underscores (s_rev s))
 
 let to_string_hum f =
-  let s = Float.to_string f in
+  let s = Float.to_string_12 f in
   match String.lsplit2 s ~on:'.' with
   | None -> s (*nan,infinity...*)
   | Some (ip,fpe) ->

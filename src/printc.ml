@@ -27,7 +27,7 @@ let lpad ?fill n s = pad `left ?fill n s
 let rpad ?fill n s = pad `right ?fill n s
 
 let i2s = Int.to_string
-let f2s = Float.to_string
+let f2s = Float.to_string_12
 
 (*
 let f2s fmt f =
