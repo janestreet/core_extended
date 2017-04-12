@@ -1,6 +1,6 @@
 (** DEPRECATED: use Core.Command instead *)
 open Core
-open Textutils.Std
+open Textutils
 
 open Printf
 

@@ -1,5 +1,5 @@
 open Core
-open Textutils.Std
+open Textutils
 
 type completer = (left:string -> right:string -> string list)
 

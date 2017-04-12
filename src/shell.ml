@@ -1,7 +1,7 @@
 (* TODO: Ron wants the ability to run interactive commands and to expose the fd
    version of process handling.*)
 open Core
-open Textutils.Std
+open Textutils
 
 module Line_buffer = Shell__line_buffer
 

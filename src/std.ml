@@ -1,5 +1,5 @@
 include Extended_common
-include Textutils.Std
+include Textutils
 
 module Alternating_primary_backup_assignment = Alternating_primary_backup_assignment
 module Array = struct

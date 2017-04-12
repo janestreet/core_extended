@@ -1,7 +1,7 @@
 (** DEPRECATED: use the base/bench library instead *)
 
 open Core
-open Textutils.Std
+open Textutils
 
 module Int63_arithmetic : sig
   type t = Int63.t

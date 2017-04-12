@@ -1,5 +1,5 @@
 open Core
-open Textutils.Std
+open Textutils
 
 module Term = Console.Ansi
 module LZ = List_zipper
