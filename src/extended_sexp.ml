@@ -720,7 +720,7 @@ module Comprehension = struct
           (Format.Sing x) :: (Format.Sing y) :: find_runs tail
       | len, tail -> (Format.IRange(x, x + (len-1)*(y-x), y-x)) :: find_runs tail
 
-  let compress_ints ints = Format.Set(find_runs (List.dedup ints))
+  let compress_ints ints = Format.Set(find_runs (List.dedup_and_sort ints))
 
   (* Simplistic compression scheme: split each string into str1<num>str2 if possible.
    * For each set of matching str1 and str2, group together all the numbers in

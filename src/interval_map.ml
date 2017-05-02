@@ -367,7 +367,7 @@ let gen k_gen a_gen ~comparator =
   let open G.Monad_infix in
   G.tuple2 a_gen (List.gen k_gen)
   >>= fun (initial_value, changes_keys) ->
-  let changes_keys = List.dedup changes_keys ~compare:comparator.Comparator.compare in
+  let changes_keys = List.dedup_and_sort changes_keys ~compare:comparator.Comparator.compare in
   List.gen' a_gen ~length:(`Exactly (List.length changes_keys))
   >>| fun changes_vals ->
   create ~left_of_leftmost:initial_value

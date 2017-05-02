@@ -23,7 +23,7 @@ open Core_kernel
    can be used to make the upper bound of the range exclusive or inclusive respectively).
 *)
 
-module type Key = Core_kernel.Core_map_intf.Key
+module type Key = Core_kernel.Map_intf.Key
 
 (** A simple representation of a contiguous interval in some type. *)
 module Interval : sig
