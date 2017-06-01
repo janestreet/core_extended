@@ -58,14 +58,9 @@ module Internal = struct
 
   let ntp_packet_length = 48
 
-  let buf = String.create ntp_packet_length
-
-  let reset_buffer () =
-    String.fill ~pos:0 ~len:ntp_packet_length buf '\000'
-  ;;
-
   let query ~timeout ~port ipaddr =
-    reset_buffer ();
+    let buf = String.create ntp_packet_length in
+    String.fill ~pos:0 ~len:ntp_packet_length buf '\000';
     let addr = Unix.get_sockaddr ipaddr port in
     Exn.protectx
       (Unix.socket ~domain:Unix.PF_INET ~kind:Unix.SOCK_DGRAM ~protocol:0)

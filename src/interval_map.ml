@@ -368,7 +368,7 @@ let gen k_gen a_gen ~comparator =
   G.tuple2 a_gen (List.gen k_gen)
   >>= fun (initial_value, changes_keys) ->
   let changes_keys = List.dedup_and_sort changes_keys ~compare:comparator.Comparator.compare in
-  List.gen' a_gen ~length:(`Exactly (List.length changes_keys))
+  List.gen_with_length (List.length changes_keys) a_gen
   >>| fun changes_vals ->
   create ~left_of_leftmost:initial_value
     ~value_right_of:(
@@ -904,4 +904,3 @@ let%test_module "Int test" = (
 
     let%test "cont always" = test_cont (For_int.always "a") (-100) "a"
   end)
-
