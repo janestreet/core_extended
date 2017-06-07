@@ -36,6 +36,7 @@ module Access_control : sig
   val mem : ('a, _, [> read]) any -> 'a -> bool
   val remove : ('a, _) Read_write.t -> 'a -> unit
   val replace : ('a, 'b) Read_write.t -> key:'a -> data:'b -> unit
+    [@@deprecated "[since 2017-06] Use set instead"]
   val set : ('a, 'b) Read_write.t -> key:'a -> data:'b -> unit
   val add : ('a, 'b) Read_write.t -> key:'a -> data:'b -> [ `Ok | `Duplicate ]
   val add_exn : ('a, 'b) Read_write.t -> key:'a -> data:'b -> unit

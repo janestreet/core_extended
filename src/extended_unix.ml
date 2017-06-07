@@ -340,6 +340,7 @@ module Mount_entry = struct
                       "012", "\n";
                       "134", "\\";
                       "\\",  "\\"; ]
+
   let rec unescape s =
     match String.lsplit2 s ~on:'\\' with
     | None -> s
@@ -351,19 +352,42 @@ module Mount_entry = struct
       with
       | None -> l ^ "\\" ^ unescape r
       | Some ret -> ret
+  ;;
 
   let parse_optional_int = function
     | "0" -> None
     |  s  -> Some (Int.of_string s)
+  ;;
+
+  let normalize line =
+    String.fold line ~init:("",None,false)
+      ~f:(fun (new_s,lastc,commented) c ->
+        if commented || c = '#'
+        then (new_s,Some c,true)
+        else
+          let new_s =
+            if Char.is_whitespace c
+            then
+              match lastc with
+              | None         -> new_s ^ " "
+              | Some lastc   ->
+                if Char.is_whitespace lastc
+                then new_s
+                else new_s ^ " "
+            else new_s ^ (String.of_char c)
+          in
+          (new_s,Some c,commented))
+    |> Tuple3.get1
+    |> String.strip
+  ;;
 
   let parse_line line =
-    if String.is_empty line then Ok None
-    else if line.[0] = '#' then Ok None
+    if String.is_empty line
+    then Ok None
+    else if line.[0] = '#'
+    then Ok None
     else
-      match
-        List.map ~f:unescape
-          (String.split_on_chars ~on:[' ';'\t'] (String.strip line))
-      with
+      match String.split ~on:' ' (normalize line) |> List.map ~f:unescape with
       | [] | [""] -> Ok None
       | fsname :: directory :: fstype :: options
         :: ([] | [_] | [_;_] as dump_freq_and_fsck_pass) ->
@@ -375,17 +399,17 @@ module Mount_entry = struct
             | [dump_freq; fsck_pass] -> Some dump_freq, Some fsck_pass
             | _ -> assert false
           in
-          try
-            let dump_freq = Option.bind dump_freq ~f:parse_optional_int in
-            let fsck_pass = Option.bind fsck_pass ~f:parse_optional_int in
-            if String.equal fstype "ignore"
-            then Ok (None)
-            else Ok (Some { fsname; directory; fstype;
-                            options; dump_freq; fsck_pass })
-          with exn ->
-            Or_error.of_exn exn
+          Or_error.try_with
+            (fun () ->
+               let dump_freq = Option.bind dump_freq ~f:parse_optional_int in
+               let fsck_pass = Option.bind fsck_pass ~f:parse_optional_int in
+               if String.equal fstype "ignore"
+               then None
+               else Some { fsname; directory; fstype;
+                           options; dump_freq; fsck_pass })
         end
       | _ -> Or_error.error "wrong number of fields" line String.sexp_of_t
+  ;;
 
   let visible_filesystem ts =
     let add_slash = function
@@ -411,6 +435,7 @@ module Mount_entry = struct
         map
       else
         overlay map t)
+  ;;
 end
 
 let terminal_width =

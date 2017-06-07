@@ -30,7 +30,7 @@ module type Store = sig
 
   val cps_create : f:((_,_) t -> 'b) -> 'b with_init_args
   val clear : (_,_) t -> unit
-  val replace : ('k,'v) t -> key:'k -> data:'v -> unit
+  val set : ('k,'v) t -> key:'k -> data:'v -> unit
   val find : ('k,'v) t ->  'k -> 'v option
   val data : (_,'v) t -> 'v list
   val remove : ('k,_) t -> 'k -> unit
@@ -93,7 +93,7 @@ struct
 
   let add cache ~key ~data =
     touch_key cache key;
-    Store.replace cache.store ~key ~data
+    Store.set cache.store ~key ~data
 
   let remove cache key =
     Option.iter (Store.find cache.store key)
@@ -124,7 +124,7 @@ struct
     | None ->
       touch_key cache arg;
       let rval = Memoized.create ~f arg in
-      Store.replace cache.store ~key:arg ~data:rval;
+      Store.set cache.store ~key:arg ~data:rval;
       Memoized.return rval
 
   let memoize ?destruct f =

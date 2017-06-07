@@ -133,9 +133,9 @@ sig
   (** Remove all the values from the store. *)
   val clear : ('k, 'v) t -> unit
 
-  (** [replace store ~key ~data] associated the [data] to [key]; remove any
+  (** [set store ~key ~data] associated the [data] to [key]; remove any
       previously existing binding. *)
-  val replace : ('k, 'v) t -> key:'k -> data:'v -> unit
+  val set : ('k, 'v) t -> key:'k -> data:'v -> unit
 
   (** [find store key] returns the value associated to [key] in [store].  *)
   val find : ('k, 'v) t -> 'k -> 'v option
