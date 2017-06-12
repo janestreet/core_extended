@@ -3,7 +3,7 @@
   (public_name core_extended.selection)
   (libraries
    (re2
-    core))
+    core_kernel))
   (preprocess (pps (ppx_jane ppx_driver.runner)))
 ))
 
