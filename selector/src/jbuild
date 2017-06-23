@@ -2,7 +2,8 @@
  ((name selector)
   (public_name core_extended.selection)
   (libraries
-   (re2
+   (re
+    re.perl
     core_kernel))
   (preprocess (pps (ppx_jane ppx_driver.runner)))
 ))

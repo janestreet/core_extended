@@ -41,10 +41,10 @@ module Stable = struct
         module T = struct
           (* This type is stable in spite of using the Re2's non-stable type because
              bin_io and sexp conversion functions are explicitly defined below. *)
-          type t = string * Re2.Std.Re2.t
+          type t = string * Re.re
 
           let to_string (s, _) = s
-          let of_regexp s = s, Re2.Std.Re2.create_exn s
+          let of_regexp s = s, Re_perl.compile_pat s
           let of_string s = of_regexp s
         end
         include T
@@ -152,12 +152,13 @@ module String_selector = struct
     val of_regexp : string -> t
     val to_string : t -> string
     val matches   : t -> string -> bool
-    val to_regexp : t -> Re2.Std.Re2.t
+    val to_regexp : t -> Re.re
   end = struct
     include Stable.String_selector.Regexp.Current
 
     let to_regexp (_, p) = p
-    let matches (_, rex) s = Re2.Std.Re2.matches rex s
+    let matches (_, rex) s =
+      Re.execp rex s
   end
 
   include Stable.String_selector.Current

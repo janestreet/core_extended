@@ -208,7 +208,7 @@ module Mac_address = struct
   (* An efficient internal representation would be something like a 6 byte array,
      but let's use a hex string to get this off the ground. *)
   module T = struct
-    type t = string [@@deriving sexp, bin_io, compare]
+    type t = string [@@deriving sexp, bin_io, compare, hash]
     let ( = ) = String.( = )
     let equal = ( = )
     let rex = Re2.Std.Re2.create_exn "[^a-f0-9]"
@@ -239,7 +239,6 @@ module Mac_address = struct
       String.concat ~sep:"." [a; b; c]
     let t_of_sexp sexp = String.t_of_sexp sexp |> of_string
     let sexp_of_t t = to_string t |> String.sexp_of_t
-    let hash = String.hash
 
     let _flag = Command.Spec.Arg_type.create of_string
   end
