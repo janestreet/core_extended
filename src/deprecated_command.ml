@@ -860,7 +860,12 @@ module Version = struct
   let print_version ?(version = Command.Deprecated.version) () =
     print_endline version
 
-  let print_build_info ?(build_info = Command.Deprecated.build_info) () =
+  let print_build_info ?build_info () =
+    let build_info =
+      match build_info with
+      | Some v -> v
+      | None -> force (Command.Deprecated.build_info)
+    in
     print_endline build_info
 
   let poly_flags ?version ?build_info () = [
