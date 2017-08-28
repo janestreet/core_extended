@@ -338,85 +338,73 @@ module Mount_entry = struct
                       "011", "\t";
                       "012", "\n";
                       "134", "\\";
-                      "\\",  "\\"; ]
+                      "\\" , "\\" ]
 
-  let rec unescape s =
-    match String.lsplit2 s ~on:'\\' with
-    | None -> s
-    | Some (l, r) ->
-      match
-        List.find_map escape_seqs ~f:(fun (prefix, replacement) ->
-          Option.map (String.chop_prefix ~prefix r)
-            ~f:(fun r -> l ^ replacement ^ unescape r))
-      with
-      | None -> l ^ "\\" ^ unescape r
-      | Some ret -> ret
+  let unescape s =
+    let find_and_drop_prefix s (prefix, replacement) =
+      Option.map
+        (String.chop_prefix ~prefix s)
+        ~f:(fun s -> replacement, s)
+    in
+    let rec loop s =
+      match String.lsplit2 s ~on:'\\' with
+      | None -> [s]
+      | Some (l, r) ->
+        match List.find_map escape_seqs ~f:(find_and_drop_prefix r) with
+        | None -> l :: "\\" :: loop r
+        | Some (x,r) -> l :: x :: loop r
+    in String.concat (loop s)
+
+  let parse_optional_int s =
+    match Int.of_string s with
+    | 0 -> None
+    | n -> Some n
   ;;
 
-  let parse_optional_int = function
-    | "0" -> None
-    |  s  -> Some (Int.of_string s)
-  ;;
-
-  let normalize line =
-    String.fold line ~init:("",None,false)
-      ~f:(fun (new_s,lastc,commented) c ->
-        if commented || c = '#'
-        then (new_s,Some c,true)
-        else
-          let new_s =
-            if Char.is_whitespace c
-            then
-              match lastc with
-              | None         -> new_s ^ " "
-              | Some lastc   ->
-                if Char.is_whitespace lastc
-                then new_s
-                else new_s ^ " "
-            else new_s ^ (String.of_char c)
-          in
-          (new_s,Some c,commented))
-    |> Tuple3.get1
-    |> String.strip
+  let split_and_normalize line =
+    let inside_comment = ref false in
+    let whitespace = ' ' in
+    String.map line ~f:(fun x ->
+      if Char.equal x '#' then inside_comment := true;
+      if Char.is_whitespace x || !inside_comment then whitespace else x
+    )
+    |> String.split ~on:whitespace
+    |> List.filter ~f:(fun x -> not (String.is_empty x))
   ;;
 
   let parse_line line =
-    if String.is_empty line
-    then Ok None
-    else if line.[0] = '#'
-    then Ok None
-    else
-      match String.split ~on:' ' (normalize line) |> List.map ~f:unescape with
-      | [] | [""] -> Ok None
-      | fsname :: directory :: fstype :: options
-        :: ([] | [_] | [_;_] as dump_freq_and_fsck_pass) ->
-        begin
-          let dump_freq, fsck_pass =
-            match dump_freq_and_fsck_pass with
-            | [                    ] -> None,           None
-            | [dump_freq           ] -> Some dump_freq, None
-            | [dump_freq; fsck_pass] -> Some dump_freq, Some fsck_pass
-            | _ -> assert false
-          in
-          Or_error.try_with
-            (fun () ->
-               let dump_freq = Option.bind dump_freq ~f:parse_optional_int in
-               let fsck_pass = Option.bind fsck_pass ~f:parse_optional_int in
-               if String.equal fstype "ignore"
-               then None
-               else Some { fsname; directory; fstype;
-                           options; dump_freq; fsck_pass })
-        end
-      | _ -> Or_error.error "wrong number of fields" line String.sexp_of_t
+    match split_and_normalize line |> List.map ~f:unescape with
+    | [] -> Ok None
+    | fsname :: directory :: fstype :: options
+      :: ([] | [_] | [_;_] as dump_freq_and_fsck_pass) ->
+      begin
+        let dump_freq, fsck_pass =
+          match dump_freq_and_fsck_pass with
+          | [                    ] -> None,           None
+          | [dump_freq           ] -> Some dump_freq, None
+          | [dump_freq; fsck_pass] -> Some dump_freq, Some fsck_pass
+          | _ -> assert false
+        in
+        Or_error.try_with
+          (fun () ->
+             let dump_freq = Option.bind dump_freq ~f:parse_optional_int in
+             let fsck_pass = Option.bind fsck_pass ~f:parse_optional_int in
+             if String.equal fstype "ignore"
+             then None
+             else Some { fsname; directory; fstype;
+                         options; dump_freq; fsck_pass })
+      end
+    | _ -> Or_error.error "wrong number of fields" line String.sexp_of_t
   ;;
 
   let visible_filesystem ts =
-    let add_slash = function
-      | "" -> "/"
-      | p  -> if p.[String.length p - 1] = '/' then p else p ^ "/"
+    let add_slash_if_needed s =
+      if String.is_suffix s ~suffix:"/"
+      then s
+      else s ^ "/"
     in
     let overlay map t =
-      let remove_prefix = add_slash (directory t) in
+      let remove_prefix = add_slash_if_needed (directory t) in
       let rec loop map =
         match String.Map.closest_key map `Greater_than remove_prefix with
         | None ->

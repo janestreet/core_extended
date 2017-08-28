@@ -12,7 +12,7 @@
 (** Prints a valid csv file to a given channel.
     The [eol] arg can be used to override the default line ending
     of "\r\n" (DOS line endings).
-    Example ~eol:"\n" to get *nix line endings
+    Example ~eol:`Unix to get *nix line endings
 *)
 val output_lines :
   ?quote:char

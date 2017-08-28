@@ -83,9 +83,9 @@ let ifconfig_ips () =
 
 let digest file =
   if Sys.file_exists file <> `No then
-    Digest.file file
+    Some (Md5.digest_file_blocking file)
   else
-    ""
+    None
 
 (** Safe editions *)
 let edit_one file =
@@ -107,7 +107,7 @@ let edit_one file =
     (** We have to discard the return value because different editors have
         different conventions... *)
   | Ok () | Error #Unix.Exit.error ->
-      let new_digest = Digest.file file in
+      let new_digest = Some (Md5.digest_file_blocking file) in
       if new_digest = md5 then
         `Unchanged
       else
