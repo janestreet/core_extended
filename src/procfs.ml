@@ -39,7 +39,7 @@ type bigint = Big_int.big_int [@@deriving sexp] ;;
 module Process = struct
 
   module Inode = struct
-    type t = Int64.t [@@deriving sexp] ;;
+    type t = Int64.t [@@deriving sexp, bin_io] ;;
     let of_string = Int64.of_string ;;
     let to_string = Int64.to_string ;;
   end ;;
@@ -315,13 +315,13 @@ module Process = struct
       | Socket of Inode.t
       | Pipe of Inode.t
       | Inotify
-    [@@deriving sexp] ;;
+    [@@deriving sexp, bin_io] ;;
     type t =
       {
         fd      : int;     (** File descriptor (0=stdin, 1=stdout, etc.) *)
         fd_stat : fd_stat; (** Kind of file *)
       }
-    [@@deriving fields, sexp] ;;
+    [@@deriving fields, sexp, bin_io] ;;
   end ;;
 
   type t =

@@ -10,7 +10,7 @@ val input_all_with_reused_buffer : unit -> (string -> string) Staged.t
 
 module Process : sig
   module Inode : sig
-    type t [@@deriving sexp] ;;
+    type t [@@deriving sexp, bin_io] ;;
     val of_string : string -> t
     val to_string : t -> string
   end ;;
@@ -147,13 +147,13 @@ module Process : sig
       | Socket of Inode.t
       | Pipe of Inode.t
       | Inotify
-    [@@deriving sexp] ;;
+    [@@deriving sexp, bin_io] ;;
     type t =
       {
         fd      : int;     (** File descriptor (0=stdin, 1=stdout, etc.) *)
         fd_stat : fd_stat; (** Kind of file *)
       }
-    [@@deriving fields, sexp] ;;
+    [@@deriving fields, sexp, bin_io] ;;
   end ;;
 
   type t =

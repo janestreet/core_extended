@@ -13,13 +13,13 @@ depends: [
   "core"
   "core_kernel"
   "fieldslib"
-  "jbuilder"                {build & >= "1.0+beta8"}
   "ppx_driver"
   "ppx_jane"
   "re2"
   "sexplib"
   "textutils"
   "base-threads"
+  "jbuilder"                {build & >= "1.0+beta12"}
   "ocaml-migrate-parsetree" {>= "0.4"}
   "re"                      {>= "1.5.0"}
 ]
