@@ -11,7 +11,7 @@ val send :
   -> recipients:string list
   -> string
   -> unit
-[@@deprecated "[since 2016-08] use [Async_smtp.Std.Simplemail] instead"]
+[@@deprecated "[since 2016-08] use [Async_smtp.Simplemail] instead"]
 
 module Deprecated_use_async_smtp_std_simplemail : sig
   val send :

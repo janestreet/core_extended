@@ -114,6 +114,6 @@ module Lsb_release : sig
       release        : string;  (* e.g. "5.7", "6.3" or 'testing' on debian *)
       codename       : string; (* e.g. "Final", "Lucid", etc. *)
     }
-  [@@deriving sexp, fields, bin_io]
+  [@@deriving sexp, fields, bin_io, compare]
   val query : unit -> t
 end
