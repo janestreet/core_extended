@@ -1,6 +1,6 @@
 #include "config_ext.h"
 
-#ifdef JSC_LINUX_EXT
+#ifdef __GLIBC__
 
 #include <malloc.h>
 #include "ocaml_utils.h"
@@ -53,4 +53,4 @@ CAMLprim value malloc_stats_stub(value __unused v_unit)
   return Val_unit;
 }
 
-#endif /* JSC_LINUX_EXT */
+#endif /* __GLIBC__ */

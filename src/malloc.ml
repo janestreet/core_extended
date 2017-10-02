@@ -24,7 +24,7 @@ type opt =
 (*   | PERTURB *)
 [@@deriving sexp, bin_io]
 
-#ifdef JSC_LINUX_EXT
+#ifdef __GLIBC__
 
 external mallinfo     : unit -> mallinfo   = "malloc_mallinfo_stub"
 external mallopt      : opt -> int -> unit = "malloc_mallopt_stub"

@@ -20,6 +20,9 @@
 #endif
 
 #include <sys/mount.h>
+#ifndef BLOCK_SIZE
+#define BLOCK_SIZE 1024 /* kernel block size */
+#endif
 
 #ifndef __USE_ISOC99
 # define __USE_ISOC99
