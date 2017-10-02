@@ -27,6 +27,12 @@ cat > $OUT <<EOF
 #define $sentinel
 EOF
 
+if getconf GNU_LIBC_VERSION; then
+    echo '#define __GLIBC__' >>"$OUT";
+else
+    echo '#undef __GLIBC__' >>"$OUT";
+fi
+
 cat > "$SRC" <<EOF
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE 600
