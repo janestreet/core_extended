@@ -27,7 +27,7 @@ type t =
   ; t2               : float
   ; t3               : float
   ; t4               : float }
-[@@deriving fields]
+[@@deriving sexp, fields]
 ;;
 
 val extended_query :

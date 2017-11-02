@@ -41,9 +41,9 @@ let tg g1 g2 g3 () = (g1 (),g2 (), g3 ())
 let cg () = char_of_int (Random.int 256)
 
 let sg ?(char_gen = cg) ?(size_gen = nng) () =
-  let s = String.create (size_gen ()) in
+  let s = Bytes.create (size_gen ()) in
   for i = 0 to String.length s - 1 do
-    s.[i] <- char_gen ()
+    Bytes.set s i (char_gen ())
   done;
   s
 

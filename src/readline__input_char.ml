@@ -35,8 +35,8 @@ let parse_esc ()=
   let b1 = Buffer.create 4
   and b2 = Buffer.create 4
   in
-  let cmd = String.create 2 in
-  cmd.[0] <- char ();
+  let cmd = Bytes.create 2 in
+  Bytes.set cmd 0 (char ());
   let rec aux seen_semi =
     let c = char () in
     let b = if seen_semi then b2 else b1 in
@@ -55,7 +55,7 @@ let parse_esc ()=
     | _ -> c
   in
   let c = aux false in
-  cmd.[1] <- c;
+  Bytes.set cmd 1 c;
   let quant b = match Buffer.contents b with
     | "" -> None
     | s -> Some (int_of_string s)

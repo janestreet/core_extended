@@ -254,9 +254,9 @@ let pad_right ?(char=' ') s l =
   if src_len >= l then
     s
   else
-    let res = String.create l in
-    String.blit ~src:s ~dst:res ~src_pos:0 ~dst_pos:0 ~len:src_len;
-    String.fill ~pos:src_len ~len:(l-src_len) res char;
+    let res = Bytes.create l in
+    Bytes.blit ~src:s ~dst:res ~src_pos:0 ~dst_pos:0 ~len:src_len;
+    Bytes.fill ~pos:src_len ~len:(l-src_len) res char;
     res
 
 let pad_left ?(char=' ') s l =
@@ -264,9 +264,9 @@ let pad_left ?(char=' ') s l =
   if src_len >= l then
     s
   else
-    let res = String.create l in
-    String.blit ~src:s ~dst:res ~src_pos:0 ~dst_pos:(l-src_len) ~len:src_len;
-    String.fill ~pos:0 ~len:(l-src_len) res char;
+    let res = Bytes.create l in
+    Bytes.blit ~src:s ~dst:res ~src_pos:0 ~dst_pos:(l-src_len) ~len:src_len;
+    Bytes.fill ~pos:0 ~len:(l-src_len) res char;
     res
 
 let line_break ~len s =
@@ -376,16 +376,16 @@ let word_wrap
       let res_len =
         if trailing_nl then body_len+hlen+nl_len else body_len+hlen
       in
-      let res = String.create res_len in
+      let res = Bytes.create res_len in
       if trailing_nl then begin
-        String.blit
+        Bytes.blit
           ~src:nl
           ~dst:res
           ~len:nl_len
           ~src_pos:0
           ~dst_pos:(body_len+hlen);
       end;
-      String.blit
+      Bytes.blit
         ~src:s
         ~dst:res
         ~len:hlen
@@ -395,13 +395,13 @@ let word_wrap
         | [] -> ()
         | (src_pos,len)::rest ->
             let dst_pos = dst_end_pos-len-nl_len in
-            String.blit
+            Bytes.blit
               ~src:s
               ~dst:res
               ~len
               ~src_pos
               ~dst_pos;
-            String.blit
+            Bytes.blit
               ~src:nl
               ~dst:res
               ~len:nl_len

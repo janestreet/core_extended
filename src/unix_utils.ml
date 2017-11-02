@@ -5,7 +5,9 @@ module RLimit = Unix.RLimit
 (* Handling RAM limits *)
 
 let physical_ram () =
-  Int64.( * ) (Unix.sysconf Unix.PAGESIZE) (Unix.sysconf Unix.PHYS_PAGES)
+  Int64.( * )
+    (Unix.sysconf_exn Unix.PAGESIZE)
+    (Unix.sysconf_exn Unix.PHYS_PAGES)
 
 type ram_usage_limit = Unlimited | Absolute of int64 | Relative of float
 

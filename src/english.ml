@@ -31,8 +31,6 @@ let failure which s =
   in
   invalid_argf "Unrecognized %s format \"%s\"" which_s s ()
 
-let add_years d i = Date.add_months d (12 * i)
-
 let parse_date ?relative_to:(today=Date.today ~zone:(force Time.Zone.local)) dt =
   let dt' = String.lowercase dt in
   let failure () = failure `date dt in
@@ -54,11 +52,11 @@ let parse_date ?relative_to:(today=Date.today ~zone:(force Time.Zone.local)) dt 
         | [num; "months"]
         | [num; "months";   "hence"] -> Date.add_months   today (parse_int num)
         | [num; "years"]
-        | [num; "years";    "hence"] -> add_years         today (parse_int num)
+        | [num; "years";    "hence"] -> Date.add_years    today (parse_int num)
         | [num; "days";     "ago"] ->   Date.add_days     today ( -(parse_int num))
         | [num; "weekdays"; "ago"] ->   Date.add_weekdays today ( -(parse_int num))
         | [num; "months";   "ago"] ->   Date.add_months   today ( -(parse_int num))
-        | [num; "years";    "ago"] ->   add_years         today ( -(parse_int num))
+        | [num; "years";    "ago"] ->   Date.add_years    today ( -(parse_int num))
         | _ ->
           failure ()
       with

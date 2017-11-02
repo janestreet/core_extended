@@ -435,7 +435,7 @@ let cp ?(overwrite=true) ?perm src dst =
           protectx (Unix.openfile dst ~mode:out_mode ~perm)
             ~f:(fun outfh ->
                   let buflen = 4096 in
-                  let buf = String.create buflen in
+                  let buf = Bytes.create buflen in
                   let rec loop () =
                     let rlen = Unix.read infh ~buf ~pos:0 ~len:buflen in
                     if rlen <> 0 then

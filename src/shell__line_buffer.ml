@@ -53,9 +53,9 @@ let rec add_substring b s ~pos ~len =
     (* whatever is in the buffer + this suffix is our newline*)
     let suffix_len = suffix_end_pos - pos
     and prefix_len = Buffer.length b.buffer in
-    let line = String.create (prefix_len + suffix_len) in
+    let line = Bytes.create (prefix_len + suffix_len) in
     Buffer.blit b.buffer 0 line 0 prefix_len;
-    String.blit
+    Bytes.blit
       ~src:s
       ~dst:line
       ~src_pos:pos

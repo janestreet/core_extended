@@ -16,25 +16,25 @@ let next = next
 let contents zip =
   let ll = List.length zip.l
   and lr = List.length zip.r in
-  let res = String.create (ll+lr) in
+  let res = Bytes.create (ll+lr) in
   List.iteri zip.l
-    ~f:(fun i c -> res.[ll-1-i] <- c);
+    ~f:(fun i c -> Bytes.set res (ll-1-i) c);
   List.iteri zip.r
-    ~f:(fun i c -> res.[ll+i] <- c);
+    ~f:(fun i c -> Bytes.set res (ll+i) c);
   res
 
 let left_contents zip =
   let len = List.length zip.l in
-  let res = String.create len in
+  let res = Bytes.create len in
   List.iteri zip.l
-    ~f:(fun i c -> res.[len-1-i] <- c);
+    ~f:(fun i c -> Bytes.set res (len-1-i) c);
   res
 
 let right_contents zip =
   let len = List.length zip.r in
-  let res = String.create len in
+  let res = Bytes.create len in
   List.iteri zip.r
-    ~f:(fun i c -> res.[i] <- c);
+    ~f:(fun i c -> Bytes.set res i c);
   res
 
 let first zip =

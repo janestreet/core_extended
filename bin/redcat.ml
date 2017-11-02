@@ -1,7 +1,7 @@
 open Core
 open Core_extended.Std
 
-let buf = String.create 4096
+let buf = Bytes.create 4096
 let header = "\027[31m"
 let footer = "\027[0m"
 

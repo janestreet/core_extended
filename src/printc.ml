@@ -20,7 +20,7 @@ let pad side ?(fill=' ') n s =
       | `left -> n - orig_len
       | `right -> 0
     in
-    String.blit ~src:s ~dst:s' ~src_pos:0 ~dst_pos ~len:orig_len;
+    Bytes.blit ~src:s ~dst:s' ~src_pos:0 ~dst_pos ~len:orig_len;
     s'
 
 let lpad ?fill n s = pad `left ?fill n s

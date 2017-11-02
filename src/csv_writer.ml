@@ -21,8 +21,8 @@ let rec quote_blit_loop ~quote ~src ~dst ~src_pos ~dst_pos src_end =
   else
     match src.[src_pos] with
     | c when c = quote ->
-        dst.[dst_pos]     <- quote;
-        dst.[dst_pos + 1] <- quote;
+        Bytes.set dst dst_pos quote;
+        Bytes.set dst (dst_pos + 1) quote;
         quote_blit_loop
           ~quote
           ~src
@@ -31,7 +31,7 @@ let rec quote_blit_loop ~quote ~src ~dst ~src_pos ~dst_pos src_end =
           ~dst_pos:(dst_pos + 2)
           src_end
     | c ->
-        dst.[dst_pos] <- c;
+        Bytes.set dst dst_pos c;
         quote_blit_loop
           ~quote
           ~src
@@ -122,16 +122,16 @@ let rec line_spec_loop ~quote ~sep esc_acc size = function
 
 let field_blit ~quote ~dst ~pos = function
   | true,h ->
-      dst.[pos] <- quote;
+      Bytes.set dst pos quote;
       let len = String.length h in
       let qpos =
         quote_blit ~quote ~src:h ~src_pos:0 ~dst ~dst_pos:(pos+1) ~len
       in
-      dst.[qpos] <- quote;
+      Bytes.set dst qpos quote;
       qpos + 1
   | false,h ->
       let len = String.length h in
-      String.blit ~dst_pos:pos ~src_pos:0 ~dst ~src:h ~len;
+      Bytes.blit ~dst_pos:pos ~src_pos:0 ~dst ~src:h ~len;
       pos + len
 
 (** Tables *)
@@ -141,7 +141,7 @@ let rec line_blit_loop ~quote ~sep ~dst ~pos = function
       field_blit ~quote:'"' ~dst ~pos v
   | v::((_::_) as t) ->
       let pos = field_blit ~quote:'"' ~dst ~pos v in
-      dst.[pos] <- sep;
+      Bytes.set dst pos sep;
       line_blit_loop ~quote ~sep ~dst ~pos:(pos + 1) t
 
 let rec output_lines_loop ~quote ~sep ~buff ~eol oc = function
@@ -149,7 +149,7 @@ let rec output_lines_loop ~quote ~sep ~buff ~eol oc = function
   | h::t ->
       let spec,len = line_spec_loop ~quote ~sep [] 0 h in
       let buff = if String.length buff < len then
-        String.create (2*len)
+        Bytes.create (2*len)
       else
         buff
       in
@@ -160,7 +160,7 @@ let rec output_lines_loop ~quote ~sep ~buff ~eol oc = function
 
 let line_to_string ?(quote='"') ?(sep=',') l =
   let spec,len = line_spec_loop ~quote ~sep [] 0 l in
-  let res = String.create len in
+  let res = Bytes.create len in
   ignore (line_blit_loop ~quote ~sep ~dst:res ~pos:0 spec:int);
   res
 
@@ -169,9 +169,9 @@ let maybe_escape_field ?(quote='"') ?(sep=',') s =
   match quote_len s ~quote ~sep ~len ~pos:0 with
   | None -> s
   | Some qlen ->
-      let res = String.create (qlen+2) in
-      res.[0] <- quote;
-      res.[qlen+1] <- quote;
+      let res = Bytes.create (qlen+2) in
+      Bytes.set res 0 quote;
+      Bytes.set res (qlen+1) quote;
       ignore
         (quote_blit ~quote ~src:s ~src_pos:0 ~dst:res ~dst_pos:1 ~len :int);
       res
@@ -180,19 +180,19 @@ let escape_field ?(quote='"') s =
   let len = String.length s in
   match quote_len s ~quote ~sep:',' ~len ~pos:0 with
   | None ->
-      let res = String.create (len+2) in
-      res.[0] <- quote;
-      res.[len+1] <- quote;
-      String.blit ~src_pos:0 ~dst_pos:1 ~len ~src:s ~dst:res;
+      let res = Bytes.create (len+2) in
+      Bytes.set res 0 quote;
+      Bytes.set res (len+1) quote;
+      Bytes.blit ~src_pos:0 ~dst_pos:1 ~len ~src:s ~dst:res;
       res
   | Some qlen ->
-      let res = String.create (qlen+2) in
-      res.[0] <- quote;
-      res.[qlen+1] <- quote;
+      let res = Bytes.create (qlen+2) in
+      Bytes.set res 0 quote;
+      Bytes.set res (qlen+1) quote;
       ignore
         (quote_blit ~quote ~src:s ~src_pos:0 ~dst:res ~dst_pos:1 ~len :int);
       res
 
 let output_lines ?(quote='"') ?(sep=',') ?(eol=`Dos) oc l =
   let eol = match eol with | `Dos -> "\r\n" | `Unix -> "\n" in
-  output_lines_loop ~quote ~sep ~buff:(String.create 256) ~eol oc l
+  output_lines_loop ~quote ~sep ~buff:(Bytes.create 256) ~eol oc l

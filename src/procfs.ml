@@ -13,7 +13,7 @@ let ld x = lu x   (* bigint everything so we don't have to worry about overflows
    version is a work-around. *)
 let input_all_with_reused_buffer () =
   let buf_size = 65536 in
-  let buf = String.create buf_size in
+  let buf = Bytes.create buf_size in
   let buffer = Buffer.create buf_size in
   let read_all fd =
     let rec loop () =

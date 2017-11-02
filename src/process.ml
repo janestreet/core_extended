@@ -84,16 +84,16 @@ module Tail_buffer = struct
     if not b.looped then
       String.sub b.buffer ~pos:0 ~len:b.position
     else
-      let dst = String.create (b.length + 3) in
-      dst.[0] <- '.';
-      dst.[1] <- '.';
-      dst.[2] <- '.';
-      String.blit
+      let dst = Bytes.create (b.length + 3) in
+      Bytes.set dst 0 '.';
+      Bytes.set dst 1 '.';
+      Bytes.set dst 2 '.';
+      Bytes.blit
         ~src:b.buffer
         ~dst ~dst_pos:3
         ~src_pos:b.position
         ~len:(b.length - b.position);
-      String.blit ~src:b.buffer
+      Bytes.blit ~src:b.buffer
         ~dst
         ~dst_pos:(b.length - b.position + 3)
         ~src_pos:0
@@ -101,7 +101,7 @@ module Tail_buffer = struct
       dst
 
   let create len = {
-    buffer = String.create len;
+    buffer = Bytes.create len;
     length = len;
     looped = false;
     position = 0
@@ -109,7 +109,7 @@ module Tail_buffer = struct
 
   let add b src len =
     if b.length <= len then begin
-      String.blit
+      Bytes.blit
         ~src
         ~dst:b.buffer
         ~dst_pos:0
@@ -120,14 +120,14 @@ module Tail_buffer = struct
     end else
       let leftover =  b.length - b.position in
       if (len < leftover) then begin
-        String.blit ~src ~dst:b.buffer ~dst_pos:b.position ~src_pos:0 ~len;
+        Bytes.blit ~src ~dst:b.buffer ~dst_pos:b.position ~src_pos:0 ~len;
         b.position <- b.position + len;
       end else begin
-        String.blit ~src ~dst:b.buffer ~dst_pos:b.position ~src_pos:0
+        Bytes.blit ~src ~dst:b.buffer ~dst_pos:b.position ~src_pos:0
           ~len:leftover;
         b.looped <- true;
         let len = (len-leftover) in
-        String.blit ~src ~dst:b.buffer ~dst_pos:0 ~src_pos:leftover ~len;
+        Bytes.blit ~src ~dst:b.buffer ~dst_pos:0 ~src_pos:leftover ~len;
         b.position <- len
       end
 end
@@ -352,7 +352,7 @@ let create
     open_fds = [in_fd;out_fd;err_fd];
     in_fds   = [in_fd];
     out_fds  = [err_fd;out_fd];
-    buf      = String.create 4096;
+    buf      = Bytes.create 4096;
     in_cnt   = input_string;
     in_pos   = 0;
     in_len   = String.length input_string;

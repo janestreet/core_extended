@@ -20,7 +20,6 @@
     extended_linux_stubs
     extended_unix_stubs
     fork_exec
-    linebuf_stubs
     low_level_debug_stubs
     malloc_stubs
     posix_clock_stubs

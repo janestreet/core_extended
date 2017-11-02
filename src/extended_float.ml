@@ -7,8 +7,8 @@ let s_rev s =
     for i = 0 to n/2 do
       let c1 = s.[i]
       and c2 = s.[n-i] in
-      s.[i] <- c2;
-      s.[n-i] <- c1
+      Bytes.set s i c2;
+      Bytes.set s (n-i) c1
     done;
   s (* We return the value to enable us to chain applications*)
 

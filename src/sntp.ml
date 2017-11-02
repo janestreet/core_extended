@@ -11,7 +11,7 @@ type t =
   ; t2               : float
   ; t3               : float
   ; t4               : float }
-[@@deriving fields]
+[@@deriving sexp, fields]
 ;;
 
 module Rfc5905 = struct
@@ -37,7 +37,7 @@ module Rfc5905 = struct
     for i = 0 to 3 do
       let byte64 = Int64.bit_and (Int64.shift_right_logical bits (8 * i)) bytemask in
       let char = Char.of_int_exn (Int64.to_int_exn byte64) in
-      String.set buf (pos + 3 - i) char
+      Bytes.set buf (pos + 3 - i) char
     done
   ;;
 
@@ -85,8 +85,8 @@ module Rfc5905 = struct
 
   let query ~timeout ~port remote_host =
     try
-      let buf = String.create ntp_packet_length in
-      String.fill ~pos:0 ~len:ntp_packet_length buf '\000';
+      let buf = Bytes.create ntp_packet_length in
+      Bytes.fill ~pos:0 ~len:ntp_packet_length buf '\000';
       let addr = Unix.get_sockaddr remote_host port in
       Exn.protectx
         (Unix.socket ~domain:Unix.PF_INET ~kind:Unix.SOCK_DGRAM ~protocol:0)
@@ -97,7 +97,7 @@ module Rfc5905 = struct
               Version:       100 (NTPv4)
               Mode:         0011 (Client)
           *)
-          String.set buf 0 (Char.of_int_exn 0b11100011);
+          Bytes.set buf 0 (Char.of_int_exn 0b11100011);
           float_to_buf buf 40 (Unix.gettimeofday ());
           let xmt_wire_format = String.sub buf ~pos:40 ~len:8 in
           Unix.sendto s ~buf ~pos:0 ~len:(String.length buf) ~mode:[] ~addr
