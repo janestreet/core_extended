@@ -6,6 +6,7 @@
 (library
  ((name core_extended)
   (public_name core_extended)
+  (flags (:standard -unsafe-string))
   (libraries
    (bin_prot
     core
