@@ -416,7 +416,7 @@ end = struct
     | Arg.Tuple _ -> failwith "Flag.of_arg: Arg.Tuple not supported"
     | Arg.Symbol _  -> failwith "Flag.of_arg: Arg.Symbol not supported"
     | Arg.Rest _ -> failwith "Flag.of_arg: Arg.Rest not supported"
-
+    | Arg.Expand _ -> failwith "Flag.of_arg: Arg.Expand not supported"
   module Poly = struct
     type t = { flag : 'a. unit -> 'a flag }
     let instantiate t = t.flag ()
