@@ -59,8 +59,8 @@ val run :
           | `Replace of (string * string) list])
   -> ?input:string
   -> ?keep_open:bool
-  -> ?stdoutf:(string -> int -> unit)
-  -> ?stderrf:(string -> int -> unit)
+  -> ?stdoutf:(Bytes.t -> int -> unit)
+  -> ?stderrf:(Bytes.t -> int -> unit)
   -> ?tail_len:int
   -> prog:string
   -> args:string list

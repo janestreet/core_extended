@@ -44,7 +44,7 @@ module Rfc5905 = struct
   let short_int64_of_buf buf pos =
     let value = ref Int64.zero in
     for i = 0 to 3 do
-      let byte = Int64.of_int (Char.to_int (String.get buf (pos + 3 - i))) in
+      let byte = Int64.of_int (Char.to_int (Bytes.get buf (pos + 3 - i))) in
       value := Int64.(+) !value (Int64.shift_left byte (i * 8))
     done;
     !value
@@ -65,8 +65,8 @@ module Rfc5905 = struct
   let float_from_ntp_short_buf buf pos =
     let short_int64_of_buf buf pos =
       Int64.(+)
-      (Int64.of_int (Char.to_int (String.get buf (pos + 1))))
-      (Int64.shift_left (Int64.of_int (Char.to_int (String.get buf pos))) 8)
+      (Int64.of_int (Char.to_int (Bytes.get buf (pos + 1))))
+      (Int64.shift_left (Int64.of_int (Char.to_int (Bytes.get buf pos))) 8)
     in
     let ipart = short_int64_of_buf buf pos in
     let fpart = short_int64_of_buf buf (pos + 2) in
@@ -99,8 +99,8 @@ module Rfc5905 = struct
           *)
           Bytes.set buf 0 (Char.of_int_exn 0b11100011);
           float_to_buf buf 40 (Unix.gettimeofday ());
-          let xmt_wire_format = String.sub buf ~pos:40 ~len:8 in
-          Unix.sendto s ~buf ~pos:0 ~len:(String.length buf) ~mode:[] ~addr
+          let xmt_wire_format = Bytes.To_string.sub buf ~pos:40 ~len:8 in
+          Unix.sendto s ~buf ~pos:0 ~len:(Bytes.length buf) ~mode:[] ~addr
           |> ignore;
           let sfds =
             Unix.select
@@ -115,17 +115,17 @@ module Rfc5905 = struct
           match sfds.Unix.Select_fds.read with
           | []    -> Error `Timeout
           | s::[] ->
-            let _ = Unix.recvfrom s ~buf ~pos:0 ~len:(String.length buf) ~mode:[] in
+            let _ = Unix.recvfrom s ~buf ~pos:0 ~len:(Bytes.length buf) ~mode:[] in
             let t4 = Unix.gettimeofday () in  (* destination timestamp *)
             let t1 = float_from_buf buf 24 in (* origin timestamp *)
             let t2 = float_from_buf buf 32 in (* receive timestamp *)
             let t3 = float_from_buf buf 40 in (* transmit timestamp *)
-            let stratum = Char.to_int (String.get buf 1) in
+            let stratum = Char.to_int (Bytes.get buf 1) in
             let root_delay = Time.Span.of_sec (float_from_ntp_short_buf buf 4) in
             let root_dispersion = Time.Span.of_sec (float_from_ntp_short_buf buf 8) in
             (* sanity checks as per rfc5905 *)
-            let t1_wire_format = String.sub buf ~pos:24 ~len:8 in
-            let t3_wire_format = String.sub buf ~pos:40 ~len:8 in
+            let t1_wire_format = Bytes.To_string.sub buf ~pos:24 ~len:8 in
+            let t3_wire_format = Bytes.To_string.sub buf ~pos:40 ~len:8 in
             let prev_org_wire_format = !org_wire_format in
             org_wire_format := t3_wire_format;
             if String.equal t1_wire_format xmt_wire_format

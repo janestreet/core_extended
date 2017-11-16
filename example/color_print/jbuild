@@ -1,5 +1,6 @@
 (executables
  ((names (test_colors))
+  (flags (:standard -safe-string))
   (libraries (core
               core_extended
               ))

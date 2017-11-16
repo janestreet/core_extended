@@ -255,9 +255,9 @@ let pad_right ?(char=' ') s l =
     s
   else
     let res = Bytes.create l in
-    Bytes.blit ~src:s ~dst:res ~src_pos:0 ~dst_pos:0 ~len:src_len;
+    Bytes.From_string.blit ~src:s ~dst:res ~src_pos:0 ~dst_pos:0 ~len:src_len;
     Bytes.fill ~pos:src_len ~len:(l-src_len) res char;
-    res
+    Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
 
 let pad_left ?(char=' ') s l =
   let src_len = String.length s in
@@ -265,9 +265,9 @@ let pad_left ?(char=' ') s l =
     s
   else
     let res = Bytes.create l in
-    Bytes.blit ~src:s ~dst:res ~src_pos:0 ~dst_pos:(l-src_len) ~len:src_len;
+    Bytes.From_string.blit ~src:s ~dst:res ~src_pos:0 ~dst_pos:(l-src_len) ~len:src_len;
     Bytes.fill ~pos:0 ~len:(l-src_len) res char;
-    res
+    Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
 
 let line_break ~len s =
   let buf = Buffer.create len in
@@ -378,14 +378,14 @@ let word_wrap
       in
       let res = Bytes.create res_len in
       if trailing_nl then begin
-        Bytes.blit
+        Bytes.From_string.blit
           ~src:nl
           ~dst:res
           ~len:nl_len
           ~src_pos:0
           ~dst_pos:(body_len+hlen);
       end;
-      Bytes.blit
+      Bytes.From_string.blit
         ~src:s
         ~dst:res
         ~len:hlen
@@ -395,13 +395,13 @@ let word_wrap
         | [] -> ()
         | (src_pos,len)::rest ->
             let dst_pos = dst_end_pos-len-nl_len in
-            Bytes.blit
+            Bytes.From_string.blit
               ~src:s
               ~dst:res
               ~len
               ~src_pos
               ~dst_pos;
-            Bytes.blit
+            Bytes.From_string.blit
               ~src:nl
               ~dst:res
               ~len:nl_len
@@ -410,7 +410,7 @@ let word_wrap
             blit_loop dst_pos rest
       in
       blit_loop body_len t;
-      res
+      Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
 
 let is_substring_deprecated ~substring:needle haystack =
   (* 2014-10-29 mbac: a recent release of Core introduced a fast and less surprising

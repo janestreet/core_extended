@@ -15,13 +15,13 @@ let pad side ?(fill=' ') n s =
   let orig_len = String.length s in
   if orig_len >= n then s
   else
-    let s' = String.make n fill in
+    let s' = Bytes.make n fill in
     let dst_pos = match side with
       | `left -> n - orig_len
       | `right -> 0
     in
-    Bytes.blit ~src:s ~dst:s' ~src_pos:0 ~dst_pos ~len:orig_len;
-    s'
+    Bytes.From_string.blit ~src:s ~dst:s' ~src_pos:0 ~dst_pos ~len:orig_len;
+    Bytes.unsafe_to_string ~no_mutation_while_string_reachable:s'
 
 let lpad ?fill n s = pad `left ?fill n s
 let rpad ?fill n s = pad `right ?fill n s

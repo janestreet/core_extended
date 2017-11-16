@@ -21,21 +21,21 @@ let contents zip =
     ~f:(fun i c -> Bytes.set res (ll-1-i) c);
   List.iteri zip.r
     ~f:(fun i c -> Bytes.set res (ll+i) c);
-  res
+  Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
 
 let left_contents zip =
   let len = List.length zip.l in
   let res = Bytes.create len in
   List.iteri zip.l
     ~f:(fun i c -> Bytes.set res (len-1-i) c);
-  res
+  Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
 
 let right_contents zip =
   let len = List.length zip.r in
   let res = Bytes.create len in
   List.iteri zip.r
     ~f:(fun i c -> Bytes.set res i c);
-  res
+  Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
 
 let first zip =
   {

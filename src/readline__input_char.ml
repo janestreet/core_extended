@@ -60,7 +60,7 @@ let parse_esc ()=
     | "" -> None
     | s -> Some (int_of_string s)
   in
-  cmd,quant b1,quant b2
+  Bytes.to_string cmd,quant b1,quant b2
 
 let get () = match char () with
   | '\n' -> `Newline

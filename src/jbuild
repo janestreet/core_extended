@@ -15,6 +15,7 @@
     sexplib.num
     textutils
     threads))
+  (flags (:standard -safe-string))
   (c_names
    (extended_int_stubs
     extended_linux_stubs

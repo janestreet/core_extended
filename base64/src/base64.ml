@@ -40,7 +40,7 @@ module Make(D : sig
   ;;
 
   let encode source =
-    let dest = Bytes.create (((Bytes.length source + 2 ) / 3) * 4) in
+    let dest = Bytes.create (((String.length source + 2 ) / 3) * 4) in
     let source_get i =
       if i < String.length source then
         String.get source i |> Char.to_int
@@ -63,19 +63,19 @@ module Make(D : sig
         loop ~i:(i+3) ~j:(j+4)
       end else begin
         match String.length source % 3, D.pad_when_encoding with
-        | 0, _ -> dest
+        | 0, _ -> Bytes.unsafe_to_string ~no_mutation_while_string_reachable:dest
         | rest, false ->
           (* Remove extra bytes *)
-          String.sub dest ~pos:0 ~len:(j-3+rest)
+          Bytes.To_string.sub dest ~pos:0 ~len:(j-3+rest)
         | 1, true ->
           (* Set padding *)
           Bytes.set dest (j-2) D.pad_char;
           Bytes.set dest (j-1) D.pad_char;
-          dest
+          Bytes.unsafe_to_string ~no_mutation_while_string_reachable:dest
         | 2, true ->
           (* Set padding *)
           Bytes.set dest (j-1) D.pad_char;
-          dest
+          Bytes.unsafe_to_string ~no_mutation_while_string_reachable:dest
         | _, _ -> failwith "Impossible"
       end
     in
@@ -115,7 +115,7 @@ module Make(D : sig
   let decode source =
     (* We need 3 bytes for every 4 bytes of [source]. We round up to handle the
        possibility of no padding *)
-    let dest = Bytes.create (((Bytes.length source + 2) / 4) * 3) in
+    let dest = Bytes.create (((String.length source + 2) / 4) * 3) in
     let set ~a ~b ?(c=0) ?(d=0) j =
       Bytes.set dest (j+0)
         Int.(bit_or (shift_left a 2) (shift_right b 4) |> bit_and 0xff |> Char.of_int_exn);
@@ -125,7 +125,7 @@ module Make(D : sig
         Int.(bit_or (shift_left c 6)              d    |> bit_and 0xff |> Char.of_int_exn);
     in
     let finish i j =
-      let result = String.sub dest ~pos:0 ~len:j in
+      let result = Bytes.To_string.sub dest ~pos:0 ~len:j in
       let rec stop i =
         if i < String.length source then (
           let c = String.get source i in

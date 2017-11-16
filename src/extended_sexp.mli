@@ -94,7 +94,7 @@ end
 
 val load_sexp_conv_exn_sample :
   ?strict:bool
-  -> ?buf:string
+  -> ?buf:Bytes.t
   -> ?on_non_existence:[`Exit | `Raise]
   -> ?name:string
   -> string

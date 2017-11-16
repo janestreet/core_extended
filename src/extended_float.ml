@@ -1,21 +1,9 @@
 open Core
 
-(* in place string reversal *)
-let s_rev s =
-  let n = String.length s - 1 in
-  if n >= 1 then
-    for i = 0 to n/2 do
-      let c1 = s.[i]
-      and c2 = s.[n-i] in
-      Bytes.set s i c2;
-      Bytes.set s (n-i) c1
-    done;
-  s (* We return the value to enable us to chain applications*)
-
 (* Same as [Int_conversions.prettify_string] but introduces the underscores
    counting from the left*)
 let rpretty s =
-  s_rev (Int_conversions.insert_underscores (s_rev s))
+  String.rev (Int_conversions.insert_underscores (String.rev s))
 
 let to_string_hum f =
   let s = Float.to_string_12 f in

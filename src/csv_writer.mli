@@ -59,7 +59,7 @@ val quote_len:
 val quote_blit:
   quote:char
   -> src:string
-  -> dst:string
+  -> dst:Bytes.t
   -> src_pos:int
   -> dst_pos:int
   -> len :int

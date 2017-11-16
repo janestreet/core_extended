@@ -17,9 +17,9 @@ let input_all_with_reused_buffer () =
   let buffer = Buffer.create buf_size in
   let read_all fd =
     let rec loop () =
-      let len = Unix.read fd ~buf ~len:(String.length buf) in
+      let len = Unix.read fd ~buf ~len:(Bytes.length buf) in
       if len > 0 then begin
-        Buffer.add_substring buffer buf 0 len;
+        Buffer.add_subbytes buffer buf 0 len;
         loop ();
       end
     in

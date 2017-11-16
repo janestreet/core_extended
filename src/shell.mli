@@ -253,10 +253,10 @@ module Process : sig
 
   val head_exn : ?eol:char -> unit -> string reader
 
-  val callback : add:(string -> int -> unit) -> flush:(unit -> unit) -> unit reader
+  val callback : add:(Bytes.t -> int -> unit) -> flush:(unit -> unit) -> unit reader
   val callback_with_stderr
-    : add:(string -> int -> unit)
-    -> add_err:(string -> int -> unit)
+    : add:(Bytes.t -> int -> unit)
+    -> add_err:(Bytes.t -> int -> unit)
     -> flush:(unit -> unit) -> unit reader
 
   val run   :  (t -> 'a reader -> 'a)              with_run_flags

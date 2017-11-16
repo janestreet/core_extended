@@ -100,7 +100,7 @@ let stop signal slot =
 
 let status_command t =
   let module T = (val t : T) in
-  Command.basic ~summary:(sprintf "check status of daemon")
+  Command.basic_spec ~summary:(sprintf "check status of daemon")
     (T.slot_spec ())
     (fun slot () ->
        match check_lock_file slot with
@@ -115,7 +115,7 @@ let status_command t =
 
 let stop_command t =
   let module T = (val t : T) in
-  Command.basic ~summary:"stop daemon"
+  Command.basic_spec ~summary:"stop daemon"
     Command.Spec.(empty +> stop_signal_flag ++ T.slot_spec ())
     (fun signal slot ->
        match stop signal slot with
@@ -124,13 +124,13 @@ let stop_command t =
 
 let start_command t =
   let module T = (val t : T) in
-  Command.basic ~summary:"restart daemon"
+  Command.basic_spec ~summary:"restart daemon"
     Command.Spec.(T.slot_spec () ++ T.main_spec)
     (fun slot -> start_daemon slot T.main)
 
 let restart_command t =
   let module T = (val t : T) in
-  Command.basic ~summary:"restart daemon"
+  Command.basic_spec ~summary:"restart daemon"
     Command.Spec.(empty +> stop_signal_flag ++ T.slot_spec () ++ T.main_spec)
     (fun signal slot ->
        match stop signal slot with

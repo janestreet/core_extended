@@ -23,4 +23,5 @@ val add_string : t -> string -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset [ofs] in
    string [s] and appends them at the end of the buffer [b].
 *)
-val add_substring : t -> string -> pos:int -> len:int -> unit
+val add_substring : t -> string  -> pos:int -> len:int -> unit
+val add_subbytes  : t -> Bytes.t -> pos:int -> len:int -> unit

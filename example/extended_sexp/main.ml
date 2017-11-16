@@ -26,7 +26,7 @@ let main config =
   shutdown 0
 
 let command =
-  Command.basic ~summary:"read a config file with an sexp comprehension"
+  Command.basic_spec ~summary:"read a config file with an sexp comprehension"
     Command.Spec.(empty
                   +> flag "-config" (required file) ~doc:" config file")
     (fun config ->

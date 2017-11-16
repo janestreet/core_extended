@@ -115,8 +115,8 @@ module Process = struct
       (cmd.program :: cmd.arguments)
 
   type 'res acc =
-      { add_stdout    : string -> int -> [`Stop | `Continue];
-        add_stderr    : string -> int -> [`Stop | `Continue];
+      { add_stdout    : Bytes.t -> int -> [`Stop | `Continue];
+        add_stderr    : Bytes.t -> int -> [`Stop | `Continue];
         flush         : unit -> 'res; }
 
   type 'res reader = unit -> 'res acc
@@ -221,7 +221,7 @@ module Process = struct
   let content () =
     let buffer = Buffer.create 16 in
     {
-      add_stdout = (fun s len -> Buffer.add_substring buffer s 0 len; `Continue);
+      add_stdout = (fun s len -> Buffer.add_subbytes buffer s 0 len; `Continue);
       add_stderr = (fun _ _ -> `Continue);
       flush = (fun () -> Buffer.contents buffer);
     }
@@ -230,8 +230,8 @@ module Process = struct
     let stdout_buffer = Buffer.create 16 in
     let buffer_stderr = Buffer.create 16 in
     {
-      add_stdout = (fun s len -> Buffer.add_substring stdout_buffer s 0 len; `Continue);
-      add_stderr = (fun s len -> Buffer.add_substring buffer_stderr s 0 len; `Continue);
+      add_stdout = (fun s len -> Buffer.add_subbytes stdout_buffer s 0 len; `Continue);
+      add_stderr = (fun s len -> Buffer.add_subbytes buffer_stderr s 0 len; `Continue);
       flush = (fun () ->
         Buffer.contents stdout_buffer,
         Buffer.contents buffer_stderr
@@ -260,7 +260,7 @@ module Process = struct
     in
     { add_stdout =
         (fun s len ->
-           Line_buffer.add_substring lb s ~pos:0 ~len;
+           Line_buffer.add_subbytes lb s ~pos:0 ~len;
            !continue);
       add_stderr = (fun _ _ -> `Continue);
       flush = (fun () ->

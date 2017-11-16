@@ -74,7 +74,7 @@ module Tail_buffer = struct
       boundary of the buffer.
   *)
   type t = {
-    buffer : string;
+    buffer : Bytes.t;
     length : int;
     mutable looped : bool;
     mutable position : int;
@@ -82,7 +82,7 @@ module Tail_buffer = struct
 
   let contents b =
     if not b.looped then
-      String.sub b.buffer ~pos:0 ~len:b.position
+      Bytes.To_string.sub b.buffer ~pos:0 ~len:b.position
     else
       let dst = Bytes.create (b.length + 3) in
       Bytes.set dst 0 '.';
@@ -98,7 +98,7 @@ module Tail_buffer = struct
         ~dst_pos:(b.length - b.position + 3)
         ~src_pos:0
         ~len:(b.position);
-      dst
+      Bytes.unsafe_to_string ~no_mutation_while_string_reachable:dst
 
   let create len = {
     buffer = Bytes.create len;
@@ -225,10 +225,10 @@ type t = {
   mutable in_fds   : Unix.File_descr.t list;
   mutable out_fds  : Unix.File_descr.t list;
   keep_open        : bool;
-  buf              : String.t;
+  buf              : Bytes.t;
   in_cnt           : String.t;
   in_len           : int;
-  out_callbacks    : (Unix.File_descr.t*(string -> int -> unit)) list;
+  out_callbacks    : (Unix.File_descr.t*(Bytes.t -> int -> unit)) list;
   pid              : Pid.t;
   mutable in_pos   : int;
 }
@@ -246,7 +246,7 @@ let process_io ~read ~write state =
           (try
              let len =
                temp_failure_retry (fun () ->
-                 Unix.single_write fd
+                 Unix.single_write_substring fd
                    ~buf:state.in_cnt
                    ~pos:state.in_pos
                    ~len:(state.in_len - state.in_pos))
@@ -266,7 +266,7 @@ let process_io ~read ~write state =
           (fun () -> Unix.read fd
             ~buf:state.buf
             ~pos:0
-            ~len:(String.length state.buf))
+            ~len:(Bytes.length state.buf))
       in
       if len = 0 then
         close_pooled state fd

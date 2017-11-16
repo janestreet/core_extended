@@ -803,7 +803,7 @@ let of_core_command t = Core (t, None)
 
 let create ?autocomplete ?readme ~summary ~usage_arg ~init ~flags ~final main =
   let c =
-    Command.basic ~summary ?readme
+    Command.basic_spec ~summary ?readme
       Command.Spec.(
         let flag_env_updates = ref Fn.id in
         let flags =
@@ -859,14 +859,16 @@ module Version = struct
     flags : unit Flag.t list;
   }
 
-  let print_version ?(version = Command.Deprecated.version) () =
+  let print_version ?(version = Version_util.version) () =
     print_endline version
+
+  let default_build_info = lazy (Version_util.reprint_build_info Time.sexp_of_t)
 
   let print_build_info ?build_info () =
     let build_info =
       match build_info with
       | Some v -> v
-      | None -> force (Command.Deprecated.build_info)
+      | None -> Lazy.force default_build_info
     in
     print_endline build_info
 

@@ -11,7 +11,7 @@ module Query = struct
   let make_named_command user_or_group =
     let id_kind, lookup_id = id_kind_and_lookup user_or_group in
     id_kind,
-    Command.basic ~summary:(sprintf "Query a %s's quota" id_kind)
+    Command.basic_spec ~summary:(sprintf "Query a %s's quota" id_kind)
       Command.Spec.(
         (step (fun f v -> f ~id:(lookup_id v))
          +> anon (String.uppercase id_kind %: string))
@@ -43,7 +43,7 @@ module Modify = struct
   let make_named_command user_or_group =
     let id_kind, lookup_id = id_kind_and_lookup user_or_group in
     id_kind,
-    Command.basic ~summary:(sprintf "Modify a %s's quota" id_kind)
+    Command.basic_spec ~summary:(sprintf "Modify a %s's quota" id_kind)
       Command.Spec.(
         let make_nullable_arg_type ~zero parse =
           Arg_type.create (function
