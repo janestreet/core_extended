@@ -84,9 +84,9 @@ struct
     | Some v -> v
 
   let add ~key ~data t =
-    Map.add ~key ~data:(Fold.f (find t key) data) t
+    Map.set ~key ~data:(Fold.f (find t key) data) t
 
-  let set ~key ~data t = Map.add t ~key ~data
+  let set ~key ~data t = Map.set t ~key ~data
 
   let of_list l = List.fold l ~init:Map.Poly.empty ~f:(fun t (key,data) ->
     add t ~key ~data)

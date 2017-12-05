@@ -148,7 +148,7 @@ let create_extension_map l =
             ~f:(fun pos map v ->
               if Map.mem map v then
                 failwithf "Extension %s is defined twice" v ();
-              Map.add map
+              Map.set map
                 ~key:v
                 ~data:(idx,pos)
             )

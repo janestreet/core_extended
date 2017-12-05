@@ -25,7 +25,7 @@ module Env = struct
       ~init:empty
       ~f:(fun env str ->
         match String.lsplit2 ~on:'=' str with
-        | Some (key,data) -> add ~key ~data env
+        | Some (key,data) -> set ~key ~data env
         | None ->
           failwithf
             "extended_unix.Env.get %S is not in the form of key=value"
@@ -50,7 +50,7 @@ module Env = struct
         key
         ()
     else
-      String.Map.add ~key ~data env
+      String.Map.set ~key ~data env
 
   let to_string_array env =
     String.Map.to_alist env
@@ -415,7 +415,7 @@ module Mount_entry = struct
           else
             loop (String.Map.remove map key)
       in
-      String.Map.add (loop map) ~key:(directory t) ~data:t
+      String.Map.set (loop map) ~key:(directory t) ~data:t
     in
     List.fold ts ~init:String.Map.empty ~f:(fun map t ->
       if not (String.is_prefix ~prefix:"/" (directory t)) then

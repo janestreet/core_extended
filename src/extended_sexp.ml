@@ -352,7 +352,7 @@ end = struct
         let value = [%sexp_of: Sexp.t option]
           (Map.find field_names explicit_sexp_option_field)
         in
-        Map.add field_names ~key:explicit_sexp_option_field ~data:value
+        Map.set field_names ~key:explicit_sexp_option_field ~data:value
       )
     in
     Sexp.List (List.map (Map.to_alist field_names) ~f:(fun (name,sexp) ->

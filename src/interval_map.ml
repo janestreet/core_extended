@@ -60,12 +60,12 @@ let compare =
 let create = Fields.create
 
 let always left_of_leftmost ~comparator = {
-  left_of_leftmost; value_right_of = Map.empty ~comparator; }
+  left_of_leftmost; value_right_of = Map.Using_comparator.empty ~comparator; }
 
 let is_always x = Map.is_empty x.value_right_of
 
 let change t ~at:key data = {
-  t with value_right_of = Map.add t.value_right_of ~key ~data; }
+  t with value_right_of = Map.set t.value_right_of ~key ~data; }
 
 let find t key =
   match Map.closest_key t.value_right_of `Less_or_equal_to key with
@@ -80,28 +80,28 @@ let map t ~f = {
 let rec map2 lval rval left right init ~f =
   match left with
   | [] -> List.fold right ~init ~f:(fun init (key, rval) ->
-    Map.add init ~key ~data:(f lval rval))
+    Map.set init ~key ~data:(f lval rval))
   | ((lnext, lval') :: left') ->
     match right with
     | [] -> List.fold left ~init ~f:(fun init (key, lval) ->
-      Map.add init ~key ~data:(f lval rval))
+      Map.set init ~key ~data:(f lval rval))
     | ((rnext, rval') :: right') ->
       match (Map.comparator init).Comparator.compare lnext rnext with
       | 0 ->
         map2 lval' rval' left' right' ~f
-          (Map.add init ~key:rnext ~data:(f lval' rval'))
+          (Map.set init ~key:rnext ~data:(f lval' rval'))
       | n when n < 0 ->
         map2 lval' rval left' right ~f
-          (Map.add init ~key:lnext ~data:(f lval' rval))
+          (Map.set init ~key:lnext ~data:(f lval' rval))
       | _ ->
         map2 lval rval' left right' ~f
-          (Map.add init ~key:rnext ~data:(f lval rval'))
+          (Map.set init ~key:rnext ~data:(f lval rval'))
 
 let map2 x_val y_val x_changes y_changes ~f =
   map2 ~f x_val y_val
     (Map.to_alist x_changes)
     (Map.to_alist y_changes)
-    (Map.empty ~comparator:(Map.comparator x_changes))
+    (Map.Using_comparator.empty ~comparator:(Map.comparator x_changes))
 
 let map2 x y ~f =
   if is_always x then
@@ -131,9 +131,9 @@ let join =
     (* acc now just has correct content, all [< key] *)
     if is_always inner then
       (* inner value is unchanging, so change to it at [key] and let it remain *)
-      Map.add acc ~key ~data:inner.left_of_leftmost
+      Map.set acc ~key ~data:inner.left_of_leftmost
     else
-      let acc = Map.add acc ~key ~data:(find inner key) in
+      let acc = Map.set acc ~key ~data:(find inner key) in
       (* acc is now filled in for [<= key],
          finally add values from inner [> key] to acc.
          any beyond the next key in the outer sequence will be replaced.
@@ -141,7 +141,7 @@ let join =
       Map.to_sequence inner.value_right_of
         ~keys_greater_or_equal_to:key
       |> Sequence.fold ~init:acc
-           ~f:(fun acc (key, data) -> Map.add acc ~key ~data)
+           ~f:(fun acc (key, data) -> Map.set acc ~key ~data)
   in
   fun x ->
     if is_always x then
@@ -215,26 +215,26 @@ let map_within t interval ~f =
         iterate_changes t interval
         |> Sequence.fold ~init:t.value_right_of
              ~f:(fun map (key, data) ->
-               Map.add map ~key ~data:(f data))
+               Map.set map ~key ~data:(f data))
       in
       match interval with
       | `Until high_key -> {
           left_of_leftmost = f t.left_of_leftmost;
           value_right_of =
-            Map.add base_changes
+            Map.set base_changes
               ~key:high_key ~data:(find t high_key);
         }
 
       | `From low_key -> {
           left_of_leftmost = t.left_of_leftmost;
           value_right_of =
-            Map.add base_changes
+            Map.set base_changes
               ~key:low_key ~data:(f (find t low_key));
         }
       | `Between (low_key, high_key) -> {
           left_of_leftmost = t.left_of_leftmost;
           value_right_of =
-            Map.add (Map.add base_changes
+            Map.set (Map.set base_changes
                        ~key:low_key ~data:(f (find t low_key)))
               ~key:high_key ~data:(find t high_key);
         }
@@ -373,7 +373,7 @@ let gen k_gen a_gen ~comparator =
   create ~left_of_leftmost:initial_value
     ~value_right_of:(
       List.zip_exn changes_keys changes_vals
-      |> Map.of_alist_exn ~comparator)
+      |> Map.Using_comparator.of_alist_exn ~comparator)
 
 let%test_module "Check construction from standard map." = (
   module struct

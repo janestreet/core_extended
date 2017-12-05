@@ -85,12 +85,12 @@ module Process = struct
           | ("units" | "seconds" | "bytes" | "processes" | "locks" | "signals" | "files")
             :: hard_limit :: soft_limit :: name ->
               let key = List.rev name |> String.concat ~sep:" " in
-              Map.add map ~key ~data:(soft_limit, hard_limit)
+              Map.set map ~key ~data:(soft_limit, hard_limit)
 
           (* priorities don't have an entry in the "Units" column *)
           | hard_limit :: soft_limit :: name ->
               let key = List.rev name |> String.concat ~sep:" " in
-              Map.add map ~key ~data:(soft_limit, hard_limit)
+              Map.set map ~key ~data:(soft_limit, hard_limit)
 
           | _ -> failwithf "Procfs.Limits.of_string bad format: %s" line ()
         )
@@ -392,7 +392,7 @@ module Process = struct
       Array.fold (required (slurp_dir "task"))
         ~init:Pid.Map.empty
         ~f:(fun m task ->
-          Pid.Map.add m
+          Pid.Map.set m
             ~key:(Pid.of_string task)
             ~data:(Stat.of_string (require_str
               (String.concat ~sep:"/" ["task"; task; "stat"])))
@@ -491,7 +491,7 @@ module Meminfo = struct
         with
         | key :: value :: "kB" :: [] ->
             let data = Big_int.big_int_of_string value |> of_kb in
-            Map.add map ~key ~data
+            Map.set map ~key ~data
         | _ -> map (* ignore weird lines *)
       )
     in
