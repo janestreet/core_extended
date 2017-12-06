@@ -276,10 +276,10 @@ module Process = struct
 
   let aux_head ~flush ?eol () =
     fold_lines
-    ?eol
-    ~flush
-    ~init:None
-    ~f:(fun _acc line -> Some line,`Stop)
+      ?eol
+      ~flush
+      ~init:None
+      ~f:(fun _acc line -> Some line,`Stop)
 
   let head ?eol ()     = aux_head ~flush:(fun x -> x) ?eol ()
 
@@ -287,6 +287,30 @@ module Process = struct
 
   let head_exn ?eol () =
     aux_head ~flush:(function Some x -> x | None -> raise Empty_head) ?eol ()
+
+  let aux_one_line ~flush ?eol () =
+    fold_lines
+      ?eol
+      ~flush:(function
+        | Some result -> flush result
+        | None -> flush (Or_error.error_s [%message
+                           "expected one line, got empty output"]))
+      ~init:None
+      ~f:(fun acc line -> match acc with
+        | Some (Ok first_line) ->
+          let second_line = line in
+          Some (Or_error.error_s [%message
+                  "One line expected, got at least two lines of output"
+                    ~first_line
+                    ~second_line]), `Stop
+        | Some (Error _e) ->
+          (* didn't we say `Stop?! *)
+          assert false
+        | None ->
+          Some (Ok line), `Continue)
+
+  let one_line_exn ?eol () = aux_one_line ~flush:Or_error.ok_exn ?eol ()
+  let one_line     ?eol () = aux_one_line ~flush:Fn.id           ?eol ()
 
 end
 
@@ -325,13 +349,16 @@ type ('a,'ret) sh_cmd = (('a, unit, string,'ret) format4 -> 'a)
 let run_gen reader =
   Process.run_k (fun f prog args -> f (Process.cmd prog args) reader)
 
-let run = run_gen Process.discard
-let run_lines ?eol = run_gen (Process.lines ?eol ())
-let run_one ?eol = run_gen (Process.head ?eol ())
-let run_one_exn ?eol = run_gen (Process.head_exn ?eol ())
-let run_full = run_gen Process.content
-let run_fold ?eol ~init ~f = run_gen
-  (Process.fold_lines ?eol ~init ~f ~flush:(fun x -> x))
+let run                     = run_gen  Process.discard
+let run_lines ?eol          = run_gen (Process.lines        ?eol ())
+let run_one ?eol            = run_gen (Process.head         ?eol ())
+let run_one_exn ?eol        = run_gen (Process.head_exn     ?eol ())
+let run_first_line ?eol     = run_gen (Process.head         ?eol ())
+let run_first_line_exn ?eol = run_gen (Process.head_exn     ?eol ())
+let run_one_line ?eol       = run_gen (Process.one_line     ?eol ())
+let run_one_line_exn ?eol   = run_gen (Process.one_line_exn ?eol ())
+let run_full                = run_gen  Process.content
+let run_fold ?eol ~init ~f  = run_gen (Process.fold_lines ?eol ~init ~f ~flush:Fn.id)
 (*
 TEST_UNIT =
   (* This should not hand because the stdin is closed... *)
@@ -351,11 +378,15 @@ let k_shell_command k f fmt =
 let sh_gen reader =
   Process.run_k (k_shell_command (fun f cmd -> f cmd reader))
 
-let sh       ?expect = sh_gen Process.discard ?expect
-let sh_lines ?expect = sh_gen (Process.lines ())  ?expect
-let sh_full  ?expect = sh_gen Process.content ?expect
-let sh_one     ?expect = sh_gen (Process.head ()) ?expect
-let sh_one_exn ?expect = sh_gen (Process.head_exn ()) ?expect
+let sh                ?expect = sh_gen  Process.discard          ?expect
+let sh_lines          ?expect = sh_gen (Process.lines ())        ?expect
+let sh_full           ?expect = sh_gen  Process.content          ?expect
+let sh_one            ?expect = sh_gen (Process.head ())         ?expect
+let sh_one_exn        ?expect = sh_gen (Process.head_exn ())     ?expect
+let sh_first_line     ?expect = sh_gen (Process.head ())         ?expect
+let sh_first_line_exn ?expect = sh_gen (Process.head_exn ())     ?expect
+let sh_one_line       ?expect = sh_gen (Process.one_line ())     ?expect
+let sh_one_line_exn   ?expect = sh_gen (Process.one_line_exn ()) ?expect
 
 let%test _ =
   sh_lines "yes yes | head -n 200000" =
@@ -382,11 +413,15 @@ let ssh_gen reader ?ssh_options ?user ~host =
   Process.run_k (k_remote_command (fun f cmd -> f cmd reader)
                    ?ssh_options ?user ~host)
 
-let ssh       ?ssh_options = ssh_gen Process.discard ?ssh_options
-let ssh_lines ?ssh_options = ssh_gen (Process.lines ()) ?ssh_options
-let ssh_full  ?ssh_options = ssh_gen Process.content ?ssh_options
-let ssh_one     ?ssh_options = ssh_gen (Process.head ()) ?ssh_options
-let ssh_one_exn ?ssh_options = ssh_gen (Process.head_exn ()) ?ssh_options
+let ssh                ?ssh_options = ssh_gen  Process.discard          ?ssh_options
+let ssh_lines          ?ssh_options = ssh_gen (Process.lines ())        ?ssh_options
+let ssh_full           ?ssh_options = ssh_gen  Process.content          ?ssh_options
+let ssh_one            ?ssh_options = ssh_gen (Process.head ())         ?ssh_options
+let ssh_one_exn        ?ssh_options = ssh_gen (Process.head_exn ())     ?ssh_options
+let ssh_first_line     ?ssh_options = ssh_gen (Process.head ())         ?ssh_options
+let ssh_first_line_exn ?ssh_options = ssh_gen (Process.head_exn ())     ?ssh_options
+let ssh_one_line       ?ssh_options = ssh_gen (Process.one_line ())     ?ssh_options
+let ssh_one_line_exn   ?ssh_options = ssh_gen (Process.one_line_exn ()) ?ssh_options
 
 let ssh_test ?ssh_options ?user ~host =
   Process.test_k (k_remote_command (fun f cmd -> f cmd)

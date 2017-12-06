@@ -266,9 +266,11 @@ module Lsb_release = struct
 
   let query () =
     let q flag =
-      match Shell.run_one "lsb_release" ["-s"; flag] with
-      | None -> failwithf "Lsb_release.query(%s): failed Shell.run_one" flag ()
-      | Some value -> value
+      match Shell.run_one_line "lsb_release" ["-s"; flag] with
+      | Error error ->
+        failwithf !"Lsb_release.query(%s): failed Shell.run_one_line: %{sexp:Error.t}"
+          flag error ()
+      | Ok value -> value
     in
     {
       distributor_id = q "-i";

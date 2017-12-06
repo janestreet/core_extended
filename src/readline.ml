@@ -65,7 +65,7 @@ let interactive_readline ~prompt =
   print_string (prompt);
   let res =
     try
-      Shell.run_one
+      Shell.run_one_line
         "zenity"
         [ "--entry"
         ; "--text=" ^ prompt

@@ -89,11 +89,28 @@ val run       : unit cmd with_run_flags
 val run_lines : ?eol:char -> string list cmd with_run_flags
 
 (** Returns the first line of the command's output.
-    (This function might terminate the program early the same way that
-    piping through grep would)
+
+    This function might terminate the program early the same way that
+    piping through [head -n 1] would. When that happens, exit code of the
+    program gets ignored!
 *)
-val run_one      : ?eol:char -> string option cmd with_run_flags
-val run_one_exn  : ?eol:char -> string cmd with_run_flags
+val run_first_line     : ?eol:char -> string option cmd with_run_flags
+val run_first_line_exn : ?eol:char -> string cmd with_run_flags
+
+(** Returns the only line of the command's output.
+    If the command prints zero or multiple lines this returns an [Error].
+
+    If the command exits with non-zero exit code it raises an exception. *)
+val run_one_line     : ?eol:char -> string Or_error.t cmd with_run_flags
+val run_one_line_exn : ?eol:char -> string cmd with_run_flags
+val run_one : ?eol:char -> string option cmd with_run_flags
+[@@deprecated "[since 2017-11] Use [run_one_line] to get a different behavior or \
+               [run_first_line] to get the old behavior"]
+val run_one_exn : ?eol:char -> string cmd with_run_flags
+[@@deprecated "[since 2017-11] Use [run_one_line_exn] to get a different behavior or \
+               [run_first_line_exn] to get the old behavior"]
+
+
 
 (** Return the full command's output in one string. See the note in
     [run_lines].
@@ -132,8 +149,16 @@ type ('a,'ret) sh_cmd = ('a, unit, string,'ret) format4 -> 'a
 val sh       : ('a,unit)          sh_cmd with_run_flags
 val sh_lines : ('a,string list)   sh_cmd with_run_flags
 val sh_full  : ('a,string)        sh_cmd with_run_flags
-val sh_one       : ('a,string option) sh_cmd with_run_flags
-val sh_one_exn   : ('a,string) sh_cmd with_run_flags
+val sh_one   : ('a,string option) sh_cmd with_run_flags
+[@@deprecated "[since 2017-11] Use [sh_one_line] to get a different behavior or \
+               [sh_first_line] to get the old behavior"]
+val sh_one_exn : ('a,string) sh_cmd with_run_flags
+[@@deprecated "[since 2017-11] Use [sh_one_line_exn] to get a different behavior or \
+               [sh_first_line_exn] to get the old behavior"]
+val sh_one_line       : ('a,string Or_error.t) sh_cmd with_run_flags
+val sh_one_line_exn   : ('a,string)            sh_cmd with_run_flags
+val sh_first_line     : ('a,string option)     sh_cmd with_run_flags
+val sh_first_line_exn : ('a,string)            sh_cmd with_run_flags
 
 (* Magic invocation to avoid asking for password if we can.  These arguments are
    passed to ssh in the [ssh_*] functions below.  They're exposed in case you
@@ -146,8 +171,16 @@ type 'a with_ssh_flags = ?ssh_options:string list -> ?user:string -> host:string
 val ssh       : ('a,unit)          sh_cmd with_run_flags with_ssh_flags
 val ssh_lines : ('a,string list)   sh_cmd with_run_flags with_ssh_flags
 val ssh_full  : ('a,string)        sh_cmd with_run_flags with_ssh_flags
-val ssh_one     : ('a,string option) sh_cmd with_run_flags with_ssh_flags
+val ssh_one   : ('a,string option) sh_cmd with_run_flags with_ssh_flags
+[@@deprecated "[since 2017-11] Use [ssh_one_line] to get a different behavior or \
+               [ssh_first_line] to get the old behavior"]
 val ssh_one_exn : ('a,string) sh_cmd with_run_flags with_ssh_flags
+[@@deprecated "[since 2017-11] Use [ssh_one_line_exn] to get a different behavior or \
+               [ssh_first_line_exn] to get the old behavior"]
+val ssh_one_line       : ('a,string Or_error.t) sh_cmd with_run_flags with_ssh_flags
+val ssh_one_line_exn   : ('a,string)            sh_cmd with_run_flags with_ssh_flags
+val ssh_first_line     : ('a,string option)     sh_cmd with_run_flags with_ssh_flags
+val ssh_first_line_exn : ('a,string)            sh_cmd with_run_flags with_ssh_flags
 
 (** {9 Test dispatches}
 
@@ -252,6 +285,9 @@ module Process : sig
   exception Empty_head
 
   val head_exn : ?eol:char -> unit -> string reader
+
+  val one_line     : ?eol:char -> unit -> string Or_error.t reader
+  val one_line_exn     : ?eol:char -> unit -> string reader
 
   val callback : add:(Bytes.t -> int -> unit) -> flush:(unit -> unit) -> unit reader
   val callback_with_stderr
