@@ -112,7 +112,6 @@ module Printc = Printc
 module Process = Process
 module Procfs = Procfs
 module Prod_or_test = Prod_or_test
-module Posix_clock = Posix_clock
 module Random_selection = Random_selection
 module Readline = Readline
 module Result = struct

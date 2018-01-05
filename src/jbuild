@@ -23,7 +23,6 @@
     fork_exec
     low_level_debug_stubs
     malloc_stubs
-    posix_clock_stubs
     unix_pseudo_terminal_stubs))
   (preprocessor_deps (config_ext.h))
   (preprocess (pps (ppx_jane ppx_driver.runner)))))
