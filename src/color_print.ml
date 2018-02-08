@@ -1,17 +1,17 @@
 open Core
 
-let ansi_regexp = Memo.unit (fun () -> Re2.Std.Re2.create_exn "\027\\[.*?m")
+let ansi_regexp = Memo.unit (fun () -> Re2.create_exn "\027\\[.*?m")
 
-let ansi_capture_regexp = Memo.unit (fun () -> Re2.Std.Re2.create_exn "(\027\\[.*?m)")
-let normal_capture_regexp = Memo.unit (fun () -> Re2.Std.Re2.create_exn "(\027\\[0m)")
+let ansi_capture_regexp = Memo.unit (fun () -> Re2.create_exn "(\027\\[.*?m)")
+let normal_capture_regexp = Memo.unit (fun () -> Re2.create_exn "(\027\\[0m)")
 
 let normal str =
-  Re2.Std.Re2.rewrite_exn (ansi_regexp ()) ~template:"" str
+  Re2.rewrite_exn (ansi_regexp ()) ~template:"" str
 
 let add_after_ansi str ~code =
-  Re2.Std.Re2.rewrite_exn (ansi_capture_regexp ()) ~template:("\\1" ^ code) str
+  Re2.rewrite_exn (ansi_capture_regexp ()) ~template:("\\1" ^ code) str
 let add_after_normal str ~code =
-  Re2.Std.Re2.rewrite_exn (normal_capture_regexp ()) ~template:("\\1" ^ code) str
+  Re2.rewrite_exn (normal_capture_regexp ()) ~template:("\\1" ^ code) str
 
 let ansi_code ~code = "\027[" ^ code ^ "m"
 

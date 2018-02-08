@@ -810,8 +810,8 @@ module Net = struct
     |> List.tl_exn
     |> List.tl_exn
     |> List.map ~f:(fun x ->
-      let rex = Re2.Std.Re2.create_exn "(\\w+):" in
-      let matches = Re2.Std.Re2.find_submatches_exn rex (String.lstrip x) in
+      let rex = Re2.create_exn "(\\w+):" in
+      let matches = Re2.find_submatches_exn rex (String.lstrip x) in
       matches.(1) |> Option.value ~default:""
     )
   end

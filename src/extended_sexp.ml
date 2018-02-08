@@ -1,6 +1,5 @@
 open Core
 open Sexplib.Sexp
-module Re2 = Re2.Std.Re2
 
 let is_atom = function Atom _ -> true | List _ -> false
 let is_list = function Atom _ -> false | List _ -> true
