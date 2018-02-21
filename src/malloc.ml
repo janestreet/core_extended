@@ -1,6 +1,6 @@
 open Core
 
-#import "config_ext.h"
+[%%import "config_ext.h"]
 
 type mallinfo = {
   arena : int;
@@ -24,7 +24,7 @@ type opt =
 (*   | PERTURB *)
 [@@deriving sexp, bin_io]
 
-#ifdef JSC_LINUX_EXT
+[%%ifdef JSC_LINUX_EXT]
 
 external mallinfo     : unit -> mallinfo   = "malloc_mallinfo_stub"
 external mallopt      : opt -> int -> unit = "malloc_mallopt_stub"
@@ -36,11 +36,11 @@ let mallopt      = Ok mallopt
 let malloc_trim  = Ok malloc_trim
 let malloc_stats = Ok malloc_stats
 
-#else
+[%%else]
 
 let mallinfo     = Or_error.unimplemented "Malloc.mallinfo"
 let mallopt      = Or_error.unimplemented "Malloc.mallopt"
 let malloc_trim  = Or_error.unimplemented "Malloc.malloc_trim"
 let malloc_stats = Or_error.unimplemented "Malloc.malloc_stats"
 
-#endif
+[%%endif]

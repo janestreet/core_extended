@@ -1,6 +1,6 @@
 open Core
 
-#import "config_ext.h"
+[%%import "config_ext.h"]
 
 type uids = {
   ruid:int;
@@ -9,7 +9,7 @@ type uids = {
 } [@@deriving sexp, bin_io]
 
 module Statfs = struct
-#ifdef JSC_LINUX_EXT
+[%%ifdef JSC_LINUX_EXT]
   module Raw = struct
     type t =
       {
@@ -24,7 +24,7 @@ module Statfs = struct
       }
     ;;
   end
-#endif
+[%%endif]
 
   type f_type =
         ADFS_SUPER_MAGIC | AFFS_SUPER_MAGIC | BEFS_SUPER_MAGIC | BFS_MAGIC
@@ -49,7 +49,7 @@ module Statfs = struct
     }
   ;;
 
-#ifdef JSC_LINUX_EXT
+[%%ifdef JSC_LINUX_EXT]
   let of_rawstatfs raw =
     {
       f_type =
@@ -93,10 +93,10 @@ module Statfs = struct
       f_namelen = raw.Raw.f_namelen
     }
   ;;
-#endif
+[%%endif]
 end ;;
 
-#ifdef JSC_LINUX_EXT
+[%%ifdef JSC_LINUX_EXT]
 
 external setresuid : ruid:int -> euid:int -> suid:int -> unit = "linux_setresuid_stub"
 
@@ -178,7 +178,7 @@ external linux_statfs_stub : string -> Statfs.Raw.t = "linux_statfs_stub" ;;
 let statfs path = Statfs.of_rawstatfs (linux_statfs_stub path) ;;
 let statfs = Ok statfs
 
-#else
+[%%else]
 
 let setresuid = Or_error.unimplemented "Extended_linux.setresuid"
 let getresuid = Or_error.unimplemented "Extended_linux.getresuid"
@@ -195,4 +195,4 @@ end
 
 let statfs = Or_error.unimplemented "Extended_linux.statfs"
 
-#endif
+[%%endif]
