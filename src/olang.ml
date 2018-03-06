@@ -103,6 +103,15 @@ let%test_module _ = (module struct
   let sexp4 = Sexp.of_string "(ln (exp x))"
   let term4 = Term.(ln (exp x))
 
+  let sexp5 = Sexp.of_string "(min x (abs x) (max x (abs x)))"
+  let term5 = Term.(min (min x (abs x)) (max x (abs x)))
+
+  let sexp6 = Sexp.of_string "(min 1 2 3 4)"
+  let term6 = Term.(min (min (min (const 1.) (const 2.)) (const 3.)) (const 4.))
+
+  let sexp7 = Sexp.of_string "(max x)"
+  let term7 = Term.(x)
+
   let%test_unit "sexp term1" =
     [%test_result: Term.t] ~expect:term1 (Term.t_of_sexp sexp1)
 
@@ -114,6 +123,15 @@ let%test_module _ = (module struct
 
   let%test_unit "sexp term4" =
     [%test_result: Term.t] ~expect:term4 (Term.t_of_sexp sexp4)
+
+  let%test_unit "sexp term5" =
+    [%test_result: Term.t] ~expect:term5 (Term.t_of_sexp sexp5)
+
+  let%test_unit "sexp term6" =
+    [%test_result: Term.t] ~expect:term6 (Term.t_of_sexp sexp6)
+
+  let%test_unit "sexp term7" =
+    [%test_result: Term.t] ~expect:term7 (Term.t_of_sexp sexp7)
 
   let%test_unit "evaluate arithmetic" =
     let test = [%test_result: Float.t] ~equal:Float.(=.) in

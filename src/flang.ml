@@ -83,10 +83,10 @@ let t_of_sexp a_of_sexp sexp =
       mult_list (List.map ~f:t_of_sexp xs)
     | List [Atom c; x] when is_constructor "abs" c ->
       `Abs (t_of_sexp x)
-    | List [Atom c; x; y] when is_constructor "min"  c ->
-      `Min  (t_of_sexp x, t_of_sexp y)
-    | List [Atom c; x; y] when is_constructor "max"  c ->
-      `Max  (t_of_sexp x, t_of_sexp y)
+    | List (Atom c :: x :: xs) when is_constructor "min"  c ->
+      List.fold (List.map xs ~f:t_of_sexp) ~init:(t_of_sexp x) ~f:min
+    | List (Atom c :: x :: xs) when is_constructor "max"  c ->
+      List.fold (List.map xs ~f:t_of_sexp) ~init:(t_of_sexp x) ~f:max
     | List [x; Atom "/"; y] -> div  (t_of_sexp x) (t_of_sexp y)
     | List [x; Atom "-"; y] -> sub  (t_of_sexp x) (t_of_sexp y)
     | List [x; Atom "+"; y] -> add  (t_of_sexp x) (t_of_sexp y)

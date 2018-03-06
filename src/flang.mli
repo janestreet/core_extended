@@ -25,7 +25,9 @@ type 'a t = [
   (** sexp [(x / y)] or [(div x y)] *)
   | `Abs of 'a t
   | `Min of 'a t * 'a t
+  (** sexp [(min x y z ...)]. An empty list ([(min)]) is not allowed. *)
   | `Max of 'a t * 'a t
+  (** sexp [(max x y z ...)]. An empty list ([(max)]) is not allowed. *)
   | `Exp of 'a t
   | `Ln  of 'a t
 ] [@@deriving sexp, bin_io, compare]
