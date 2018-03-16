@@ -62,7 +62,7 @@ let bsearch_opt = bsearch_internal
 let bsearch_exn ~f ~low ~high =
   match bsearch_internal ~f ~low ~high with
   | Some x -> x
-  | None -> raise Not_found
+  | None -> raise Caml.Not_found
 let bsearch = bsearch_opt
 
 type poly_comparison = [`Low | `Good | `High]
@@ -85,7 +85,7 @@ let bsearch2_opt = bsearch2_internal
 let bsearch2_exn ~f ~low ~high =
   match bsearch2_internal ~f ~low ~high with
   | Some x -> x
-  | None -> raise Not_found
+  | None -> raise Caml.Not_found
 let bsearch2 = bsearch2_opt
 
 
@@ -118,5 +118,5 @@ let bsearch_val_opt = bsearch_val_internal
 let bsearch_val_exn ~f ~low ~high =
   match bsearch_val_internal ~f ~low ~high with
   | Some x -> x
-  | None -> raise Not_found
+  | None -> raise Caml.Not_found
 let bsearch_val = bsearch_val_opt

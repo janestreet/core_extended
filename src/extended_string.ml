@@ -93,7 +93,7 @@ let%test_module "collate" = (module struct
   repeat 2 basic_tests (dup sg);
   repeat 50 (fun (s,s',s'') ->
     let (s1,s2,s3) =
-      match List.sort ~cmp:String.collate [s;s';s''] with
+      match List.sort ~compare:String.collate [s;s';s''] with
       | [s1;s2;s3] -> s1,s2,s3
       | _ -> assert false
     in

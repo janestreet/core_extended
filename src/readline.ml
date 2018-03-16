@@ -209,7 +209,7 @@ let confirm ?(prompt="") true_answer =
     ~default:false
 
 let choice choices =
-  Option.iter (List.find_a_dup (List.map ~f:fst choices))
+  Option.iter (List.find_a_dup (List.map ~f:fst choices) ~compare:String.compare)
     ~f:(fun v -> failwithf "Readline.choice: two different choices for %s"
           v
           ());

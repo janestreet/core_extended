@@ -310,7 +310,7 @@ let sort ~cmp zlst =
             let i = ref 1 in
             iter xs ~f:(fun x -> ary.(!i) <- x; incr i);
             (* Sort the array *)
-            Array.sort ~cmp ary;
+            Array.sort ~compare:cmp ary;
             (* Return the lazy list of the array *)
             of_array ary
           end

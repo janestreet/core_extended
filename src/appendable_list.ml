@@ -236,5 +236,6 @@ include struct
   let (>>|) = (>>|)
   let return = return
   let all = all
-  let all_ignore = all_ignore
+  let all_unit = all_unit
+  let all_ignore = all_unit
 end

@@ -11,7 +11,7 @@ let set_diff l1 l2 =
 
 let set_inter l1 l2 =
   let set = Set.Poly.of_list l2 in
-  List.dedup_and_sort (List.filter l1 ~f:(fun x -> Set.mem set x))
+  List.dedup_and_sort (List.filter l1 ~f:(fun x -> Set.mem set x)) ~compare:Poly.compare
 
 let classify ?(equal=( = )) ~f list =
   let classify_element class_members_assoc this_member =

@@ -86,7 +86,7 @@ struct
       | _ -> assert false  (* impossible *)
     in
     let pairs = List.map ~f:to_pair sexp_list in
-    List.sort ~cmp:(fun (k1, _) (k2, _) -> String.compare k1 k2) pairs
+    List.sort ~compare:(fun (k1, _) (k2, _) -> String.compare k1 k2) pairs
 
   let rec of_record_fields acc pairs_orig pairs_upd =
     match pairs_orig, pairs_upd with
@@ -719,7 +719,7 @@ module Comprehension = struct
           (Format.Sing x) :: (Format.Sing y) :: find_runs tail
       | len, tail -> (Format.IRange(x, x + (len-1)*(y-x), y-x)) :: find_runs tail
 
-  let compress_ints ints = Format.Set(find_runs (List.dedup_and_sort ints))
+  let compress_ints ints = Format.Set(find_runs (List.dedup_and_sort ints ~compare:Int.compare))
 
   (* Simplistic compression scheme: split each string into str1<num>str2 if possible.
    * For each set of matching str1 and str2, group together all the numbers in
@@ -768,7 +768,7 @@ module Comprehension = struct
 
   (* You should always be able to convert a string list to comprehensions and back. *)
   let roundtrip strs =
-    let sort = List.sort ~cmp:String.compare in
+    let sort = List.sort ~compare:String.compare in
     sort strs = (strs |> sort |> compress |> expand_strings_exn |> sort)
 
   let%test _ = Format.(["1";"2";"3"] = expand (Set[IRange(1,3,1)]))

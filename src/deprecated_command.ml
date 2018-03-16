@@ -54,7 +54,7 @@ module Columns = struct
           in
           head :: tail))
 
-  let sort_align pairs = align (List.sort pairs ~cmp:subcommand_cmp_fst)
+  let sort_align pairs = align (List.sort pairs ~compare:subcommand_cmp_fst)
 
 end
 
@@ -601,7 +601,7 @@ let help ~cmd t =
 
 let help_help ~cmd subcommands =
   let choices =
-    List.sort ~cmp:subcommand_cmp subcommands
+    List.sort ~compare:subcommand_cmp subcommands
   in
   Help_page.render
     ~summary:("explain " ^ cmd ^ " or one of its subcommands, perhaps recursively")
@@ -624,7 +624,7 @@ let help_recursive ~cmd ~with_flags ~expand_dots t =
     | Group grp ->
       (s ^ cmd, grp.summary) ::
         List.concat_map
-          (List.sort ~cmp:subcommand_cmp_fst (Hashtbl.to_alist grp.subcommands))
+          (List.sort ~compare:subcommand_cmp_fst (Hashtbl.to_alist grp.subcommands))
           ~f:(fun (cmd', t) -> help_recursive_rec ~cmd:cmd' t new_s)
   in
   let alist = help_recursive_rec ~cmd t "" in

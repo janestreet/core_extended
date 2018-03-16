@@ -1,4 +1,4 @@
-open! Core_kernel.Std
+open! Core_kernel
 
 (* Implements types to be used in selection languages using Blang.
    The many nested types serve partially as documentation, but mostly

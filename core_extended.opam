@@ -13,14 +13,14 @@ depends: [
   "core"
   "core_kernel"
   "fieldslib"
-  "ppx_driver"
   "ppx_jane"
   "re2"
   "sexplib"
   "textutils"
   "base-threads"
-  "jbuilder"                {build & >= "1.0+beta12"}
+  "jbuilder"                {build & >= "1.0+beta18.1"}
   "ocaml-migrate-parsetree" {>= "1.0"}
+  "ppxlib"                  {>= "0.1.1"}
   "re"                      {>= "1.5.0"}
 ]
 available: [ ocaml-version >= "4.04.1" ]

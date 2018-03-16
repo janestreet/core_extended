@@ -17,7 +17,7 @@ let file_kind f = (Unix.lstat f).Unix.st_kind
 
 let ls dir = Sys.readdir dir
   |> Array.to_list
-  |> List.sort ~cmp:Extended_string.collate
+  |> List.sort ~compare:Extended_string.collate
 
 let stat_time_exn f ?(follow_symlinks=true) path =
   let stat =

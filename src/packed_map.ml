@@ -65,7 +65,7 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
         None)
 
   let duplicate_key_sorted arr =
-    if not (Array.is_sorted arr ~cmp) then raise (Unsorted_array arr);
+    if not (Array.is_sorted arr ~compare:cmp) then raise (Unsorted_array arr);
     duplicate_key_sorted' arr
 
   let of_sorted_aarray' = T.of_array
@@ -75,10 +75,10 @@ module Make (K : Key) (V : Value) : S with type key := K.t and type value := V.t
     | None -> of_sorted_aarray' arr
     | Some k -> raise (Duplicate_key k)
 
-  let of_aarray arr = of_sorted_aarray (Array.sorted_copy arr ~cmp)
+  let of_aarray arr = of_sorted_aarray (Array.sorted_copy arr ~compare:cmp)
 
   let destructive_of_aarray arr =
-    Array.sort arr ~cmp;
+    Array.sort arr ~compare:cmp;
     match duplicate_key_sorted' arr with
     | None -> of_sorted_aarray' arr
     | Some k -> raise (Duplicate_key k)

@@ -343,8 +343,8 @@ module Make(T : Type_with_map_module) = struct
   let map2 = custom_map2
 
   (* all values of type unit t = unit, so... *)
-  let ignore_m _ = unit
-  let all_ignore _ = unit
+  let ignore_m (_ : _ t) = unit
+  let all_unit (_ : unit t list) = unit
 end
 
 module Make_with_boundary (Key : Key) = struct
@@ -630,7 +630,7 @@ let%test_module "Quickcheck tests." = (
         ~f:(fun x ->
           [%test_result: unit poly_t]
             ~expect:(Int_key.ignore_m (Int_key.all x))
-            (Int_key.all_ignore x));
+            (Int_key.all_unit x));
     ;;
 
     let%test_unit "find rules: join" =

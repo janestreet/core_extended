@@ -17,7 +17,7 @@ module Make (M : Monad.Basic) : S with type 'a t := 'a M.t = struct
 
   let map_monad list ~f = all (List.map ~f list)
 
-  let map_monad_ignore list ~f = all_ignore (List.map ~f list)
+  let map_monad_ignore list ~f = all_unit (List.map ~f list)
 end
 
 module type S2 = sig
@@ -33,5 +33,5 @@ module Make2 (M : Monad.Basic2) : S2 with type ('a,'b) t := ('a,'b) M.t = struct
 
   let map_monad list ~f = all (List.map ~f list)
 
-  let map_monad_ignore list ~f = all_ignore (List.map ~f list)
+  let map_monad_ignore list ~f = all_unit (List.map ~f list)
 end

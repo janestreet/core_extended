@@ -6,7 +6,7 @@
    (re
     re.perl
     core_kernel))
-  (preprocess (pps (ppx_jane ppx_driver.runner)))
+  (preprocess (pps (ppx_jane ppxlib.runner)))
 ))
 
 

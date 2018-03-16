@@ -78,7 +78,7 @@ let roll log =
       Some (f, int_of_string (snd (String.rsplit2_exn f ~on:'.')))
     else None)
   in
-  let files = List.sort ~cmp:(fun x y ->
+  let files = List.sort ~compare:(fun x y ->
     Polymorphic_compare.ascending (snd x) (snd y)) files
   in
   let max_archives =

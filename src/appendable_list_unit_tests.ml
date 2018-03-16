@@ -138,7 +138,8 @@ let%test_module _ = (module (struct
   let is_empty   = is_empty
   let length     = length
   let mem        = mem
-  let all_ignore = all_ignore
+  let all_unit   = all_unit
+  let all_ignore = all_unit
   let all        = all
   let ignore_m   = ignore_m
 

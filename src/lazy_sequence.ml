@@ -282,8 +282,8 @@ let mem t elt ~equal = exists t ~f:(fun x -> equal x elt)
 let length t = Container.length ~fold t
 let count t ~f = Container.count ~fold t ~f
 let sum m t ~f = Container.sum m ~fold t ~f
-let min_elt t ~cmp = Container.min_elt ~fold t ~cmp
-let max_elt t ~cmp = Container.max_elt ~fold t ~cmp
+let min_elt t ~compare = Container.min_elt ~fold t ~compare
+let max_elt t ~compare = Container.max_elt ~fold t ~compare
 let to_list t = Container.to_list ~fold t
 let to_array t = Container.to_array ~fold t
 
