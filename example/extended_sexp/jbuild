@@ -1,6 +1,5 @@
 (executables
  ((names (main))
-  (flags (:standard -safe-string))
   (libraries (async
               core
               core_extended

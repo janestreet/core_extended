@@ -1,7 +1,6 @@
 (library
  ((name selector)
   (public_name core_extended.selection)
-  (flags (:standard -safe-string))
   (libraries
    (re
     re.perl

@@ -1,6 +1,5 @@
 (executables
  ((names (mail_test diff_sexp diff_sexps redcat))
-  (flags (:standard -safe-string))
   (libraries (core_extended))
   (preprocess (pps (ppx_jane ppxlib.runner)))))
 
