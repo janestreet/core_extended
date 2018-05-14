@@ -221,7 +221,7 @@ module Process = struct
   let content () =
     let buffer = Buffer.create 16 in
     {
-      add_stdout = (fun s len -> Buffer.add_subbytes buffer s 0 len; `Continue);
+      add_stdout = (fun s len -> Buffer.add_subbytes buffer s ~pos:0 ~len; `Continue);
       add_stderr = (fun _ _ -> `Continue);
       flush = (fun () -> Buffer.contents buffer);
     }
@@ -230,8 +230,8 @@ module Process = struct
     let stdout_buffer = Buffer.create 16 in
     let buffer_stderr = Buffer.create 16 in
     {
-      add_stdout = (fun s len -> Buffer.add_subbytes stdout_buffer s 0 len; `Continue);
-      add_stderr = (fun s len -> Buffer.add_subbytes buffer_stderr s 0 len; `Continue);
+      add_stdout = (fun s len -> Buffer.add_subbytes stdout_buffer s ~pos:0 ~len; `Continue);
+      add_stderr = (fun s len -> Buffer.add_subbytes buffer_stderr s ~pos:0 ~len; `Continue);
       flush = (fun () ->
         Buffer.contents stdout_buffer,
         Buffer.contents buffer_stderr

@@ -155,7 +155,7 @@ struct
 
   let to_string diff = Buffer.contents (to_buffer diff)
 
-  let print ?(oc = stdout) diff = Buffer.output_buffer oc (to_buffer diff)
+  let print ?(oc = stdout) diff = Caml.Buffer.output_buffer oc (to_buffer diff)
 end
 
 let print_diff ?oc ~original ~updated () =

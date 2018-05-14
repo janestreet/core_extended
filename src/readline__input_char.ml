@@ -48,7 +48,7 @@ let parse_esc ()=
         aux seen_semi
     |'~' when Buffer.length b > 0 ->
        let c = Buffer.nth b 0 in
-       let b_cnt = Buffer.sub b 1 (Buffer.length b -1) in
+       let b_cnt = Buffer.To_string.sub b ~pos:1 ~len:(Buffer.length b -1) in
        Buffer.clear b;
        Buffer.add_string b b_cnt;
        c

@@ -48,13 +48,13 @@ let add_char b c =
 
 let rec add_substring' blit get buffer_add b s ~pos ~len =
   match nl_between get s ~eol:b.eol ~pos ~len with
-  | None -> buffer_add b.buffer s pos len
+  | None -> buffer_add b.buffer s ~pos ~len
   | Some suffix_end_pos ->
     (* whatever is in the buffer + this suffix is our newline*)
     let suffix_len = suffix_end_pos - pos
     and prefix_len = Buffer.length b.buffer in
     let line = Bytes.create (prefix_len + suffix_len) in
-    Buffer.blit b.buffer 0 line 0 prefix_len;
+    Buffer.blit ~src:b.buffer ~src_pos:0 ~dst:line ~dst_pos:0 ~len:prefix_len;
     blit
       ~src:s
       ~src_pos:pos

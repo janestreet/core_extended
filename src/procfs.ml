@@ -19,7 +19,7 @@ let input_all_with_reused_buffer () =
     let rec loop () =
       let len = Unix.read fd ~buf ~len:(Bytes.length buf) in
       if len > 0 then begin
-        Buffer.add_subbytes buffer buf 0 len;
+        Buffer.add_subbytes buffer buf ~pos:0 ~len;
         loop ();
       end
     in
