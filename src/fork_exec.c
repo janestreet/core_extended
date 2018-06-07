@@ -46,13 +46,13 @@
    a null pointer the result need to be free'd with a stat_free
    It is a copy of cstringvect in the ocaml unix's module.
  */
-static char ** copy_stringvect(const value arg)
+static const char ** copy_stringvect(const value arg)
 {
-  char ** res;
+  const char ** res;
   mlsize_t size, i;
 
   size = Wosize_val(arg);
-  res = (char **) caml_stat_alloc((size + 1) * sizeof(char *));
+  res = (const char **) caml_stat_alloc((size + 1) * sizeof(const char *));
   for (i = 0; i < size; i++) res[i] = String_val(Field(arg, i));
   res[size] = NULL;
   return res;
@@ -157,19 +157,19 @@ CAMLprim value extended_ml_spawn
   int stdin_fd = Int_val (v_stdin);
   int stdout_fd = Int_val (v_stdout);
   int stderr_fd = Int_val (v_stderr);
-  char** envp  = NULL;
+  const char** envp  = NULL;
   int my_errno,forked_error;
   int pfd[2]; /* The pipe used to report errors.. */
 
   /* It's ok to hold pointers into the O'Caml heap, since the memory
      space gets duplicated upon the fork, during which we keep the
      O'Caml lock. */
-  char* prog = String_val(v_prog);
-  char* working_dir = NULL;
+  const char* prog = String_val(v_prog);
+  const char* working_dir = NULL;
 
   pid_t child_pid;
 
-  char** args;
+  const char** args;
 
   /* We use a pipe to report errors on the forked side */
   if (pipe(pfd) == -1) uerror("extended_ml_spawn::pipe",Nothing);
@@ -277,9 +277,9 @@ CAMLprim value extended_ml_spawn
     if (envp) {
       /* path lookups should be done on the parent side of the fork so no
          execvp*/
-      SYSCALL(execve(prog,args,envp));
+      SYSCALL(execve(prog,(char **) args,(char **) envp));
     }else {
-      SYSCALL(execv(prog,args));
+      SYSCALL(execv(prog,(char **) args));
     };
 
   default: /* Parent process */
