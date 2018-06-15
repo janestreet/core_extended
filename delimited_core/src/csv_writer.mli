@@ -6,7 +6,7 @@
  * writing functions in two parts one that gives the length of the string to
  * write and another that writes the result in a subpart of another string we
  * avoid unnecessary string creations.
- *)
+*)
 
 
 (** Prints a valid csv file to a given channel.

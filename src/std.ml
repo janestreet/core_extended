@@ -11,7 +11,7 @@ module Bitarray = Bitarray
 module Cache = Cache
 module Color_print = Color_print
 module Service_command = Service_command
-module Csv_writer = Csv_writer
+module Csv_writer = Delimited_core.Csv_writer (* we reexport this for external users. *)
 module Date = struct
   include Core.Date
   include Extended_time.Extended_date

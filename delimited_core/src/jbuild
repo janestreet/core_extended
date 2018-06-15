@@ -1,0 +1,10 @@
+(library (
+  (name delimited_core)
+  (public_name core_extended.delimited_core)
+  (libraries (
+    core
+    ))
+  (preprocess (pps (ppx_jane ppxlib.runner)))
+  ))
+
+(jbuild_version 1)

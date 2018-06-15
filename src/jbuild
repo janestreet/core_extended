@@ -9,6 +9,7 @@
   (libraries
    (bin_prot
     core
+    delimited_core
     fieldslib
     re2
     sexplib

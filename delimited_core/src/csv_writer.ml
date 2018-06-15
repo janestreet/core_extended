@@ -12,7 +12,7 @@ open Core
  * -> to operate on substrings : pos len
  * -> to perform string transformations: all the blit arguments
  *
- *)
+*)
 
 (** Field handling *)
 let rec quote_blit_loop ~quote ~src ~dst ~src_pos ~dst_pos src_end =
@@ -21,24 +21,24 @@ let rec quote_blit_loop ~quote ~src ~dst ~src_pos ~dst_pos src_end =
   else
     match src.[src_pos] with
     | c when c = quote ->
-        Bytes.set dst dst_pos       quote;
-        Bytes.set dst (dst_pos + 1) quote;
-        quote_blit_loop
-          ~quote
-          ~src
-          ~dst
-          ~src_pos:(src_pos + 1)
-          ~dst_pos:(dst_pos + 2)
-          src_end
+      Bytes.set dst dst_pos       quote;
+      Bytes.set dst (dst_pos + 1) quote;
+      quote_blit_loop
+        ~quote
+        ~src
+        ~dst
+        ~src_pos:(src_pos + 1)
+        ~dst_pos:(dst_pos + 2)
+        src_end
     | c ->
-        Bytes.set dst dst_pos c;
-        quote_blit_loop
-          ~quote
-          ~src
-          ~dst
-          ~src_pos:(src_pos + 1)
-          ~dst_pos:(dst_pos + 1)
-          src_end
+      Bytes.set dst dst_pos c;
+      quote_blit_loop
+        ~quote
+        ~src
+        ~dst
+        ~src_pos:(src_pos + 1)
+        ~dst_pos:(dst_pos + 1)
+        src_end
 
 let quote_blit ~quote ~src ~dst ~src_pos ~dst_pos ~len =
   quote_blit_loop ~quote ~src ~dst ~src_pos ~dst_pos (src_pos + len)
@@ -51,7 +51,7 @@ let rec quote_len_loop ~quote ~sep ~pos ~end_pos ~should_escape s acc =
     else
       None
   else match s.[pos] with
-  | c when c = quote ->
+    | c when c = quote ->
       quote_len_loop
         s
         ~quote
@@ -60,7 +60,7 @@ let rec quote_len_loop ~quote ~sep ~pos ~end_pos ~should_escape s acc =
         ~end_pos
         ~should_escape:true
         (acc + 1)
-  | c when c = sep ->
+    | c when c = sep ->
       quote_len_loop
         s
         ~quote
@@ -69,7 +69,7 @@ let rec quote_len_loop ~quote ~sep ~pos ~end_pos ~should_escape s acc =
         ~end_pos
         ~should_escape:true
         acc
-  | '\n' ->
+    | '\n' ->
       quote_len_loop
         s
         ~quote
@@ -78,7 +78,7 @@ let rec quote_len_loop ~quote ~sep ~pos ~end_pos ~should_escape s acc =
         ~end_pos
         ~should_escape:true
         acc
-  | _ ->
+    | _ ->
       quote_len_loop
         s
         ~quote
@@ -110,53 +110,53 @@ let rec line_spec_loop ~quote ~sep esc_acc size = function
   | [] when esc_acc = [] -> [],0
   | []  -> List.rev esc_acc,(size -1) (* We overshot our count by one comma*)
   | h::t ->
-      let len = String.length h in
-      begin match quote_len h ~quote ~sep ~len ~pos:0 with
-      | None ->
-          line_spec_loop ~quote ~sep
-            ((false,h)::esc_acc) (size + len + 1) t
-      | Some qlen ->
-          line_spec_loop ~quote ~sep
-            ((true,h)::esc_acc) (size + qlen + 3) t
-      end
+    let len = String.length h in
+    begin match quote_len h ~quote ~sep ~len ~pos:0 with
+    | None ->
+      line_spec_loop ~quote ~sep
+        ((false,h)::esc_acc) (size + len + 1) t
+    | Some qlen ->
+      line_spec_loop ~quote ~sep
+        ((true,h)::esc_acc) (size + qlen + 3) t
+    end
 
 let field_blit ~quote ~dst ~pos = function
   | true,h ->
-      Bytes.set dst pos quote;
-      let len = String.length h in
-      let qpos =
-        quote_blit ~quote ~src:h ~src_pos:0 ~dst ~dst_pos:(pos+1) ~len
-      in
-      Bytes.set dst qpos quote;
-      qpos + 1
+    Bytes.set dst pos quote;
+    let len = String.length h in
+    let qpos =
+      quote_blit ~quote ~src:h ~src_pos:0 ~dst ~dst_pos:(pos+1) ~len
+    in
+    Bytes.set dst qpos quote;
+    qpos + 1
   | false,h ->
-      let len = String.length h in
-      Bytes.From_string.blit ~dst_pos:pos ~src_pos:0 ~dst ~src:h ~len;
-      pos + len
+    let len = String.length h in
+    Bytes.From_string.blit ~dst_pos:pos ~src_pos:0 ~dst ~src:h ~len;
+    pos + len
 
 (** Tables *)
 let rec line_blit_loop ~quote ~sep ~dst ~pos = function
   | [] -> pos
   | [v] ->
-      field_blit ~quote:'"' ~dst ~pos v
+    field_blit ~quote:'"' ~dst ~pos v
   | v::((_::_) as t) ->
-      let pos = field_blit ~quote:'"' ~dst ~pos v in
-      Bytes.set dst pos sep;
-      line_blit_loop ~quote ~sep ~dst ~pos:(pos + 1) t
+    let pos = field_blit ~quote:'"' ~dst ~pos v in
+    Bytes.set dst pos sep;
+    line_blit_loop ~quote ~sep ~dst ~pos:(pos + 1) t
 
 let rec output_lines_loop ~quote ~sep ~buff ~eol oc = function
   | [] -> ()
   | h::t ->
-      let spec,len = line_spec_loop ~quote ~sep [] 0 h in
-      let buff = if Bytes.length buff < len then
+    let spec,len = line_spec_loop ~quote ~sep [] 0 h in
+    let buff = if Bytes.length buff < len then
         Bytes.create (2*len)
       else
         buff
-      in
-      ignore (line_blit_loop ~quote ~sep ~dst:buff ~pos:0 spec:int);
-      Out_channel.output oc ~buf:buff ~pos:0 ~len;
-      Out_channel.output_string oc eol;
-      output_lines_loop ~quote ~sep ~buff ~eol oc t
+    in
+    ignore (line_blit_loop ~quote ~sep ~dst:buff ~pos:0 spec:int);
+    Out_channel.output oc ~buf:buff ~pos:0 ~len;
+    Out_channel.output_string oc eol;
+    output_lines_loop ~quote ~sep ~buff ~eol oc t
 
 let line_to_string ?(quote='"') ?(sep=',') l =
   let spec,len = line_spec_loop ~quote ~sep [] 0 l in
@@ -169,30 +169,31 @@ let maybe_escape_field ?(quote='"') ?(sep=',') s =
   match quote_len s ~quote ~sep ~len ~pos:0 with
   | None -> s
   | Some qlen ->
-      let res = Bytes.create (qlen+2) in
-      Bytes.set res 0 quote;
-      Bytes.set res (qlen+1) quote;
-      ignore
-        (quote_blit ~quote ~src:s ~src_pos:0 ~dst:res ~dst_pos:1 ~len :int);
-      Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
+    let res = Bytes.create (qlen+2) in
+    Bytes.set res 0 quote;
+    Bytes.set res (qlen+1) quote;
+    ignore
+      (quote_blit ~quote ~src:s ~src_pos:0 ~dst:res ~dst_pos:1 ~len :int);
+    Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
 
 let escape_field ?(quote='"') s =
   let len = String.length s in
   match quote_len s ~quote ~sep:',' ~len ~pos:0 with
   | None ->
-      let res = Bytes.create (len+2) in
-      Bytes.set res 0 quote;
-      Bytes.set res (len+1) quote;
-      Bytes.From_string.blit ~src_pos:0 ~dst_pos:1 ~len ~src:s ~dst:res;
-      Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
+    let res = Bytes.create (len+2) in
+    Bytes.set res 0 quote;
+    Bytes.set res (len+1) quote;
+    Bytes.From_string.blit ~src_pos:0 ~dst_pos:1 ~len ~src:s ~dst:res;
+    Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
   | Some qlen ->
-      let res = Bytes.create (qlen+2) in
-      Bytes.set res 0 quote;
-      Bytes.set res (qlen+1) quote;
-      ignore
-        (quote_blit ~quote ~src:s ~src_pos:0 ~dst:res ~dst_pos:1 ~len :int);
-      Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
+    let res = Bytes.create (qlen+2) in
+    Bytes.set res 0 quote;
+    Bytes.set res (qlen+1) quote;
+    ignore
+      (quote_blit ~quote ~src:s ~src_pos:0 ~dst:res ~dst_pos:1 ~len :int);
+    Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
 
 let output_lines ?(quote='"') ?(sep=',') ?(eol=`Dos) oc l =
   let eol = match eol with | `Dos -> "\r\n" | `Unix -> "\n" in
   output_lines_loop ~quote ~sep ~buff:(Bytes.create 256) ~eol oc l
+
