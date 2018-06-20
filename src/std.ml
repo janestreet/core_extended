@@ -1,13 +1,10 @@
 include Extended_common
 include Textutils
 
-module Alternating_primary_backup_assignment = Alternating_primary_backup_assignment
 module Array = struct
   include Core.Array
   include Extended_array
 end
-module Atomic_edit = Atomic_edit
-module Bitarray = Bitarray
 module Cache = Cache
 module Color_print = Color_print
 module Service_command = Service_command
