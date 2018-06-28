@@ -1,0 +1,7 @@
+(library
+ ((name find_files)
+  (public_name core_extended.find_files)
+  (libraries (core))
+  (preprocess (pps (ppx_jane ppxlib.runner)))))
+
+(jbuild_version 1)

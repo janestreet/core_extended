@@ -1,7 +1,0 @@
-(executables
- ((names (mail_test diff_sexp diff_sexps redcat))
-  (libraries (core_extended))
-  (preprocess (pps (ppx_jane ppxlib.runner)))))
-
-
-(jbuild_version 1)
