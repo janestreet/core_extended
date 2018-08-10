@@ -1,4 +1,4 @@
-open Core
+open Core_kernel
 
 (**
  *
@@ -196,4 +196,3 @@ let escape_field ?(quote='"') s =
 let output_lines ?(quote='"') ?(sep=',') ?(eol=`Dos) oc l =
   let eol = match eol with | `Dos -> "\r\n" | `Unix -> "\n" in
   output_lines_loop ~quote ~sep ~buff:(Bytes.create 256) ~eol oc l
-

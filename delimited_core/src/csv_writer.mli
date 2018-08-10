@@ -1,5 +1,5 @@
 (**
- * Compliant simple CSV writter.
+ * Compliant simple CSV writer.
  *
  * This library is designed to deal with proper CSV (no quotes allowed in the
  * middle of the fields...). It is fast and flexible: by splitting most

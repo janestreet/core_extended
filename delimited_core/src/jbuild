@@ -2,7 +2,7 @@
   (name delimited_core)
   (public_name core_extended.delimited_core)
   (libraries (
-    core
+    core_kernel
     ))
   (preprocess (pps (ppx_jane ppxlib.runner)))
   ))
