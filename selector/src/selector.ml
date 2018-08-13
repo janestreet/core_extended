@@ -64,7 +64,7 @@ module Stable = struct
               of_regexp s
             else fail ()
 
-        let sexp_of_t (s, _) = Sexp.Atom ("/" ^ s ^ "/")
+        let sexp_of_t (s, _) = Sexp.V1.Atom ("/" ^ s ^ "/")
       end
       module Current = V1
     end
@@ -110,7 +110,7 @@ module Stable = struct
 
       let t_of_sexp sexp =
         match sexp with
-        | Sexp.Atom s -> [s]
+        | Sexp.V1.Atom s -> [s]
         | _ -> t_of_sexp sexp
     end
     module Current = V1
