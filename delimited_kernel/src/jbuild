@@ -1,6 +1,6 @@
 (library (
-  (name delimited_core)
-  (public_name core_extended.delimited_core)
+  (name delimited_kernel)
+  (public_name core_extended.delimited_kernel)
   (libraries (
     core_kernel
     ))
