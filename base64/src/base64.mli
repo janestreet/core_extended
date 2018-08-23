@@ -23,12 +23,16 @@ module Websafe : T
 module Make(D : sig
     (** Usually [ '+' ] *)
     val char62 : char
+
     (** Usually [ '/' ] *)
     val char63 : char
+
     (** Usually [ '=' ]. *)
     val pad_char : char
+
     (** Usually [ true ] *)
     val pad_when_encoding : bool
+
     (** Usually [ Char.is_whitespace ] *)
     val ignore_char : char -> bool
   end) : T
