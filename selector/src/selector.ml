@@ -44,7 +44,7 @@ module Stable = struct
           type t = string * Re.re
 
           let to_string (s, _) = s
-          let of_regexp s = s, Re_perl.compile_pat s
+          let of_regexp s = s, Re.Perl.compile_pat s
           let of_string s = of_regexp s
         end
         include T
