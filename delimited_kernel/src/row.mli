@@ -72,25 +72,16 @@ val length : t -> int
 *)
 
 val headers : t -> int String.Map.t
-
 val list_of_headers : t -> string list
 
 (* [is_empty t] return true if the row contains only empty strings *)
 
 val is_empty : t -> bool
-
 val to_string : t -> string
-
 val sexp_of_t : t -> Sexp.t
-
 val fold : t -> init:'acc -> f:('acc -> header:string -> data:string -> 'acc) -> 'acc
-
 val iter : t -> f:(header:string -> data:string -> unit) -> unit
-
 val create : int String.Table.t -> string array -> t
-
 val create' : int String.Map.t -> string array -> t
-
 val equal : t -> t -> bool
-
 val compare : t -> t -> int

@@ -8,14 +8,13 @@
  * avoid unnecessary string creations.
 *)
 
-
 (** Prints a valid csv file to a given channel.
     The [eol] arg can be used to override the default line ending
     of "\r\n" (DOS line endings).
     Example ~eol:`Unix to get *nix line endings
 *)
-val output_lines :
-  ?quote:char
+val output_lines
+  :  ?quote:char
   -> ?sep:char
   -> ?eol:[`Dos | `Unix]
   -> out_channel
@@ -23,44 +22,27 @@ val output_lines :
   -> unit
 
 (** Convert one CSV line to a string. *)
-val line_to_string :
-  ?quote:char
-  -> ?sep:char
-  -> string list
-  -> string
+val line_to_string : ?quote:char -> ?sep:char -> string list -> string
 
 (** Escape the a CSV field if need be.*)
-val maybe_escape_field :
-  ?quote:char
-  -> ?sep:char
-  -> string
-  -> string
+val maybe_escape_field : ?quote:char -> ?sep:char -> string -> string
 
 (** Escape a CSV (even if doesn't have any characters that require escaping).*)
-val escape_field :
-  ?quote:char
-  -> string
-  -> string
+val escape_field : ?quote:char -> string -> string
 
 (** {3 Low-level } *)
 
 (** Get the escaped length of one quoted field (without the quotes). Returns
     None if the field doesn't need to be escaped. *)
-val quote_len:
-  quote:char
-  -> sep:char
-  -> pos:int
-  -> len:int
-  -> string
-  -> int option
+val quote_len : quote:char -> sep:char -> pos:int -> len:int -> string -> int option
 
 (** Copy and escapes the content of a field over from one string to
     another. This does not put the quotes in.*)
-val quote_blit:
-  quote:char
+val quote_blit
+  :  quote:char
   -> src:string
   -> dst:Bytes.t
   -> src_pos:int
   -> dst_pos:int
-  -> len :int
+  -> len:int
   -> int

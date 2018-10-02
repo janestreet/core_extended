@@ -13,7 +13,8 @@ let column to_string ~header =
 ;;
 
 let append l r =
-  let to_columns_l = l.to_columns and to_columns_r = r.to_columns in
+  let to_columns_l = l.to_columns
+  and to_columns_r = r.to_columns in
   { headers = List.append l.headers r.headers
   ; to_columns = (fun x ~tail -> to_columns_l x ~tail:(to_columns_r x ~tail))
   }
@@ -31,7 +32,6 @@ let contra_map x ~f =
 ;;
 
 let map_headers t ~f = { t with headers = List.map t.headers ~f }
-
 let to_columns t x = to_columns t x ~tail:[]
 
 module Fields_O = struct
@@ -52,14 +52,12 @@ end
 
 module O = struct
   let ( <<| ) t f = contra_map t ~f
-
   let ( <> ) = append
 end
 
 let to_string_m (type t) (module T : Stringable.S with type t = t) = T.to_string
-
 let column_m m ~header = column (to_string_m m) ~header
 
-let column_m_opt ?(default="") m ~header =
+let column_m_opt ?(default = "") m ~header =
   column (Option.value_map ~default ~f:(to_string_m m)) ~header
 ;;

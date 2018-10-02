@@ -22,14 +22,12 @@ module Let_syntax : sig
 
     module Open_on_rhs : sig
       val at_index : int -> f:(string -> 'a) -> 'a t
-
       val at_header : string -> f:(string -> 'a) -> 'a t
     end
   end
 end
 
 val at_index : int -> f:(string -> 'a) -> 'a t
-
 val at_header : string -> f:(string -> 'a) -> 'a t
 
 (** ['a on_invalid_row] specifies how to handle a row whose extents are known but whose
@@ -38,6 +36,7 @@ val at_header : string -> f:(string -> 'a) -> 'a t
     If a row's extents are unknown, the parser cannot continue and will always raise.
 *)
 type 'a on_invalid_row
+
 
 val fold_string
   :  ?strip:bool
@@ -57,19 +56,12 @@ module Fast_queue : sig
   type 'a t
 
   val create : ?capacity:int -> unit -> 'a t
-
   val of_list : 'a list -> 'a t
-
   val enqueue : 'a t -> 'a -> unit
-
   val nth_exn : 'a t -> int -> 'a
-
   val clear : 'a t -> unit
-
   val to_list : 'a t -> 'a list
-
   val to_array : 'a t -> 'a array
-
   val length : 'a t -> int
 end
 
@@ -137,7 +129,6 @@ module Builder : sig
   type nonrec 'a t = 'a t
 
   val lambda : (int String.Map.t -> string Fast_queue.t -> 'a) -> 'a t
-
   val return : 'a -> 'a t
 end
 
@@ -170,7 +161,6 @@ module Header_parse : sig
   val input : t -> len:int -> Bytes.t -> (t, int String.Map.t * string) Either.t
 
   val input_string : t -> len:int -> string -> (t, int String.Map.t * string) Either.t
-
   val is_at_beginning_of_row : t -> bool
 end
 
@@ -178,7 +168,6 @@ module Row : sig
   include module type of Row
 
   val create_of_fq : int String.Map.t -> string Fast_queue.t -> t
-
   val builder : t Builder.t
 end
 

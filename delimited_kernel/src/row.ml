@@ -33,7 +33,7 @@ let index_exn t header =
 
 let get_exn_p t header here =
   let i = index_exn t header in
-  try (t.fields).(i) with
+  try t.fields.(i) with
   | _ ->
     raise_s
       [%message
@@ -58,7 +58,10 @@ let get_conv_exn t header here conv =
           (exn : exn)]
 ;;
 
-let get t header = try Some (get_exn t header) with _ -> None
+let get t header =
+  try Some (get_exn t header) with
+  | _ -> None
+;;
 
 let get_opt_exn t header =
   match get t header with
@@ -82,7 +85,7 @@ let get_conv_opt_exn t header here conv =
              (exn : exn)])
 ;;
 
-let nth_exn t i = (t.fields).(i)
+let nth_exn t i = t.fields.(i)
 
 let nth_conv_exn t i here conv =
   try conv (nth_exn t i) with
@@ -96,9 +99,15 @@ let nth_conv_exn t i here conv =
           (exn : exn)]
 ;;
 
-let nth t i = try Some (nth_exn t i) with _ -> None
+let nth t i =
+  try Some (nth_exn t i) with
+  | _ -> None
+;;
 
-let nth_conv t i conv = try Some (conv (nth_exn t i)) with _ -> None
+let nth_conv t i conv =
+  try Some (conv (nth_exn t i)) with
+  | _ -> None
+;;
 
 let create' header_map fields = { header_map; fields }
 
@@ -111,20 +120,16 @@ let create header_table fields =
 ;;
 
 let to_list t = Array.to_list t.fields
-
 let to_array t = t.fields
-
 let length t = Array.length t.fields
-
 let equal t1 t2 = 0 = [%compare: t] t1 t2
 
 let fold t ~init ~f =
   Map.fold t.header_map ~init ~f:(fun ~key:header ~data:i acc ->
-    f acc ~header ~data:(t.fields).(i))
+    f acc ~header ~data:t.fields.(i))
 ;;
 
 let iter t ~f = fold t ~init:() ~f:(fun () ~header ~data -> f ~header ~data)
-
 let headers t = t.header_map
 
 let list_of_headers t =

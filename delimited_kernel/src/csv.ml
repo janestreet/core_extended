@@ -15,7 +15,7 @@ module Fast_queue = struct
 
   let to_array t = Array.init t.length ~f:(fun i -> Option_array.get_some_exn t.array i)
 
-  let create ?(capacity=1) () =
+  let create ?(capacity = 1) () =
     { array = Option_array.create ~len:capacity; capacity; length = 0 }
   ;;
 
@@ -50,7 +50,6 @@ module Fast_queue = struct
   ;;
 
   let to_list t = List.init t.length ~f:(Option_array.get_some_exn t.array)
-
   let length t = t.length
 end
 
@@ -100,7 +99,8 @@ module Parse_state = struct
 
   let set_acc t acc = { t with acc }
 
-  let create ?(strip=false) ?(sep=',') ?(quote=`Using '"') ~fields_used ~init ~f () =
+  let create ?(strip = false) ?(sep = ',') ?(quote = `Using '"') ~fields_used ~init ~f ()
+    =
     { acc = init
     ; sep
     ; quote =
@@ -153,7 +153,7 @@ module Parse_state = struct
       next_field_index < Array.length array && array.(next_field_index) = current_field
   ;;
 
-  let input_aux ~get_length ~get t ?(pos=0) ?len input =
+  let input_aux ~get_length ~get t ?(pos = 0) ?len input =
     let field, current_row = mutable_of_t t in
     let enqueue =
       ref (should_enqueue t.fields_used t.current_field t.next_field_index)
@@ -314,9 +314,7 @@ module On_invalid_row = struct
     -> [`Skip | `Yield of 'a | `Raise of exn]
 
   let raise _ _ exn = `Raise exn
-
   let skip _ _ _ = `Skip
-
   let create = Fn.id
 end
 
@@ -364,26 +362,17 @@ module Builder = struct
     ;;
 
     let all ts = List.fold_right ts ~init:(return []) ~f:(map2 ~f:(fun x xs -> x :: xs))
-
     let all_unit ts = map ~f:ignore (all ts)
-
     let all_ignore = all_unit
-
     let both x y = Both (x, y)
-
     let ( <*> ) = apply
-
     let ( *> ) u v = return (fun () y -> y) <*> u <*> v
-
     let ( <* ) u v = return (fun x () -> x) <*> u <*> v
 
     module Applicative_infix = struct
       let ( <*> ) = ( <*> )
-
       let ( *> ) = ( *> )
-
       let ( <* ) = ( <* )
-
       let ( >>| ) = ( >>| )
     end
   end
@@ -391,9 +380,7 @@ module Builder = struct
   include T
 
   let at_index i ~f = Map (f, Column i)
-
   let at_header h ~f = Map (f, Header h)
-
   let lambda f = Lambda f
 
   module Let_syntax = struct
@@ -402,7 +389,6 @@ module Builder = struct
 
       module Open_on_rhs = struct
         let at_index = at_index
-
         let at_header = at_header
       end
     end
@@ -532,7 +518,6 @@ module Header_parse : sig
   val input : t -> len:int -> Bytes.t -> (t, int String.Map.t * string) Either.t
 
   val input_string : t -> len:int -> string -> (t, int String.Map.t * string) Either.t
-
   val is_at_beginning_of_row : t -> bool
 end = struct
   (* This exception is used to return early from the parser, so we don't consume more
@@ -586,7 +571,7 @@ end = struct
     }
   ;;
 
-  let create ?strip ?sep ?quote ?(header=`No) builder =
+  let create ?strip ?sep ?quote ?(header = `No) builder =
     match header with
     | `No -> Second String.Map.empty
     | `Add headers -> Second (header_map (Array.of_list headers))
@@ -624,7 +609,7 @@ let create_parse_state
       ?strip
       ?sep
       ?quote
-      ?(on_invalid_row=On_invalid_row.raise)
+      ?(on_invalid_row = On_invalid_row.raise)
       ~header_map
       builder
       ~init

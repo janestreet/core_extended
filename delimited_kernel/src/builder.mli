@@ -6,9 +6,7 @@ open Base
 type -'a t
 
 val empty : 'a t
-
 val column : ('a -> string) -> header:string -> 'a t
-
 val column_m : (module Stringable.S with type t = 'a) -> header:string -> 'a t
 
 (** [default] is printed in place of [None], and if not supplied
@@ -21,15 +19,10 @@ val column_m_opt
   -> 'a option t
 
 val of_list : 'a t list -> 'a t
-
 val append : 'a t -> 'a t -> 'a t
-
 val contra_map : 'b t -> f:('a -> 'b) -> 'a t
-
 val map_headers : 'a t -> f:(string -> string) -> 'a t
-
 val headers : 'a t -> string list
-
 val to_columns : 'a t -> 'a -> string list
 
 (** Open for prefix operators useful for using with Fields.to_list.
@@ -58,6 +51,5 @@ end
 
 module O : sig
   val ( <<| ) : 'b t -> ('a -> 'b) -> 'a t
-
   val ( <> ) : 'a t -> 'a t -> 'a t
 end

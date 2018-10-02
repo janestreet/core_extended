@@ -56,8 +56,8 @@ let make_emit_row current_row row_queue header ~lineno =
   let header_index =
     match (header : Header.t) with
     | `No | `Yes | `Limit _ | `Transform _ | `Filter_map _ -> Table.create () ~size:1
-    | `Replace headers | `Add headers ->
-      Table.of_alist_exn (List.mapi headers ~f:(fun i s -> s, i))
+    | `Replace headers
+    | `Add headers -> Table.of_alist_exn (List.mapi headers ~f:(fun i s -> s, i))
   in
   let header_processed =
     ref
