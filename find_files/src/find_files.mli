@@ -3,6 +3,7 @@
 (* Implements find (like the unix utility).  Note that t is stateful both because
    filesystems themselves are highly stateful, and for performance reasons *)
 
+
 open! Core
 
 type t
@@ -15,16 +16,16 @@ module Options : sig
     | Raise
     | Handle_with of (string -> unit)
 
-  type t = {
-    min_depth: int;
-    max_depth: int option;
-    follow_links: bool;
-    on_open_errors: error_handler;
-    on_stat_errors: error_handler;
-    filter: (file_info -> bool) option;
-    skip_dir : (file_info -> bool) option;
-    relative_paths : bool;
-  }
+  type t =
+    { min_depth : int
+    ; max_depth : int option
+    ; follow_links : bool
+    ; on_open_errors : error_handler
+    ; on_stat_errors : error_handler
+    ; filter : (file_info -> bool) option
+    ; skip_dir : (file_info -> bool) option
+    ; relative_paths : bool
+    }
 
   val default : t
   val ignore_errors : t
