@@ -137,3 +137,9 @@ let list_of_headers t =
   |> List.sort ~compare:(fun a b -> Int.compare (snd a) (snd b))
   |> List.map ~f:fst
 ;;
+
+module Expert = struct
+  let of_buffer header_map row_queue =
+    create' header_map (Append_only_buffer.to_array row_queue)
+  ;;
+end

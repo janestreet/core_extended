@@ -85,3 +85,7 @@ val create : int String.Table.t -> string array -> t
 val create' : int String.Map.t -> string array -> t
 val equal : t -> t -> bool
 val compare : t -> t -> int
+
+module Expert : sig
+  val of_buffer : int String.Map.t -> string Append_only_buffer.t -> t
+end

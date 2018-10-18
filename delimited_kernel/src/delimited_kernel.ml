@@ -1,11 +1,7 @@
-module Csv = Csv
+(** Read CSVs *)
+module Read = Read
 
-(** A builder for CSV output *)
-module Builder = Builder
+(** Write CSVs *)
+module Write = Write
 
-(** Simple CSV writing functions *)
-module Csv_writer = Csv_writer
-
-module Header = Header
-module Row = Row
 module Shared = Shared
