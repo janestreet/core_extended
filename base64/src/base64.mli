@@ -5,7 +5,7 @@ module type T = sig
   val encode : string -> string
 
   (** The decoded string along with any unconsumed data *)
-  val decode : string -> string  * [`Unconsumed_data of string] option
+  val decode : string -> string * [`Unconsumed_data of string] option
 
   (** Raises if [decode] has any unconsumed data *)
   val decode_exn : string -> string
@@ -20,7 +20,7 @@ include T
 module Websafe : T
 
 (** Create other Base64 derivatives *)
-module Make(D : sig
+module Make (D : sig
     (** Usually [ '+' ] *)
     val char62 : char
 
