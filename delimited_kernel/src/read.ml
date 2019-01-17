@@ -21,6 +21,7 @@ module Builder = struct
   type _ t =
     | Column : int -> string t
     | Header : string -> string t
+    | Header_opt : string -> string option t
     | Return : 'a -> 'a t
     | Apply : ('b -> 'a) t * 'b t -> 'a t
     | Map : ('b -> 'a) * 'b t -> 'a t
@@ -78,6 +79,7 @@ module Builder = struct
 
   let at_index i ~f = Map (f, Column i)
   let at_header h ~f = Map (f, Header h)
+  let at_header_opt h ~f = Map (f, Header_opt h)
   let lambda f = Lambda f
 
   module Let_syntax = struct
@@ -87,6 +89,7 @@ module Builder = struct
       module Open_on_rhs = struct
         let at_index = at_index
         let at_header = at_header
+        let at_header_opt = at_header_opt
       end
     end
   end
@@ -167,14 +170,15 @@ module Builder = struct
       | Return x -> Without_headers.Return x
       | Column i -> Without_headers.Column i
       | Header h ->
-        let column_index =
-          match String.Map.find_exn header_map h with
-          | index -> index
-          | exception (Not_found_s _ | Caml.Not_found) ->
-            raise_s
-              [%message "Header not found" (h : string) (header_map : int String.Map.t)]
-        in
-        Without_headers.Column column_index
+        (match String.Map.find_exn header_map h with
+         | index -> Without_headers.Column index
+         | exception (Not_found_s _ | Caml.Not_found) ->
+           raise_s
+             [%message "Header not found" (h : string) (header_map : int String.Map.t)])
+      | Header_opt h ->
+        (match String.Map.find_exn header_map h with
+         | index -> Without_headers.Map (Option.some, Column index)
+         | exception (Not_found_s _ | Caml.Not_found) -> Without_headers.Return None)
       | Apply (f, x) -> Without_headers.Apply (transform f, transform x)
       | Map (f, x) -> Without_headers.Map (f, transform x)
       | Map2 (f, x, y) -> Without_headers.Map2 (f, transform x, transform y)
@@ -183,17 +187,6 @@ module Builder = struct
     in
     let transformed = transform t in
     Without_headers.build transformed
-  ;;
-
-  let rec headers_used : type a. a t -> String.Set.t = function
-    | Return _ -> String.Set.empty
-    | Column _ -> String.Set.empty
-    | Header h -> String.Set.singleton h
-    | Apply (f, x) -> Set.union (headers_used f) (headers_used x)
-    | Map (_, x) -> headers_used x
-    | Map2 (_, x, y) -> Set.union (headers_used x) (headers_used y)
-    | Both (x, y) -> Set.union (headers_used x) (headers_used y)
-    | Lambda _ -> String.Set.empty
   ;;
 end
 
@@ -221,24 +214,16 @@ module Parse_header = struct
 
   let header_map header_row = header_map_opt (Array.map ~f:Option.some header_row)
 
-  let limit_header builder limit_headers' csv_headers' =
-    let limit_headers = String.Set.of_list limit_headers' in
-    let builder_headers = Builder.headers_used builder in
-    if not (Set.is_subset builder_headers ~of_:limit_headers)
-    then
-      raise_s
-        [%message
-          "Builder uses header not specified in `Limit"
-            (builder_headers : String.Set.t)
-            (limit_headers : String.Set.t)];
+  let require_header required_headers' csv_headers' =
+    let required_headers = String.Set.of_list required_headers' in
     let csv_headers = String.Set.of_array csv_headers' in
-    let missing = Set.diff limit_headers csv_headers in
+    let missing = Set.diff required_headers csv_headers in
     if not (Set.is_empty missing)
     then
       raise_s
         [%message
-          "Header specified in `Limit not present in csv document"
-            (limit_headers : String.Set.t)
+          "Header specified in `Require not present in csv document"
+            (required_headers : String.Set.t)
             (csv_headers : String.Set.t)
             (missing : String.Set.t)];
     header_map csv_headers'
@@ -253,15 +238,15 @@ module Parse_header = struct
     }
   ;;
 
-  let create ?strip ?sep ?quote ?(header = `No) builder =
+  let create ?strip ?sep ?quote ?(header = `No) () =
     match header with
     | `No -> Second String.Map.empty
     | `Add headers -> Second (header_map (Array.of_list headers))
     | `Yes ->
-      let f headers = limit_header builder (Array.to_list headers) headers in
+      let f headers = header_map headers in
       First (create' ?strip ?sep ?quote f)
-    | `Limit headers ->
-      let f csv_headers = limit_header builder headers csv_headers in
+    | `Require headers ->
+      let f csv_headers = require_header headers csv_headers in
       First (create' ?strip ?sep ?quote f)
     | `Replace headers ->
       let f _ = header_map (Array.of_list headers) in
@@ -355,7 +340,7 @@ module Expert = struct
 
   let create_partial ?strip ?sep ?quote ?header () =
     let state =
-      Parse_header.create ?strip ?sep ?quote ?header (Builder.return ())
+      Parse_header.create ?strip ?sep ?quote ?header ()
       |> Either.Second.map ~f:(manual_parse_state ?strip ?sep ?quote)
       |> ref
     in
@@ -374,7 +359,7 @@ end
 
 let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_string =
   match
-    match Parse_header.create ?strip ?sep ?quote ?header builder with
+    match Parse_header.create ?strip ?sep ?quote ?header () with
     | Second header_map -> Some (header_map, csv_string)
     | First header_parse ->
       (match

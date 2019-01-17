@@ -3,7 +3,7 @@ open! Core_kernel
 type t =
   [ `No
   | `Yes
-  | `Limit of string list
+  | `Require of string list
   |
     `Replace of string list
   | `Add of string list

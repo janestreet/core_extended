@@ -70,6 +70,7 @@ module type Root = sig
       module Open_on_rhs : sig
         val at_index : int -> f:(string -> 'a) -> 'a t
         val at_header : string -> f:(string -> 'a) -> 'a t
+        val at_header_opt : string -> f:(string option -> 'a) -> 'a t
       end
     end
   end
@@ -82,6 +83,10 @@ module type Root = sig
       Note that if the given header is not provided through either the file or
       the [~header] argument to the parsers, this will fail at runtime.  *)
   val at_header : string -> f:(string -> 'a) -> 'a t
+
+  (** Read a field at the given header, if it exists. Use [f] to convert the field from
+      string. *)
+  val at_header_opt : string -> f:(string option -> 'a) -> 'a t
 
   module On_invalid_row : On_invalid_row
 
@@ -161,7 +166,7 @@ module type Expert = sig
       -> ?sep:char
       -> ?quote:[`No_quoting | `Using of char]
       -> ?header:Header.t
-      -> _ Builder.t
+      -> unit
       -> (t, int String.Map.t) Either.t
 
     (** [input t ~len s] reads the first [len] bytes from [s] and returns either [t] or

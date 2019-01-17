@@ -55,7 +55,7 @@ let make_emit_row current_row row_queue header ~lineno =
   let module Table = String.Table in
   let header_index =
     match (header : Header.t) with
-    | `No | `Yes | `Limit _ | `Transform _ | `Filter_map _ -> Table.create () ~size:1
+    | `No | `Yes | `Require _ | `Transform _ | `Filter_map _ -> Table.create () ~size:1
     | `Replace headers
     | `Add headers -> Table.of_alist_exn (List.mapi headers ~f:(fun i s -> s, i))
   in
@@ -63,7 +63,7 @@ let make_emit_row current_row row_queue header ~lineno =
     ref
       (match header with
        | `No | `Add _ -> true
-       | `Limit _ | `Replace _ | `Transform _ | `Filter_map _ | `Yes -> false)
+       | `Require _ | `Replace _ | `Transform _ | `Filter_map _ | `Yes -> false)
   in
   ( `on_eof (fun () -> if not !header_processed then failwith "Header line was not found")
   , fun () ->
@@ -72,7 +72,7 @@ let make_emit_row current_row row_queue header ~lineno =
       header_processed := true;
       match header with
       | `No | `Add _ -> assert false
-      | `Limit at_least ->
+      | `Require at_least ->
         let headers = Queue.to_list current_row in
         List.iter at_least ~f:(fun must_exist ->
           match List.findi headers ~f:(fun _ h -> h = must_exist) with
