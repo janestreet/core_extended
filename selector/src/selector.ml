@@ -9,7 +9,7 @@ module Stable = struct
         | LT of Date.V1.t
         | Between of Date.V1.t * Date.V1.t
         | On of Date.V1.t
-        [@@deriving bin_io, sexp]
+        [@@deriving bin_io, compare, sexp]
 
       let t_of_sexp sexp =
         let module Date = Core_kernel.Date in
@@ -46,6 +46,7 @@ module Stable = struct
           let to_string (s, _) = s
           let of_regexp s = s, Re.Perl.compile_pat s
           let of_string s = of_regexp s
+          let compare t1 t2 = String.V1.compare (to_string t1) (to_string t2)
         end
         include T
         include Binable.Of_stringable.V1(T)
@@ -66,6 +67,7 @@ module Stable = struct
 
         let sexp_of_t (s, _) = Sexp.V1.Atom ("/" ^ s ^ "/")
       end
+
       module Current = V1
     end
 
@@ -74,7 +76,7 @@ module Stable = struct
         | Equal of string list
         | Matches of Regexp.V1.t list
         | Mixed of [ `Regexp of Regexp.V1.t | `Literal of string ] list
-        [@@deriving bin_io, sexp]
+        [@@deriving bin_io, compare, sexp]
 
       let t_of_sexp sexp =
         let parse_atom a =

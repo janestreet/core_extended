@@ -73,7 +73,7 @@ module Stable : sig
 
   module Date_selector : sig
     module V1 : sig
-      type t = Date_selector.t [@@deriving sexp, bin_io]
+      type t = Date_selector.t [@@deriving sexp, bin_io, compare]
     end
   end
   module String_selector : sig
@@ -83,7 +83,7 @@ module Stable : sig
       end
     end
     module V1 : sig
-      type t = String_selector.t [@@deriving bin_io, sexp]
+      type t = String_selector.t [@@deriving bin_io, compare, sexp]
     end
   end
   module String_list_selector : sig
