@@ -1,4 +1,4 @@
-open Core_kernel
+open! Core_kernel
 
 (** Control how headers are parsed
 
@@ -16,6 +16,6 @@ type t =
   | `Require of string list
   | `Replace of string list
   | `Add of string list
-  | `Transform of (string list -> string list) sexp_opaque
-  | `Filter_map of (string list -> string option list) sexp_opaque ]
+  | `Transform of string list -> string list
+  | `Filter_map of string list -> string option list ]
 [@@deriving sexp_of]
