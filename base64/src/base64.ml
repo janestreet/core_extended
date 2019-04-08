@@ -1,4 +1,5 @@
 open Core_kernel
+open Poly
 
 module type T = sig
   val encode : string -> string

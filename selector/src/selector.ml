@@ -53,6 +53,7 @@ module Stable = struct
 
         let t_of_sexp sexp =
           let open Core_kernel in
+          let open Poly in
           let fail () =
             of_sexp_error "expected string bounded with / on both sides" sexp
           in
@@ -83,7 +84,8 @@ module Stable = struct
           match a with
           | List _ -> assert false
           | Atom s ->
-            if Core_kernel.(String.length s >= 1 && s.[0] = '/')
+            if Core_kernel.(let open Poly in
+               String.length s >= 1 && s.[0] = '/')
             then `Regexp (Regexp.V1.t_of_sexp a)
             else `Literal s
         in
@@ -122,6 +124,7 @@ end
 
 
 open Core_kernel
+open Poly
 
 
 

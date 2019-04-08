@@ -1,4 +1,5 @@
 open Core
+open Poly
 
 type file_info = string * Unix.stats
 type path = string list
