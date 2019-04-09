@@ -1,5 +1,4 @@
 open Core_kernel
-open Poly
 
 (* the maximum read/write I managed to get off of a socket or disk was 65k *)
 let buffer_size = 10 * 65 * 1024
@@ -16,14 +15,14 @@ let strip_buffer buf =
   let rec first_non_space n =
     if n >= len
     then None
-    else if Buffer.nth buf n <> ' '
+    else if Char.O.(Buffer.nth buf n <> ' ')
     then Some n
     else first_non_space (n + 1)
   in
   let rec last_non_space n =
     if n < 0
     then None
-    else if Buffer.nth buf n <> ' '
+    else if Char.O.(Buffer.nth buf n <> ' ')
     then Some n
     else last_non_space (n - 1)
   in
@@ -76,7 +75,7 @@ let make_emit_row current_row row_queue header ~lineno =
       | `Require at_least ->
         let headers = Queue.to_list current_row in
         List.iter at_least ~f:(fun must_exist ->
-          match List.findi headers ~f:(fun _ h -> h = must_exist) with
+          match List.findi headers ~f:(fun _ h -> String.equal h must_exist) with
           | None ->
             failwithf
               "The required header '%s' was not found in '%s' (lineno=%d)"

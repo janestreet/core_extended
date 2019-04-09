@@ -30,12 +30,12 @@ val to_columns : 'a t -> 'a -> string list
     e.g.
     {[
       let csv =
-        Builder.Fields_O.(
+        Delimited.Write.Fields_O.(
           Fields.to_list
             ~a_string:!!Fn.id
             ~a_date:!!Date.to_string
             ~mv:!>Long_short.csv)
-        |> Builder.of_list
+        |> Delimited.Write.of_list
     ]}
 *)
 module Fields_O : sig
