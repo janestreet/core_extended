@@ -1,0 +1,5 @@
+(library (name appendable_list) (public_name core_extended.appendable_list)
+ (libraries core_kernel)
+ (preprocess
+  (pps ppx_jane -dont-apply=sexp_message -annotated-ignores
+   -check-doc-comments)))
