@@ -104,7 +104,7 @@ module Builder = struct
       | Both : ('a t * 'b t) -> ('a * 'b) t
       | Lambda :
           (int String.Map.t -> string Append_only_buffer.t -> 'a) * int String.Map.t
-        -> 'a t
+          -> 'a t
 
     let get_fields_used t =
       let open Option.Let_syntax in
