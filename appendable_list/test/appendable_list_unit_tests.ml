@@ -142,7 +142,6 @@ let%test_module "individual test cases" =
      let length = length
      let mem = mem
      let all_unit = all_unit
-     let all_ignore = all_unit
      let all = all
      let ignore_m = ignore_m
 
@@ -319,7 +318,6 @@ let%test_module "semantics" =
        and return = return
        and all = all
        and all_unit = all_unit
-       and all_ignore = all_unit
 
        module Monad_infix = Monad_infix
        module Let_syntax = Let_syntax

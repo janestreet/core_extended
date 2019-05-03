@@ -244,7 +244,6 @@ include struct
   let return = return
   let all = all
   let all_unit = all_unit
-  let all_ignore = all_unit
 end
 
 module For_testing = struct

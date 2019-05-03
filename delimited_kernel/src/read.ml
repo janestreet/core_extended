@@ -61,7 +61,6 @@ module Builder = struct
 
     let all ts = List.fold_right ts ~init:(return []) ~f:(map2 ~f:(fun x xs -> x :: xs))
     let all_unit ts = map ~f:ignore (all ts)
-    let all_ignore = all_unit
     let both x y = Both (x, y)
     let ( <*> ) = apply
     let ( *> ) u v = return (fun () y -> y) <*> u <*> v
@@ -82,7 +81,14 @@ module Builder = struct
   let at_header_opt h ~f = Map (f, Header_opt h)
   let lambda f = Lambda f
 
+  module Open_on_rhs_intf = struct
+    module type S = Read_intf.Open_on_rhs with type 'a t := 'a t
+  end
+
   module Let_syntax = struct
+    include T
+    include Applicative_infix
+
     module Let_syntax = struct
       include T
 

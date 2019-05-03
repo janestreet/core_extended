@@ -29,6 +29,14 @@ module type On_invalid_row = sig
     -> 'a t
 end
 
+module type Open_on_rhs = sig
+  type 'a t
+
+  val at_index : int -> f:(string -> 'a) -> 'a t
+  val at_header : string -> f:(string -> 'a) -> 'a t
+  val at_header_opt : string -> f:(string option -> 'a) -> 'a t
+end
+
 module type Root = sig
   (** Row up to the error, and the field with the error up to the point of
       failure. Same as [Expert.Parse_state.Bad_csv_formatting]. *)
@@ -63,17 +71,14 @@ module type Root = sig
 
   include Applicative.S with type 'a t := 'a t
 
-  module Let_syntax : sig
-    module Let_syntax : sig
-      include Applicative.S with type 'a t := 'a t
-
-      module Open_on_rhs : sig
-        val at_index : int -> f:(string -> 'a) -> 'a t
-        val at_header : string -> f:(string -> 'a) -> 'a t
-        val at_header_opt : string -> f:(string option -> 'a) -> 'a t
-      end
-    end
+  module Open_on_rhs_intf : sig
+    module type S = Open_on_rhs with type 'a t := 'a t
   end
+
+  include
+    Applicative.Let_syntax
+    with type 'a t := 'a t
+    with module Open_on_rhs_intf := Open_on_rhs_intf
 
   (** Read a field at the given index. Use [f] to convert the field from string. *)
   val at_index : int -> f:(string -> 'a) -> 'a t
