@@ -129,12 +129,8 @@ module Expert = struct
     if len = 0
     then None
     else (
-      let ( = ) = Char.( = ) in
       let trailling_ws =
-        s.[pos] = ' '
-        || s.[pos] = '\t'
-        || s.[pos + len - 1] = ' '
-        || s.[pos + len - 1] = '\t'
+        Char.is_whitespace s.[pos] || Char.is_whitespace s.[pos + len - 1]
       in
       quote_len_loop
         s

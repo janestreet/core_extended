@@ -15,16 +15,16 @@ let strip_buffer buf =
   let rec first_non_space n =
     if n >= len
     then None
-    else if Char.O.(Buffer.nth buf n <> ' ')
-    then Some n
-    else first_non_space (n + 1)
+    else if Char.is_whitespace (Buffer.nth buf n)
+    then first_non_space (n + 1)
+    else Some n
   in
   let rec last_non_space n =
     if n < 0
     then None
-    else if Char.O.(Buffer.nth buf n <> ' ')
-    then Some n
-    else last_non_space (n - 1)
+    else if Char.is_whitespace (Buffer.nth buf n)
+    then last_non_space (n - 1)
+    else Some n
   in
   match first_non_space 0 with
   | None -> ""
