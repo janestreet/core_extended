@@ -25,7 +25,7 @@ module type On_invalid_row = sig
     :  (int String.Map.t (** Map from header to position. *)
         -> string Append_only_buffer.t (** Value at each position. *)
         -> exn (** Exception raised when trying to convert this row. *)
-        -> [`Skip | `Yield of 'a | `Raise of exn])
+        -> [ `Skip | `Yield of 'a | `Raise of exn ])
     -> 'a t
 end
 
@@ -111,11 +111,12 @@ module type Root = sig
     val builder : t builder_t
   end
 
+
   (** Fold the CSV rows contained in the given string. *)
   val fold_string
     :  ?strip:bool
     -> ?sep:char
-    -> ?quote:[`No_quoting | `Using of char]
+    -> ?quote:[ `No_quoting | `Using of char ]
     -> ?header:Header.t
     -> ?on_invalid_row:'a On_invalid_row.t
     -> 'a t
@@ -128,7 +129,7 @@ module type Root = sig
   val list_of_string
     :  ?strip:bool
     -> ?sep:char
-    -> ?quote:[`No_quoting | `Using of char]
+    -> ?quote:[ `No_quoting | `Using of char ]
     -> ?header:Header.t
     -> ?on_invalid_row:'a On_invalid_row.t
     -> 'a t
@@ -146,7 +147,7 @@ module type Expert = sig
   val create_parse_state
     :  ?strip:bool
     -> ?sep:char
-    -> ?quote:[`No_quoting | `Using of char]
+    -> ?quote:[ `No_quoting | `Using of char ]
     -> ?on_invalid_row:'a On_invalid_row.t
     -> header_map:int String.Map.t
     -> 'a t
@@ -169,7 +170,7 @@ module type Expert = sig
     val create
       :  ?strip:bool
       -> ?sep:char
-      -> ?quote:[`No_quoting | `Using of char]
+      -> ?quote:[ `No_quoting | `Using of char ]
       -> ?header:Header.t
       -> unit
       -> (t, int String.Map.t) Either.t
@@ -187,8 +188,8 @@ module type Expert = sig
   val create_partial
     :  ?strip:bool
     -> ?sep:char
-    -> ?quote:[`No_quoting | `Using of char]
+    -> ?quote:[ `No_quoting | `Using of char ]
     -> ?header:Header.t
     -> unit
-    -> ([`Data of string | `Eof] -> Row.t list) Staged.t
+    -> ([ `Data of string | `Eof ] -> Row.t list) Staged.t
 end

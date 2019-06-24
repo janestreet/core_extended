@@ -15,7 +15,9 @@ open Core_kernel
 type ('a, 'b) reader =
   ?strip:bool
   -> ?skip_lines:int
-  -> ?on_parse_error:[`Raise | `Handle of string Queue.t -> exn -> [`Continue | `Finish]]
+  -> ?on_parse_error:[ `Raise
+                     | `Handle of string Queue.t -> exn -> [ `Continue | `Finish ]
+                     ]
   -> header:'a
   -> 'b
 
@@ -39,4 +41,4 @@ val make_emit_row
   -> Row.t Queue.t
   -> Header.t
   -> lineno:int ref
-  -> [`on_eof of unit -> unit] * (unit -> unit)
+  -> [ `on_eof of unit -> unit ] * (unit -> unit)

@@ -58,7 +58,7 @@ type t =
     mutable to_visit : (path * int) list
   ; (* dir to traverse and the depth it is at *)
     mutable current_dir : path
-  ; mutable current_handle : [`Just_created | `Starting | `Handle of Unix.dir_handle]
+  ; mutable current_handle : [ `Just_created | `Starting | `Handle of Unix.dir_handle ]
   ; mutable depth : int
   ; mutable closed : bool
   }
@@ -192,8 +192,7 @@ let rec next t =
   match t.current_handle with
   | `Just_created ->
     (match t.options.O.max_depth with
-     | Some d
-       when d < 0 ->
+     | Some d when d < 0 ->
        close t;
        None
      | None | Some _ ->

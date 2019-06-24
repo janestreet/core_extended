@@ -17,5 +17,6 @@ type t =
   | `Replace of string list
   | `Add of string list
   | `Transform of string list -> string list
-  | `Filter_map of string list -> string option list ]
+  | `Filter_map of string list -> string option list
+  ]
 [@@deriving sexp_of]

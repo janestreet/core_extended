@@ -18,8 +18,7 @@ type 'a t =
   { acc : 'a
   ; sep : char
   ; quote : char
-  ; use_quoting :
-      bool
+  ; use_quoting : bool
   ; lineno : int
   ; step : Step.t
   ; field : string
@@ -133,7 +132,10 @@ let input_aux ~get_length ~get t ?(pos = 0) ?len input =
   let rec loop i t step =
     if i >= loop_bound
     then
-      { t with step; current_field = !current_field; next_field_index = !next_field_index
+      { t with
+        step
+      ; current_field = !current_field
+      ; next_field_index = !next_field_index
       }
     else
       let open Char.Replace_polymorphic_compare in

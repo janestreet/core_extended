@@ -6,7 +6,9 @@ let buffer_size = 10 * 65 * 1024
 type ('a, 'b) reader =
   ?strip:bool
   -> ?skip_lines:int
-  -> ?on_parse_error:[`Raise | `Handle of string Queue.t -> exn -> [`Continue | `Finish]]
+  -> ?on_parse_error:[ `Raise
+                     | `Handle of string Queue.t -> exn -> [ `Continue | `Finish ]
+                     ]
   -> header:'a
   -> 'b
 
@@ -56,8 +58,8 @@ let make_emit_row current_row row_queue header ~lineno =
   let header_index =
     match (header : Header.t) with
     | `No | `Yes | `Require _ | `Transform _ | `Filter_map _ -> Table.create () ~size:1
-    | `Replace headers
-    | `Add headers -> Table.of_alist_exn (List.mapi headers ~f:(fun i s -> s, i))
+    | `Replace headers | `Add headers ->
+      Table.of_alist_exn (List.mapi headers ~f:(fun i s -> s, i))
   in
   let header_processed =
     ref

@@ -17,7 +17,7 @@ val set_acc : 'a t -> 'a -> 'a t
 val create
   :  ?strip:bool
   -> ?sep:char
-  -> ?quote:[`No_quoting | `Using of char]
+  -> ?quote:[ `No_quoting | `Using of char ]
   (** Indices of the fields used. E.g., [~fields_used:(Some [| 0; 3; |])] means every
       row will be presented to [f] as having two fields, the first and fourth fields of
       the csv. This is for performance; pass [None] to store all fields.*)

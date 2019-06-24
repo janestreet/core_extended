@@ -10,7 +10,9 @@ let%test_module "individual test cases" =
 
      let test_with_list ~expect expr =
        [%test_result: int list] ~expect (expr |> to_list);
-       [%test_result: int list] ~expect (expr |> to_sequence |> Sequence.to_list)
+       [%test_result: int list]
+         ~expect
+         (expr |> to_sequence |> Sequence.to_list)
      ;;
 
      let empty = empty
@@ -33,9 +35,12 @@ let%test_module "individual test cases" =
          ~f:(test_with_list ~expect)
          [ of_list expect
          ; concat (List.init n ~f:(fun i -> of_list [ i ]))
-         ; List.fold ~init:empty expect ~f:(fun acc i -> append acc (of_list [ i ]))
+         ; List.fold ~init:empty expect ~f:(fun acc i ->
+             append acc (of_list [ i ]))
          ; (assert (n mod 2 = 0);
-            concat (List.init (n / 2) ~f:(fun i -> of_list [ 2 * i; (2 * i) + 1 ])))
+            concat
+              (List.init (n / 2) ~f:(fun i ->
+                 of_list [ 2 * i; (2 * i) + 1 ])))
          ]
      ;;
 
@@ -72,9 +77,12 @@ let%test_module "individual test cases" =
              ~f:(fun acc x -> add_front x acc)
          in
          let ts_add_back () =
-           List.fold (List.concat xss) ~init:empty ~f:(fun acc x -> add_back acc x)
+           List.fold (List.concat xss) ~init:empty ~f:(fun acc x ->
+             add_back acc x)
          in
-         let ts_left () = List.fold xs ~init:empty ~f:(fun acc t -> append acc t) in
+         let ts_left () =
+           List.fold xs ~init:empty ~f:(fun acc t -> append acc t)
+         in
          let ts_right () =
            List.fold_right xs ~init:empty ~f:(fun t acc -> append t acc)
          in
@@ -101,7 +109,8 @@ let%test_module "individual test cases" =
                  (to_list (map l ~f:f_map))
                  ~expect:expect_f_map
              with
-             | exn -> failwiths "fail" (i, l, exn) [%sexp_of: int * int t * Exn.t])
+             | exn ->
+               failwiths "fail" (i, l, exn) [%sexp_of: int * int t * Exn.t])
            [ ts_concat
            ; ts_add_front
            ; ts_add_back
@@ -203,25 +212,30 @@ let%test_module "semantics" =
      let of_list = of_list
 
      let%test_unit "of_list" =
-       Quickcheck.test Quickcheck.Generator.small_non_negative_int ~f:(fun len ->
-         let list = List.init len ~f:Fn.id in
-         [%test_eq: int list] (to_list (of_list list)) list)
+       Quickcheck.test
+         Quickcheck.Generator.small_non_negative_int
+         ~f:(fun len ->
+           let list = List.init len ~f:Fn.id in
+           [%test_eq: int list] (to_list (of_list list)) list)
      ;;
 
      let singleton = singleton
 
-     let%test_unit "singleton" = [%test_eq: unit list] (to_list (singleton ())) [ () ]
+     let%test_unit "singleton" =
+       [%test_eq: unit list] (to_list (singleton ())) [ () ]
+     ;;
 
      let append = append
 
      let%test_unit "append" =
        Quickcheck.test
          [%quickcheck.generator: For_testing.t * For_testing.t]
-         ~sexp_of:[%sexp_of: For_testing.Element.t t * For_testing.Element.t t]
+         ~sexp_of:
+           [%sexp_of: For_testing.Element.t t * For_testing.Element.t t]
          ~f:(fun (l, r) ->
            let l = For_testing.map_simple l ~f:(fun e -> `L, e) in
            let r = For_testing.map_simple r ~f:(fun e -> `R, e) in
-           [%test_eq: ([`L | `R] * For_testing.Element.t) list]
+           [%test_eq: ([ `L | `R ] * For_testing.Element.t) list]
              (to_list (append l r))
              (List.append (to_list l) (to_list r)))
      ;;
@@ -246,7 +260,7 @@ let%test_module "semantics" =
          ~sexp_of:[%sexp_of: For_testing.Element.t t]
          ~f:(fun t ->
            let t = For_testing.map_simple t ~f:(fun e -> `tl e) in
-           [%test_eq: [`hd | `tl of For_testing.Element.t] list]
+           [%test_eq: [ `hd | `tl of For_testing.Element.t ] list]
              (to_list (add_front `hd t))
              (`hd :: to_list t))
      ;;
@@ -259,7 +273,7 @@ let%test_module "semantics" =
          ~sexp_of:[%sexp_of: For_testing.Element.t t]
          ~f:(fun t ->
            let t = For_testing.map_simple t ~f:(fun e -> `init e) in
-           [%test_eq: [`init of For_testing.Element.t | `last] list]
+           [%test_eq: [ `init of For_testing.Element.t | `last ] list]
              (to_list (add_back t `last))
              (to_list t @ [ `last ]))
      ;;
@@ -289,7 +303,7 @@ let%test_module "semantics" =
          For_testing.quickcheck_generator
          ~sexp_of:[%sexp_of: For_testing.Element.t t]
          ~f:(fun t ->
-           [%test_eq: [`f of For_testing.Element.t] list]
+           [%test_eq: [ `f of For_testing.Element.t ] list]
              (to_list (map t ~f:(fun e -> `f e)))
              (List.map (to_list t) ~f:(fun e -> `f e)))
      ;;
@@ -302,7 +316,8 @@ let%test_module "semantics" =
            For_testing.t * (For_testing.Element.t -> For_testing.t)]
          ~sexp_of:
            [%sexp_of:
-             For_testing.Element.t t * (For_testing.Element.t -> For_testing.t)]
+             For_testing.Element.t t
+             * (For_testing.Element.t -> For_testing.t)]
          ~f:(fun (t, f) ->
            [%test_eq: For_testing.Element.t list]
              (to_list (bind t ~f))
@@ -366,7 +381,8 @@ let%test_module "semantics" =
          ~f:(fun t ->
            [%test_eq: Accum.t]
              (fold t ~init:Accum.Init ~f:(fun acc e -> Accum.F (acc, e)))
-             (List.fold (to_list t) ~init:Accum.Init ~f:(fun acc e -> Accum.F (acc, e))))
+             (List.fold (to_list t) ~init:Accum.Init ~f:(fun acc e ->
+                Accum.F (acc, e))))
      ;;
 
      let fold_until = fold_until
@@ -375,13 +391,14 @@ let%test_module "semantics" =
        let module Accum = struct
          type t =
            [ `Init
-           | `Continue of t * For_testing.Element.t ]
+           | `Continue of t * For_testing.Element.t
+           ]
          [@@deriving compare, sexp_of]
 
          let quickcheck_observer =
            Quickcheck.Observer.fixed_point (fun quickcheck_observer ->
              [%quickcheck.observer:
-               [`Init | `Continue of t * For_testing.Element.t]])
+               [ `Init | `Continue of t * For_testing.Element.t ]])
          ;;
        end
        in
@@ -394,7 +411,8 @@ let%test_module "semantics" =
        in
        Quickcheck.test
          [%quickcheck.generator:
-           For_testing.t * (Accum.t -> For_testing.Element.t -> [`Continue | `Stop])]
+           For_testing.t
+           * (Accum.t -> For_testing.Element.t -> [ `Continue | `Stop ])]
          ~f:(fun (t, f) ->
            let f accum e =
              match f accum e with
@@ -413,25 +431,31 @@ let%test_module "semantics" =
        let module Accum = struct
          type t =
            [ `Init
-           | `Ok of t * For_testing.Element.t ]
+           | `Ok of t * For_testing.Element.t
+           ]
          [@@deriving compare, sexp_of]
 
          let quickcheck_observer =
            Quickcheck.Observer.fixed_point (fun quickcheck_observer ->
-             [%quickcheck.observer: [`Init | `Ok of t * For_testing.Element.t]])
+             [%quickcheck.observer:
+               [ `Init | `Ok of t * For_testing.Element.t ]])
          ;;
        end
        in
        Quickcheck.test
          [%quickcheck.generator:
-           For_testing.t * (Accum.t -> For_testing.Element.t -> [`Ok | `Error])]
+           For_testing.t
+           * (Accum.t -> For_testing.Element.t -> [ `Ok | `Error ])]
          ~f:(fun (t, f) ->
            let f accum e =
              match f accum e with
              | `Ok -> Ok (`Ok (accum, e))
              | `Error -> Error (`Error (accum, e))
            in
-           [%test_eq: (Accum.t, [`Error of Accum.t * For_testing.Element.t]) Result.t]
+           [%test_eq:
+             ( Accum.t
+             , [ `Error of Accum.t * For_testing.Element.t ] )
+               Result.t]
              (fold_result t ~init:`Init ~f)
              (List.fold_result (to_list t) ~init:`Init ~f))
      ;;
@@ -442,7 +466,8 @@ let%test_module "semantics" =
        Quickcheck.test
          For_testing.quickcheck_generator
          ~sexp_of:[%sexp_of: For_testing.Element.t t]
-         ~f:(fun t -> [%test_eq: bool] (is_empty t) (List.is_empty (to_list t)))
+         ~f:(fun t ->
+           [%test_eq: bool] (is_empty t) (List.is_empty (to_list t)))
      ;;
 
      let length = length
@@ -467,12 +492,13 @@ let%test_module "semantics" =
      and to_array = to_array
      and sum = sum
 
-     let%expect_test "For_testing.quickcheck_generator at least generates each \
-                      constructor"
+     let%expect_test "For_testing.quickcheck_generator at least generates \
+                      each constructor"
        =
        let generates f =
-         Quickcheck.test_can_generate For_testing.quickcheck_generator ~f:(fun t ->
-           f [%sexp (t : For_testing.Element.t t)])
+         Quickcheck.test_can_generate
+           For_testing.quickcheck_generator
+           ~f:(fun t -> f [%sexp (t : For_testing.Element.t t)])
        in
        generates (function
          | List [] -> true

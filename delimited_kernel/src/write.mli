@@ -65,7 +65,7 @@ module By_row : sig
   val output_lines
     :  ?quote:char
     -> ?sep:char
-    -> ?eol:[`Dos | `Unix]
+    -> ?eol:[ `Dos | `Unix ]
     -> Out_channel.t
     -> row list
     -> unit

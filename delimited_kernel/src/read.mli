@@ -1,5 +1,4 @@
-(** @inline *)
-include Read_intf.Root
+include Read_intf.Root (** @inline *)
 
 (** Experts only. If you really think you need a function in this module,
     please talk to a delimited dev first. *)

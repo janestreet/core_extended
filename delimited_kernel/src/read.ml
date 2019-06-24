@@ -8,7 +8,7 @@ module On_invalid_row = struct
     int String.Map.t
     -> string Append_only_buffer.t
     -> exn
-    -> [`Skip | `Yield of 'a | `Raise of exn]
+    -> [ `Skip | `Yield of 'a | `Raise of exn ]
 
   let raise _ _ exn = `Raise exn
   let skip _ _ _ = `Skip

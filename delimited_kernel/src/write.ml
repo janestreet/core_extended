@@ -82,8 +82,7 @@ module Expert = struct
     then dst_pos
     else (
       match src.[src_pos] with
-      | c
-        when Char.equal c quote ->
+      | c when Char.equal c quote ->
         Bytes.set dst dst_pos quote;
         Bytes.set dst (dst_pos + 1) quote;
         quote_blit_loop
@@ -114,11 +113,9 @@ module Expert = struct
     then if should_escape then Some acc else None
     else (
       match s.[pos] with
-      | c
-        when Char.equal c quote ->
+      | c when Char.equal c quote ->
         quote_len_loop s ~quote ~sep ~pos:(pos + 1) ~end_pos ~should_escape:true (acc + 1)
-      | c
-        when Char.equal c sep ->
+      | c when Char.equal c sep ->
         quote_len_loop s ~quote ~sep ~pos:(pos + 1) ~end_pos ~should_escape:true acc
       | '\n' ->
         quote_len_loop s ~quote ~sep ~pos:(pos + 1) ~end_pos ~should_escape:true acc
