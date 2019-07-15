@@ -39,8 +39,7 @@ let%test_module "individual test cases" =
              append acc (of_list [ i ]))
          ; (assert (n mod 2 = 0);
             concat
-              (List.init (n / 2) ~f:(fun i ->
-                 of_list [ 2 * i; (2 * i) + 1 ])))
+              (List.init (n / 2) ~f:(fun i -> of_list [ 2 * i; (2 * i) + 1 ])))
          ]
      ;;
 
@@ -230,8 +229,7 @@ let%test_module "semantics" =
      let%test_unit "append" =
        Quickcheck.test
          [%quickcheck.generator: For_testing.t * For_testing.t]
-         ~sexp_of:
-           [%sexp_of: For_testing.Element.t t * For_testing.Element.t t]
+         ~sexp_of:[%sexp_of: For_testing.Element.t t * For_testing.Element.t t]
          ~f:(fun (l, r) ->
            let l = For_testing.map_simple l ~f:(fun e -> `L, e) in
            let r = For_testing.map_simple r ~f:(fun e -> `R, e) in
@@ -316,8 +314,7 @@ let%test_module "semantics" =
            For_testing.t * (For_testing.Element.t -> For_testing.t)]
          ~sexp_of:
            [%sexp_of:
-             For_testing.Element.t t
-             * (For_testing.Element.t -> For_testing.t)]
+             For_testing.Element.t t * (For_testing.Element.t -> For_testing.t)]
          ~f:(fun (t, f) ->
            [%test_eq: For_testing.Element.t list]
              (to_list (bind t ~f))
@@ -453,9 +450,7 @@ let%test_module "semantics" =
              | `Error -> Error (`Error (accum, e))
            in
            [%test_eq:
-             ( Accum.t
-             , [ `Error of Accum.t * For_testing.Element.t ] )
-               Result.t]
+             (Accum.t, [ `Error of Accum.t * For_testing.Element.t ]) Result.t]
              (fold_result t ~init:`Init ~f)
              (List.fold_result (to_list t) ~init:`Init ~f))
      ;;
