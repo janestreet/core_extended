@@ -1,6 +1,8 @@
 open Core_kernel
 open! Int.Replace_polymorphic_compare
 
+module type To_string = Write_intf.To_string
+
 type -'a t =
   { headers : string list
   ; to_columns : 'a -> tail:string list -> string list
@@ -56,7 +58,7 @@ module O = struct
   let ( <> ) = append
 end
 
-let to_string_m (type t) (module T : Stringable.S with type t = t) = T.to_string
+let to_string_m (type t) (module T : To_string with type t = t) = T.to_string
 let column_m m ~header = column (to_string_m m) ~header
 
 let column_m_opt ?(default = "") m ~header =
