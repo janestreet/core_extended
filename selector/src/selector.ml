@@ -49,7 +49,7 @@ module Stable = struct
           let compare t1 t2 = String.V1.compare (to_string t1) (to_string t2)
         end
         include T
-        include Binable.Of_stringable.V1(T)
+        include (Binable.Of_stringable.V1 [@alert "-legacy"])(T)
 
         let t_of_sexp sexp =
           let open Core_kernel in
