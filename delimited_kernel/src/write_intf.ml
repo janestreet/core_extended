@@ -65,14 +65,14 @@ module type M = sig
     type row = string list
 
     (** Prints a valid csv file to a given channel.
-        The [eol] arg can be used to override the default line ending
-        of "\r\n" (DOS line endings).
-        Example ~eol:`Unix to get *nix line endings
+        The [line_breaks] arg can be used to override the default line ending
+        of "\r\n" (DOS/Windows line endings).
+        Example ~line_breaks:`Unix to get *nix line endings
     *)
     val output_lines
       :  ?quote:char
       -> ?sep:char
-      -> ?eol:[ `Dos | `Unix ]
+      -> ?line_breaks:[ `Windows | `Unix ]
       -> Out_channel.t
       -> row list
       -> unit

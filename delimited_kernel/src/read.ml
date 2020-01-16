@@ -419,6 +419,11 @@ let list_of_string ?strip ?sep ?quote ?header ?on_invalid_row builder csv_string
   |> Append_only_buffer.to_list
 ;;
 
+let read_lines ?strip ?sep ?quote ?header ?on_invalid_row builder in_channel =
+  let contents = In_channel.input_all in_channel in
+  list_of_string ?strip ?sep ?quote ?header ?on_invalid_row builder contents
+;;
+
 module Row = struct
   type 'a builder_t = 'a t
 

@@ -135,6 +135,17 @@ module type Root = sig
     -> 'a t
     -> string
     -> 'a list
+
+  (** Read CSV file. *)
+  val read_lines
+    :  ?strip:bool
+    -> ?sep:char
+    -> ?quote:[ `No_quoting | `Using of char ]
+    -> ?header:Header.t
+    -> ?on_invalid_row:'a On_invalid_row.t
+    -> 'a t
+    -> In_channel.t
+    -> 'a list
 end
 
 module type Expert = sig

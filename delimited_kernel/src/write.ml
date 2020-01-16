@@ -220,23 +220,23 @@ module By_row = struct
     Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
   ;;
 
-  let rec output_lines_loop ~quote ~sep ~buff ~eol oc = function
+  let rec output_lines_loop ~quote ~sep ~buff ~line_break oc = function
     | [] -> ()
     | h :: t ->
       let spec, len = line_spec_loop ~quote ~sep [] 0 h in
       let buff = if Bytes.length buff < len then Bytes.create (2 * len) else buff in
       ignore (line_blit_loop ~quote ~sep ~dst:buff ~pos:0 spec : int);
       Out_channel.output oc ~buf:buff ~pos:0 ~len;
-      Out_channel.output_string oc eol;
-      output_lines_loop ~quote ~sep ~buff ~eol oc t
+      Out_channel.output_string oc line_break;
+      output_lines_loop ~quote ~sep ~buff ~line_break oc t
   ;;
 
-  let output_lines ?(quote = '"') ?(sep = ',') ?(eol = `Dos) oc l =
-    let eol =
-      match eol with
-      | `Dos -> "\r\n"
+  let output_lines ?(quote = '"') ?(sep = ',') ?(line_breaks = `Windows) oc l =
+    let line_break =
+      match line_breaks with
+      | `Windows -> "\r\n"
       | `Unix -> "\n"
     in
-    output_lines_loop ~quote ~sep ~buff:(Bytes.create 256) ~eol oc l
+    output_lines_loop ~quote ~sep ~buff:(Bytes.create 256) ~line_break oc l
   ;;
 end
