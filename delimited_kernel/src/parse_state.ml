@@ -79,15 +79,6 @@ let create ?(strip = false) ?(sep = ',') ?(quote = `Using '"') ~fields_used ~ini
   }
 ;;
 
-let is_at_beginning_of_row t =
-  String.is_empty t.field
-  && List.is_empty t.current_row
-  &&
-  match t.step with
-  | Field_start -> true
-  | In_unquoted_field | In_quoted_field | In_quoted_field_after_quote -> false
-;;
-
 let mutable_of_t t =
   let field = Buffer.create (String.length t.field) in
   Buffer.add_string field t.field;

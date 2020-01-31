@@ -175,12 +175,15 @@ module Builder = struct
     let rec transform : type a. a t -> a Without_headers.t = function
       | Return x -> Without_headers.Return x
       | Column i -> Without_headers.Column i
-      | Header h ->
-        (match String.Map.find_exn header_map h with
+      | Header column ->
+        (match String.Map.find_exn header_map column with
          | index -> Without_headers.Column index
          | exception (Not_found_s _ | Caml.Not_found) ->
            raise_s
-             [%message "Header not found" (h : string) (header_map : int String.Map.t)])
+             [%message
+               "Missing column in header"
+                 (column : string)
+                 (header_map : int String.Map.t)])
       | Header_opt h ->
         (match String.Map.find_exn header_map h with
          | index -> Without_headers.Map (Option.some, Column index)
@@ -208,8 +211,6 @@ module Parse_header = struct
     { state : unit Parse_state.t
     ; transform : string array -> int String.Map.t
     }
-
-  let is_at_beginning_of_row t = Parse_state.is_at_beginning_of_row t.state
 
   let header_map_opt header_row =
     Array.foldi header_row ~init:String.Map.empty ~f:(fun i map header ->

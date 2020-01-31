@@ -41,6 +41,3 @@ val input_string : 'a t -> ?pos:int -> ?len:int -> string -> 'a t
 (** [finish t] forces an end-of-row. Raises if end-of-row is not permitted here (e.g.,
     within a quoted field). It is permitted to [input] after a [finish]. *)
 val finish : 'a t -> 'a t
-
-(** Returns true if the parser is at the beginning of a row *)
-val is_at_beginning_of_row : _ t -> bool

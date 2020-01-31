@@ -191,7 +191,6 @@ module type Expert = sig
     val input : t -> len:int -> Bytes.t -> (t, int String.Map.t * string) Either.t
 
     val input_string : t -> len:int -> string -> (t, int String.Map.t * string) Either.t
-    val is_at_beginning_of_row : t -> bool
   end
 
   (** This creates a function that can be fed partial input to return partial parses.
