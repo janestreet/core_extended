@@ -1,7 +1,7 @@
 open! Core_kernel
 open! Import
 
-(* A Stack that suppors an efficient push_list operation *)
+(* A Stack that supports an efficient push_list operation *)
 module List_stack : sig
   type 'a t
 
@@ -39,21 +39,27 @@ type +'a t =
 
 let empty = Empty
 
-let rec non_closure_apply_and_tail_rec_iter nodes ~f =
-  if not (List_stack.is_empty nodes)
-  then (
-    (match List_stack.pop_exn nodes with
-     | Empty -> ()
-     | Singleton a -> f a
-     | List (a, b, cs) ->
-       f a;
-       f b;
-       List.iter cs ~f
-     | Node (a, b, cs) -> List_stack.push_list nodes (a :: b :: cs));
-    non_closure_apply_and_tail_rec_iter nodes ~f)
+let rec non_closure_apply_and_tail_rec_fold nodes ~acc ~f =
+  if List_stack.is_empty nodes
+  then acc
+  else (
+    let acc =
+      match List_stack.pop_exn nodes with
+      | Empty -> acc
+      | Singleton a -> f acc a
+      | List (a, b, cs) -> List.fold ~f ~init:(f (f acc a) b) cs
+      | Node (a, b, cs) ->
+        List_stack.push_list nodes (a :: b :: cs);
+        acc
+    in
+    non_closure_apply_and_tail_rec_fold nodes ~acc ~f)
 ;;
 
-let iter t ~f = non_closure_apply_and_tail_rec_iter (List_stack.singleton t) ~f
+let fold t ~init ~f =
+  non_closure_apply_and_tail_rec_fold (List_stack.singleton t) ~acc:init ~f
+;;
+
+let iter t ~f = Container.iter ~fold ~f t
 
 let is_empty = function
   | Empty -> true
@@ -64,26 +70,10 @@ let is_empty = function
       true)
 ;;
 
-let fold t ~init ~f =
-  let acc = ref init in
-  iter t ~f:(fun t -> acc := f !acc t);
-  !acc
-;;
-
 let fold_result t ~init ~f = Container.fold_result ~fold ~init ~f t
 let fold_until t ~init ~f = Container.fold_until ~fold ~init ~f t
-
-let length t =
-  let count = ref 0 in
-  iter t ~f:(fun _ -> incr count);
-  !count
-;;
-
-let to_list t =
-  let xs = ref [] in
-  iter t ~f:(fun x -> xs := x :: !xs);
-  List.rev !xs
-;;
+let length t = fold t ~init:0 ~f:(fun acc _ -> Int.succ acc)
+let to_list t = fold t ~init:[] ~f:(fun acc x -> x :: acc) |> List.rev
 
 (* Mauro Jaskelioff and Exequiel Rivas. 2015. Functional pearl: a smart view on datatypes.
    SIGPLAN Not. 50, 9 (August 2015), 355-361.
