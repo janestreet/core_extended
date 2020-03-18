@@ -39,6 +39,7 @@ let create sz =
   }
 ;;
 
+let length t = t.length
 let bucket i = i / bits_per_bucket
 let index i = i mod bits_per_bucket
 

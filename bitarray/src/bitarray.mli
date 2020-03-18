@@ -27,3 +27,6 @@ val fold : t -> init:'a -> f:('a -> bool -> 'a) -> 'a
 
 (** [iter t ~f] Iterate over the array as in [Array.iter] *)
 val iter : t -> f:(bool -> unit) -> unit
+
+(** [length t] returns the length of [t], i.e., the number of bits it contains *)
+val length : t -> int
