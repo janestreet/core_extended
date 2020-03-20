@@ -94,7 +94,8 @@ let%test_module "individual test cases" =
            ~f:(fun i l ->
              let l =
                try l () with
-               | exn -> failwiths "exn" (i, exn) [%sexp_of: int * Exn.t]
+               | exn ->
+                 failwiths ~here:[%here] "exn" (i, exn) [%sexp_of: int * Exn.t]
              in
              let iter_to_list l =
                let r = ref [] in
@@ -109,7 +110,11 @@ let%test_module "individual test cases" =
                  ~expect:expect_f_map
              with
              | exn ->
-               failwiths "fail" (i, l, exn) [%sexp_of: int * int t * Exn.t])
+               failwiths
+                 ~here:[%here]
+                 "fail"
+                 (i, l, exn)
+                 [%sexp_of: int * int t * Exn.t])
            [ ts_concat
            ; ts_add_front
            ; ts_add_back
