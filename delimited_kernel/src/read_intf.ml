@@ -9,7 +9,7 @@ open Core_kernel
 module type On_invalid_row = sig
   type 'a t
 
-  (** The default. Raise. *)
+  (** The default. Raise with additional context. *)
   val raise : _ t
 
   (** Skip the bad row *)
@@ -22,7 +22,8 @@ module type On_invalid_row = sig
       - [`Raise]: raise the given exception
   *)
   val create
-    :  (int String.Map.t (** Map from header to position. *)
+    :  (line_number:int (** The line number of the bad row.  *)
+        -> int String.Map.t (** Map from header to position. *)
         -> string Append_only_buffer.t (** Value at each position. *)
         -> exn (** Exception raised when trying to convert this row. *)
         -> [ `Skip | `Yield of 'a | `Raise of exn ])
@@ -159,6 +160,7 @@ module type Expert = sig
     :  ?strip:bool
     -> ?sep:char
     -> ?quote:[ `No_quoting | `Using of char ]
+    -> ?start_line_number:int
     -> ?on_invalid_row:'a On_invalid_row.t
     -> header_map:int String.Map.t
     -> 'a t
@@ -174,23 +176,46 @@ module type Expert = sig
   end
 
   module Parse_header : sig
-    (** Type [t] represents an incomplete header parse. Keep calling [input] on it until you
-        get a map from header name to column number. *)
-    type t
+    module Partial : sig
+      (** Type [t] represents an incomplete header parse. Keep calling [input] on it until you
+          get a map from header name to column number. *)
+      type t
+    end
+
+    module Success : sig
+      type t =
+        { header_map : int String.Map.t
+        ; next_line_number : int
+        ; consumed : int
+        }
+      [@@deriving sexp_of]
+    end
 
     val create
       :  ?strip:bool
       -> ?sep:char
       -> ?quote:[ `No_quoting | `Using of char ]
+      -> ?start_line_number:int
       -> ?header:Header.t
       -> unit
-      -> (t, int String.Map.t) Either.t
+      -> (Partial.t, Success.t) Either.t
 
     (** [input t ~len s] reads the first [len] bytes from [s] and returns either [t] or
         [header_map, unused_input]. *)
-    val input : t -> len:int -> Bytes.t -> (t, int String.Map.t * string) Either.t
+    val input
+      :  Partial.t
+      -> ?pos:int
+      -> ?len:int
+      -> Bytes.t
+      -> (Partial.t, Success.t) Either.t
 
-    val input_string : t -> len:int -> string -> (t, int String.Map.t * string) Either.t
+    (** The same as [input], but takes a string instead. *)
+    val input_string
+      :  Partial.t
+      -> ?pos:int
+      -> ?len:int
+      -> string
+      -> (Partial.t, Success.t) Either.t
   end
 
   (** This creates a function that can be fed partial input to return partial parses.
@@ -199,7 +224,11 @@ module type Expert = sig
     :  ?strip:bool
     -> ?sep:char
     -> ?quote:[ `No_quoting | `Using of char ]
+    -> ?start_line_number:int
     -> ?header:Header.t
     -> unit
     -> ([ `Data of string | `Eof ] -> Row.t list) Staged.t
+  [@@deprecated
+    "[since 2020-05] use [Delimited.Read.list_of_string Delimited.Read.Row.builder s] \
+     for simple use cases, [Delimited.Read.Expert.Parse_state] otherwise"]
 end

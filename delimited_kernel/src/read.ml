@@ -5,13 +5,24 @@ exception Bad_csv_formatting = Parse_state.Bad_csv_formatting
 
 module On_invalid_row = struct
   type 'a t =
-    int String.Map.t
+    line_number:int
+    -> int String.Map.t
     -> string Append_only_buffer.t
     -> exn
     -> [ `Skip | `Yield of 'a | `Raise of exn ]
 
-  let raise _ _ exn = `Raise exn
-  let skip _ _ _ = `Skip
+  let raise ~line_number header_map buffer exn =
+    `Raise
+      (Exn.create_s
+         [%message
+           "Exception raised in Delimited.Read"
+             (line_number : int)
+             (header_map : int String.Map.t)
+             ~buffer:(Append_only_buffer.to_list buffer : string list)
+             (exn : exn)])
+  ;;
+
+  let skip ~line_number:_ _ _ _ = `Skip
   let create = Fn.id
 end
 
@@ -202,24 +213,26 @@ end
 include Builder
 
 module Parse_header = struct
-  (* This exception is used to return early from the parser, so we don't consume more
-     input than necessary. This is almost [With_return], except declaring the exception at
-     top-level so we can freely pass around a closure that raises it. *)
-  exception Header_parsed of string array * int
+  module Partial = struct
+    type t =
+      { state : string array option Parse_state.t
+      ; transform : string array -> int String.Map.t
+      }
+  end
 
-  type t =
-    { state : unit Parse_state.t
-    ; transform : string array -> int String.Map.t
-    }
+  module Success = struct
+    type t =
+      { header_map : int String.Map.t
+      ; next_line_number : int
+      ; consumed : int
+      }
+    [@@deriving sexp_of]
+  end
 
-  let header_map_opt header_row =
-    Array.foldi header_row ~init:String.Map.empty ~f:(fun i map header ->
-      match header with
-      | None -> map
-      | Some header -> Map.set map ~key:header ~data:i)
+  let header_map ~foldi header_row =
+    foldi header_row ~init:String.Map.empty ~f:(fun i map header ->
+      Map.set map ~key:header ~data:i)
   ;;
-
-  let header_map header_row = header_map_opt (Array.map ~f:Option.some header_row)
 
   let require_header required_headers' csv_headers' =
     let required_headers = String.Set.of_list required_headers' in
@@ -233,49 +246,121 @@ module Parse_header = struct
             (required_headers : String.Set.t)
             (csv_headers : String.Set.t)
             (missing : String.Set.t)];
-    header_map csv_headers'
+    header_map ~foldi:Array.foldi csv_headers'
   ;;
 
-  let create' ?strip ?sep ?quote transform =
-    let f offset () row =
-      raise (Header_parsed (Append_only_buffer.to_array row, offset))
+  let create' ?strip ?sep ?quote ?start_line_number transform : Partial.t =
+    let f ~line_number:_ r row =
+      match r with
+      | Some _ -> raise_s [%message "Header already parsed, cannot feed more input"]
+      | None -> Some (Append_only_buffer.to_array row)
     in
-    { state = Parse_state.create ?strip ?sep ?quote ~fields_used:None ~init:() ~f ()
+    { state =
+        Parse_state.create
+          ?strip
+          ?sep
+          ?quote
+          ?start_line_number
+          ~fields_used:None
+          ~init:None
+          ~f
+          ()
     ; transform
     }
   ;;
 
-  let create ?strip ?sep ?quote ?(header = `No) () =
+  let create ?strip ?sep ?quote ?(start_line_number = 1) ?(header = `No) () =
     match header with
-    | `No -> Second String.Map.empty
-    | `Add headers -> Second (header_map (Array.of_list headers))
+    | `No ->
+      Second
+        { Success.header_map = String.Map.empty
+        ; next_line_number = start_line_number
+        ; consumed = 0
+        }
+    | `Add headers ->
+      Second
+        { header_map = header_map ~foldi:List.foldi headers
+        ; next_line_number = start_line_number
+        ; consumed = 0
+        }
     | `Yes ->
-      let f headers = header_map headers in
-      First (create' ?strip ?sep ?quote f)
+      let f headers = header_map ~foldi:Array.foldi headers in
+      First (create' ?strip ?sep ?quote ~start_line_number f)
     | `Require headers ->
       let f csv_headers = require_header headers csv_headers in
-      First (create' ?strip ?sep ?quote f)
+      First (create' ?strip ?sep ?quote ~start_line_number f)
     | `Replace headers ->
-      let f _ = header_map (Array.of_list headers) in
-      First (create' ?strip ?sep ?quote f)
+      let f _ = header_map ~foldi:List.foldi headers in
+      First (create' ?strip ?sep ?quote ~start_line_number f)
     | `Transform f ->
-      let f headers = header_map (Array.of_list (f (Array.to_list headers))) in
-      First (create' ?strip ?sep ?quote f)
+      let f headers = header_map ~foldi:List.foldi (f (Array.to_list headers)) in
+      First (create' ?strip ?sep ?quote ~start_line_number f)
     | `Filter_map f ->
-      let f headers = header_map_opt (Array.of_list (f (Array.to_list headers))) in
-      First (create' ?strip ?sep ?quote f)
+      let foldi l ~init ~f =
+        List.foldi l ~init ~f:(fun i acc x ->
+          match x with
+          | None -> acc
+          | Some x -> f i acc x)
+      in
+      let f headers = header_map ~foldi (f (Array.to_list headers)) in
+      First (create' ?strip ?sep ?quote ~start_line_number f)
   ;;
 
-  let input_string t ~len input =
-    try First { t with state = Parse_state.input_string t.state ~len input } with
-    | Header_parsed (row, offset) ->
-      Second (t.transform row, String.sub input ~pos:offset ~len:(len - offset))
+  let is_set (t : Partial.t) =
+    match Parse_state.acc t.state with
+    | Some row -> Some (t, row)
+    | None -> None
   ;;
 
-  let input t ~len input =
-    try First { t with state = Parse_state.input t.state ~len input } with
-    | Header_parsed (row, offset) ->
-      Second (t.transform row, Bytes.To_string.sub input ~pos:offset ~len:(len - offset))
+  (* We only want to parse the header here and nothing more.  To achieve that, we feed the
+     parser with chunks of input that does not contain newlines but at the end.  After
+     each chunk, we check whether a header was successfully parsed or not.  *)
+  let input_string (t : Partial.t) ?(pos = 0) ?len input : _ Either.t =
+    match is_set t with
+    | Some _ -> raise_s [%message "Header already parsed, cannot feed more input"]
+    | None ->
+      let len =
+        match len with
+        | None -> String.length input - pos
+        | Some len -> len
+      in
+      let start_pos = pos in
+      let max_pos = start_pos + len in
+      if start_pos < 0 || len < 0 || max_pos > String.length input
+      then
+        invalid_arg
+          "Delimited_kernel.Read.Expert.Parse_header.input_string: index out of bound";
+      let rec loop (t : Partial.t) ~pos ~len =
+        if pos >= max_pos
+        then First t
+        else (
+          let end_pos =
+            match String.index_from input pos '\n' with
+            | None -> max_pos
+            | Some end_pos -> min max_pos (end_pos + 1)
+          in
+          let line_len = end_pos - pos in
+          let t =
+            { t with state = Parse_state.input_string t.state ~pos ~len:line_len input }
+          in
+          match is_set t with
+          | None -> loop t ~pos:end_pos ~len:(len - line_len)
+          | Some (t, row) ->
+            Second
+              { Success.header_map = t.transform row
+              ; consumed = end_pos - start_pos
+              ; next_line_number = Parse_state.current_line_number t.state
+              })
+      in
+      loop t ~pos ~len
+  ;;
+
+  let input t ?pos ?len input =
+    input_string
+      t
+      ?pos
+      ?len
+      (Bytes.unsafe_to_string ~no_mutation_while_string_reachable:input)
   ;;
 end
 
@@ -289,6 +374,7 @@ module Expert = struct
         ?strip
         ?sep
         ?quote
+        ?start_line_number
         ?(on_invalid_row = On_invalid_row.raise)
         ~header_map
         builder
@@ -296,25 +382,26 @@ module Expert = struct
         ~f
     =
     let row_to_'a, fields_used = Builder.build ~header_map builder in
-    let f _offset init row =
+    let f ~line_number init row =
       try f init (row_to_'a row) with
       | exn ->
-        (match on_invalid_row header_map row exn with
+        (match on_invalid_row ~line_number header_map row exn with
          | `Yield x -> f init x
          | `Skip -> init
          | `Raise exn -> raise exn)
     in
-    Parse_state.create ?strip ?sep ?quote ~fields_used ~init ~f ()
+    Parse_state.create ?strip ?sep ?quote ?start_line_number ~fields_used ~init ~f ()
   ;;
 
-  let manual_parse_state ?strip ?sep ?quote header_map =
+  let manual_parse_state ?strip ?sep ?quote ?start_line_number header_map =
     Parse_state.create
       ?strip
       ?sep
       ?quote
+      ?start_line_number
       ~fields_used:None
       ~init:(Append_only_buffer.create ())
-      ~f:(fun _ queue row ->
+      ~f:(fun ~line_number:_ queue row ->
         Append_only_buffer.append queue (Row.Expert.of_buffer header_map row);
         queue)
       ()
@@ -340,15 +427,29 @@ module Expert = struct
     in
     match Parse_header.input_string header_state ~len:(String.length input) input with
     | First header_state -> First header_state, []
-    | Second (header_map, input) ->
-      let state = manual_parse_state ?strip ?sep ?quote header_map in
-      manual_parse_data state (`Data input)
+    | Second { header_map; consumed; next_line_number } ->
+      let state =
+        manual_parse_state
+          ?strip
+          ?sep
+          ?quote
+          ~start_line_number:next_line_number
+          header_map
+      in
+      manual_parse_data state (`Data (String.drop_prefix input consumed))
   ;;
 
-  let create_partial ?strip ?sep ?quote ?header () =
+  let create_partial ?strip ?sep ?quote ?start_line_number ?header () =
     let state =
-      Parse_header.create ?strip ?sep ?quote ?header ()
-      |> Either.Second.map ~f:(manual_parse_state ?strip ?sep ?quote)
+      Parse_header.create ?strip ?sep ?quote ?start_line_number ?header ()
+      |> Either.Second.map ~f:(fun { header_map; next_line_number; consumed } ->
+        assert (consumed = 0);
+        manual_parse_state
+          ?strip
+          ?sep
+          ?quote
+          ~start_line_number:next_line_number
+          header_map)
       |> ref
     in
     let parse_chunk input =
@@ -366,8 +467,9 @@ end
 
 let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_string =
   match
-    match Parse_header.create ?strip ?sep ?quote ?header () with
-    | Second header_map -> Some (header_map, csv_string)
+    match Parse_header.create ?strip ?sep ?quote ~start_line_number:1 ?header () with
+    | Second { header_map; next_line_number; consumed } ->
+      Some (header_map, consumed, next_line_number)
     | First header_parse ->
       (match
          Parse_header.input_string
@@ -385,21 +487,24 @@ let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_
                  (csv_string : string)
                  (sep : char option)
                  (header : Header.t option)]
-       | Second (header_map, csv_string) -> Some (header_map, csv_string))
+       | Second { header_map; consumed; next_line_number } ->
+         Some (header_map, consumed, next_line_number))
   with
   | None -> init
-  | Some (header_map, csv_string) ->
+  | Some (header_map, consumed, start_line_number) ->
     Parse_state.input_string
       (Expert.create_parse_state
          ?strip
          ?sep
          ?quote
          ?on_invalid_row
+         ~start_line_number
          ~header_map
          builder
          ~init
          ~f)
       csv_string
+      ~pos:consumed
     |> Parse_state.finish
     |> Parse_state.acc
 ;;

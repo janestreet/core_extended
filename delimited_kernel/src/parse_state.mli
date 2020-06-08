@@ -8,6 +8,8 @@ exception Bad_csv_formatting of string list * string
 
 type 'a t
 
+val current_line_number : 'a t -> int
+
 (** At any moment, the result of folding over all complete rows seen so far. *)
 val acc : 'a t -> 'a
 
@@ -18,17 +20,18 @@ val create
   :  ?strip:bool
   -> ?sep:char
   -> ?quote:[ `No_quoting | `Using of char ]
+  -> ?start_line_number:int
   (** Indices of the fields used. E.g., [~fields_used:(Some [| 0; 3; |])] means every
       row will be presented to [f] as having two fields, the first and fourth fields of
       the csv. This is for performance; pass [None] to store all fields.*)
   -> fields_used:int array option
   -> init:'a
-  (** [f i init row] should take the previous accumulator [init] and the next complete
-      row [row], and return the next accumulator.
+  (** [f ~line_number init row] should take the previous accumulator [init]
+      and the next complete row [row], and return the next accumulator.
 
-      The index [i] is the zero-indexed position of the next unconsumed byte relative to
-      the start of this chunk of input. *)
-  -> f:(int -> 'a -> string Append_only_buffer.t -> 'a)
+      [line_number] gives the line number as counted by the parse state.
+  *)
+  -> f:(line_number:int -> 'a -> string Append_only_buffer.t -> 'a)
   -> unit
   -> 'a t
 

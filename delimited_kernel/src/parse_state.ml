@@ -14,239 +14,323 @@ end
 
 open Step
 
+module Config = struct
+  type 'a t =
+    { sep : char
+    ; quote : char
+    ; use_quoting : bool
+    ; strip : bool
+    ; f : line_number:int -> 'a -> string Row_buffer.t -> 'a
+    ; fields_used : int array option
+    }
+
+  let create ~sep ~quote ~strip ~f ~fields_used =
+    let fields_used =
+      match fields_used with
+      | None -> None
+      | Some fields_used as x
+        when Array.is_sorted_strictly fields_used ~compare:Int.ascending -> x
+      | Some fields_used ->
+        Some
+          (Array.of_list
+             (List.dedup_and_sort (Array.to_list fields_used) ~compare:Int.ascending))
+    in
+    { sep
+    ; quote =
+        (match quote with
+         | `Using char -> char
+         | `No_quoting -> '"')
+    ; use_quoting =
+        (match quote with
+         | `Using _ -> true
+         | `No_quoting -> false)
+    ; strip
+    ; f
+    ; fields_used
+    }
+  ;;
+end
+
+module State = struct
+  type 'a t =
+    { field_buffer : string
+    ; row_buffer : string list
+    ; current_field : int
+    ; current_line_number : int (** The current line number *)
+    ; row_line_number : int (** The line number of the beginning of the current row *)
+    ; acc : 'a
+    ; step : Step.t
+    }
+
+  let create ~init ~start_line_number =
+    { acc = init
+    ; step = Field_start
+    ; field_buffer = ""
+    ; row_buffer = []
+    ; current_field = 0
+    ; row_line_number = start_line_number
+    ; current_line_number = start_line_number
+    }
+  ;;
+
+  let acc t = t.acc
+  let set_acc t acc = { t with acc }
+end
+
 type 'a t =
-  { acc : 'a
-  ; sep : char
-  ; quote : char
-  ; use_quoting : bool
-  ; lineno : int
-  ; step : Step.t
-  ; field : string
-  ; current_row : string list
-  ; emit_field : string Row_buffer.t -> Buffer.t -> unit
-  ; f : int -> 'a -> string Row_buffer.t -> 'a
-  ; fields_used : int array option
-  ; current_field : int
-  ; next_field_index : int
+  { config : 'a Config.t
+  ; state : 'a State.t
   }
-[@@deriving fields]
 
-let make_emit_field ~strip current_row field =
-  Row_buffer.append
-    current_row
-    (if strip then Shared.strip_buffer field else Buffer.contents field);
-  Buffer.clear field
+let acc t = State.acc t.state
+let set_acc t acc = { t with state = State.set_acc t.state acc }
+
+let create
+      ?(strip = false)
+      ?(sep = ',')
+      ?(quote = `Using '"')
+      ?(start_line_number = 1)
+      ~fields_used
+      ~init
+      ~f
+      ()
+  =
+  { config = Config.create ~sep ~quote ~strip ~f ~fields_used
+  ; state = State.create ~init ~start_line_number
+  }
 ;;
 
-let emit_row f i acc current_row =
-  let acc = f (i + 1) acc current_row in
-  Row_buffer.lax_clear current_row;
-  acc
-;;
+module Char_kind = struct
+  type t =
+    | Backslash_r
+    | Newline
+    | Sep
+    | Quote
+    | Quote_and_sep
+    | Whitespace
+    | Normal
 
-let set_acc t acc = { t with acc }
+  let of_char (t : _ Config.t) c =
+    let open Char.Replace_polymorphic_compare in
+    match c with
+    | '\r' -> Backslash_r
+    | '\n' -> Newline
+    | _ when c = t.quote && t.use_quoting -> if c = t.sep then Quote_and_sep else Quote
+    | _ when c = t.sep -> Sep
+    | _ when Char.is_whitespace c -> Whitespace
+    | _ -> Normal
+  ;;
+end
 
-let create ?(strip = false) ?(sep = ',') ?(quote = `Using '"') ~fields_used ~init ~f () =
-  let fields_used =
+module Mutable_state = struct
+  (* We don't capture state [step] in here to avoid having to mutate the record at every
+     single iteration *)
+  type 'a t =
+    { field_buffer : Buffer.t
+    ; row_buffer : string Row_buffer.t
+    ; config : 'a Config.t
+    ; mutable current_field : int
+    ; mutable enqueue : bool (* cache for should_enqueue *)
+    ; mutable current_line_number : int
+    ; mutable row_line_number : int
+    ; mutable acc : 'a
+    }
+
+  let row_length t = Row_buffer.length t.row_buffer
+
+  (* To reduce the number of allocations, we keep an array [fields_used] of the field
+     indexes we care about. [current_field] is the position of the parser within the
+     input row, and [next_field_index] is an index into the [fields_used] array
+     indicating the next field that we need to store.
+
+     If [fields_used] is None, we need to store every field.
+  *)
+  let should_enqueue fields_used state =
     match fields_used with
-    | None -> None
-    | Some fields_used as x
-      when Array.is_sorted_strictly fields_used ~compare:Int.ascending -> x
-    | Some fields_used ->
-      Some
-        (Array.of_list
-           (List.dedup_and_sort (Array.to_list fields_used) ~compare:Int.ascending))
-  in
-  { acc = init
-  ; sep
-  ; quote =
-      (match quote with
-       | `Using char -> char
-       | `No_quoting -> '"')
-  ; use_quoting =
-      (match quote with
-       | `Using _ -> true
-       | `No_quoting -> false)
-  ; lineno = 1
-  ; step = Field_start
-  ; field = ""
-  ; current_row = []
-  ; emit_field = make_emit_field ~strip
-  ; f
-  ; fields_used
-  ; current_field = 0
-  ; next_field_index = 0
-  }
-;;
+    | None -> true
+    | Some array ->
+      let next_field_index = row_length state in
+      next_field_index < Array.length array
+      && array.(next_field_index) = state.current_field
+  ;;
 
-let mutable_of_t t =
-  let field = Buffer.create (String.length t.field) in
-  Buffer.add_string field t.field;
-  let current_row = Row_buffer.of_list t.current_row in
-  field, current_row
-;;
-
-(* To reduce the number of allocations, we keep an array [fields_used] of the field
-   indexes we care about. [current_field] is the position of the parser within the
-   input row, and [next_field_index] is an index into the [fields_used] array
-   indicating the next field that we need to store.
-
-   If [fields_used] is None, we need to store every field.
-*)
-let should_enqueue fields_used current_field next_field_index =
-  match fields_used with
-  | None -> true
-  | Some array ->
-    next_field_index < Array.length array && array.(next_field_index) = current_field
-;;
-
-let input_aux ~get_length ~get t ?(pos = 0) ?len input =
-  let field, current_row = mutable_of_t t in
-  let enqueue = ref (should_enqueue t.fields_used t.current_field t.next_field_index) in
-  let current_field = ref t.current_field in
-  let next_field_index = ref t.next_field_index in
-  let increment_field () =
-    current_field := !current_field + 1;
-    next_field_index := if !enqueue then !next_field_index + 1 else !next_field_index;
-    enqueue := should_enqueue t.fields_used !current_field !next_field_index
-  in
-  let reset_field () =
-    current_field := 0;
-    next_field_index := 0;
-    enqueue := should_enqueue t.fields_used !current_field !next_field_index
-  in
-  let loop_bound =
-    match len with
-    | Some i -> i + pos
-    | None -> get_length input
-  in
-  let rec loop i t step =
-    if i >= loop_bound
-    then
-      { t with
-        step
-      ; current_field = !current_field
-      ; next_field_index = !next_field_index
+  let create ~(config : 'a Config.t) ~(state : 'a State.t) =
+    let field_buffer = Buffer.create (String.length state.field_buffer) in
+    Buffer.add_string field_buffer state.field_buffer;
+    let row_buffer = Row_buffer.of_list state.row_buffer in
+    let state =
+      { field_buffer
+      ; row_buffer
+      ; current_field = state.current_field
+      ; enqueue = false
+      ; config
+      ; row_line_number = state.row_line_number
+      ; current_line_number = state.current_line_number
+      ; acc = state.acc
       }
-    else
-      let open Char.Replace_polymorphic_compare in
-      let continue = loop (i + 1) in
+    in
+    if should_enqueue config.fields_used state then state.enqueue <- true;
+    state
+  ;;
+
+  let emit_char t c = if t.enqueue then Buffer.add_char t.field_buffer c
+
+  let emit_field state =
+    if state.enqueue
+    then (
+      Row_buffer.append
+        state.row_buffer
+        (if state.config.strip
+         then Shared.strip_buffer state.field_buffer
+         else Buffer.contents state.field_buffer);
+      Buffer.clear state.field_buffer);
+    state.current_field <- state.current_field + 1;
+    state.enqueue <- should_enqueue state.config.fields_used state
+  ;;
+
+  let emit_row state =
+    let acc =
+      state.config.f ~line_number:state.row_line_number state.acc state.row_buffer
+    in
+    state.acc <- acc;
+    Row_buffer.lax_clear state.row_buffer;
+    state.current_field <- 0;
+    state.enqueue <- should_enqueue state.config.fields_used state;
+    state.current_line_number <- state.current_line_number + 1;
+    state.row_line_number <- state.current_line_number
+  ;;
+
+  let freeze ~step t : 'a State.t =
+    { acc = t.acc
+    ; step
+    ; field_buffer = Buffer.contents t.field_buffer
+    ; row_buffer = Row_buffer.to_list t.row_buffer
+    ; current_field = t.current_field
+    ; current_line_number = t.current_line_number
+    ; row_line_number = t.row_line_number
+    }
+  ;;
+
+  let incr_line_number t = t.current_line_number <- t.current_line_number + 1
+
+  let is_empty t =
+    t.current_field = 0
+    && Row_buffer.length t.row_buffer = 0
+    && Buffer.length t.field_buffer = 0
+  ;;
+end
+
+let input_aux ~get t ~pos ~len input =
+  let state = Mutable_state.create ~config:t.config ~state:t.state in
+  let feed_one c step =
+    match step, Char_kind.of_char t.config c with
+    | _, Backslash_r -> step
+    | Field_start, (Quote | Quote_and_sep) -> In_quoted_field
+    | Field_start, Sep ->
+      Mutable_state.emit_field state;
+      Field_start
+    | Field_start, Newline ->
+      Mutable_state.emit_field state;
+      Mutable_state.emit_row state;
+      Field_start
+    | Field_start, (Normal | Whitespace) ->
+      Mutable_state.emit_char state c;
+      In_unquoted_field
+    | In_unquoted_field, (Sep | Quote_and_sep) ->
+      Mutable_state.emit_field state;
+      Field_start
+    | In_unquoted_field, Newline ->
+      Mutable_state.emit_field state;
+      Mutable_state.emit_row state;
+      Field_start
+    | In_unquoted_field, (Whitespace | Normal) ->
+      Mutable_state.emit_char state c;
+      step
+    | In_unquoted_field, Quote ->
+      Mutable_state.emit_char state c;
+      step
+    | In_quoted_field, (Quote | Quote_and_sep) -> In_quoted_field_after_quote
+    | In_quoted_field, Newline ->
+      Mutable_state.emit_char state c;
+      Mutable_state.incr_line_number state;
+      step
+    | In_quoted_field, (Normal | Sep | Whitespace) ->
+      Mutable_state.emit_char state c;
+      step
+    | In_quoted_field_after_quote, (Quote | Quote_and_sep) ->
+      (* doubled quote *)
+      Mutable_state.emit_char state c;
+      In_quoted_field
+    | In_quoted_field_after_quote, _ when Char.equal c '0' ->
+      Mutable_state.emit_char state '\000';
+      In_quoted_field
+    | In_quoted_field_after_quote, Sep ->
+      Mutable_state.emit_field state;
+      Field_start
+    | In_quoted_field_after_quote, Newline ->
+      Mutable_state.emit_field state;
+      Mutable_state.emit_row state;
+      Field_start
+    | In_quoted_field_after_quote, Whitespace ->
+      step
+    | In_quoted_field_after_quote, Normal ->
+      failwithf
+        "In_quoted_field_after_quote looking at '%c' (line_number=%d)"
+        c
+        state.current_line_number
+        ()
+  in
+  let loop_bound = len + pos in
+  let rec loop i step =
+    if i >= loop_bound
+    then step
+    else (
       let c = get input i in
-      if c = '\r'
-      then continue t step
-      else (
-        match step with
-        | Field_start ->
-          if c = t.quote && t.use_quoting
-          then continue t In_quoted_field
-          else if c = t.sep
-          then (
-            if !enqueue then t.emit_field current_row field;
-            increment_field ();
-            continue t Field_start)
-          else if c = '\n'
-          then (
-            if !enqueue then t.emit_field current_row field;
-            reset_field ();
-            continue
-              { t with acc = emit_row t.f i t.acc current_row; lineno = t.lineno + 1 }
-              Field_start)
-          else (
-            if !enqueue then Buffer.add_char field c;
-            continue t In_unquoted_field)
-        | In_unquoted_field ->
-          if c = t.sep
-          then (
-            if !enqueue then t.emit_field current_row field;
-            increment_field ();
-            continue t Field_start)
-          else if c = '\n'
-          then (
-            if !enqueue then t.emit_field current_row field;
-            reset_field ();
-            continue
-              { t with acc = emit_row t.f i t.acc current_row; lineno = t.lineno + 1 }
-              Field_start)
-          else (
-            if !enqueue then Buffer.add_char field c;
-            continue t step)
-        | In_quoted_field ->
-          if c = t.quote
-          then continue t In_quoted_field_after_quote
-          else (
-            if !enqueue then Buffer.add_char field c;
-            continue t step)
-        | In_quoted_field_after_quote ->
-          (* We must be using quoting to be in this state. *)
-          if c = t.quote
-          then (
-            (* doubled quote *)
-            if !enqueue then Buffer.add_char field t.quote;
-            continue t In_quoted_field)
-          else if c = '0'
-          then (
-            if !enqueue then Buffer.add_char field '\000';
-            continue t In_quoted_field)
-          else if c = t.sep
-          then (
-            if !enqueue then t.emit_field current_row field;
-            increment_field ();
-            continue t Field_start)
-          else if c = '\n'
-          then (
-            if !enqueue then t.emit_field current_row field;
-            reset_field ();
-            continue
-              { t with acc = emit_row t.f i t.acc current_row; lineno = t.lineno + 1 }
-              Field_start)
-          else if Char.is_whitespace c
-          then continue t step
-          else
-            failwithf
-              "In_quoted_field_after_quote looking at '%c' (lineno=%d)"
-              c
-              t.lineno
-              ())
+      let step = feed_one c step in
+      loop (i + 1) step)
   in
-  let t' = loop pos t t.step in
-  { t' with
-    field = Buffer.contents field
-  ; current_row = Row_buffer.to_list current_row
-  ; current_field = !current_field
-  ; next_field_index = !next_field_index
-  }
+  let step = loop pos t.state.step in
+  let state = Mutable_state.freeze ~step state in
+  { t with state }
 ;;
 
-let input t ?pos ?len input =
-  input_aux ~get_length:Bytes.length ~get:Bytes.get t ?pos ?len input
-;;
-
-let input_string t ?pos ?len input =
-  input_aux ~get_length:String.length ~get:String.get t ?pos ?len input
-;;
-
-let finish t =
-  let field, current_row = mutable_of_t t in
-  let enqueue = should_enqueue t.fields_used t.current_field t.next_field_index in
-  let acc =
-    match t.step with
-    | Field_start ->
-      if Row_buffer.length current_row <> 0
-      then (
-        if enqueue then t.emit_field current_row field;
-        emit_row t.f 0 t.acc current_row)
-      else t.acc
-    | In_unquoted_field | In_quoted_field_after_quote ->
-      if enqueue then t.emit_field current_row field;
-      emit_row t.f 0 t.acc current_row
-    | In_quoted_field ->
-      raise (Bad_csv_formatting (Row_buffer.to_list current_row, Buffer.contents field))
+let input t ?(pos = 0) ?len input =
+  let len =
+    match len with
+    | None -> Bytes.length input - pos
+    | Some len -> len
   in
-  { t with
-    field = Buffer.contents field
-  ; current_row = Row_buffer.to_list current_row
-  ; current_field = 0
-  ; next_field_index = 0
-  ; acc
-  }
+  if len < 0 || pos < 0 || pos + len > Bytes.length input
+  then invalid_arg "Delimited_kernel.Parse_state.input: index out of bound";
+  input_aux ~get:Bytes.unsafe_get t ~pos ~len input
+;;
+
+let input_string t ?(pos = 0) ?len input =
+  let len =
+    match len with
+    | None -> String.length input - pos
+    | Some len -> len
+  in
+  if len < 0 || pos < 0 || pos + len > String.length input
+  then invalid_arg "Delimited_kernel.Parse_state.input_string: index out of bound";
+  input_aux ~get:String.unsafe_get t ~pos ~len input
+;;
+
+let current_line_number t = t.state.current_line_number
+
+let finish ({ config; state } as t) =
+  let state = Mutable_state.create ~config ~state in
+  (match t.state.step with
+   | Field_start ->
+     if not (Mutable_state.is_empty state)
+     then (
+       Mutable_state.emit_field state;
+       Mutable_state.emit_row state)
+   | In_unquoted_field | In_quoted_field_after_quote ->
+     Mutable_state.emit_field state;
+     Mutable_state.emit_row state
+   | In_quoted_field ->
+     raise (Bad_csv_formatting (t.state.row_buffer, t.state.field_buffer)));
+  let state = Mutable_state.freeze ~step:t.state.step state in
+  { t with state }
 ;;
