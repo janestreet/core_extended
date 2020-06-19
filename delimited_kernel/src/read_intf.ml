@@ -147,6 +147,30 @@ module type Root = sig
     -> 'a t
     -> In_channel.t
     -> 'a list
+
+  module Streaming : sig
+    type 'a builder_t = 'a t
+    type 'a t
+
+    val create
+      :  ?strip:bool
+      -> ?sep:char
+      -> ?quote:[ `No_quoting | `Using of char ]
+      -> ?start_line_number:int
+      -> ?on_invalid_row:'a On_invalid_row.t
+      -> ?header:Header.t
+      -> 'a builder_t
+      -> init:'b
+      -> f:('b -> 'a -> 'b)
+      -> 'b t
+
+    val input_string : 'a t -> ?pos:int -> ?len:int -> string -> 'a t
+    val input : 'a t -> ?pos:int -> ?len:int -> bytes -> 'a t
+    val finish : 'a t -> 'a t
+    val acc : 'a t -> 'a
+    val headers : 'a t -> String.Set.t option
+    val state : 'a t -> [ `Parsing_header | `Parsing_rows ]
+  end
 end
 
 module type Expert = sig
@@ -167,6 +191,7 @@ module type Expert = sig
     -> init:'b
     -> f:('b -> 'a -> 'b)
     -> 'b Parse_state.t
+  [@@deprecated "[since 2020-06] use the [Streaming] module instead."]
 
   module Builder : sig
     type nonrec 'a t = 'a t
@@ -216,6 +241,8 @@ module type Expert = sig
       -> ?len:int
       -> string
       -> (Partial.t, Success.t) Either.t
+
+    val finish_exn : Partial.t -> Success.t
   end
 
   (** This creates a function that can be fed partial input to return partial parses.

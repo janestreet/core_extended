@@ -42,5 +42,7 @@ val input : 'a t -> ?pos:int -> ?len:int -> Bytes.t -> 'a t
 val input_string : 'a t -> ?pos:int -> ?len:int -> string -> 'a t
 
 (** [finish t] forces an end-of-row. Raises if end-of-row is not permitted here (e.g.,
-    within a quoted field). It is permitted to [input] after a [finish]. *)
+    within a quoted field). *)
 val finish : 'a t -> 'a t
+
+val at_beginning_of_row : 'a t -> bool

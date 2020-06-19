@@ -362,6 +362,135 @@ module Parse_header = struct
       ?len
       (Bytes.unsafe_to_string ~no_mutation_while_string_reachable:input)
   ;;
+
+  let finish_exn (t : Partial.t) =
+    let t = { t with state = Parse_state.finish t.state } in
+    match is_set t with
+    | Some (t, row) ->
+      { Success.header_map = t.transform row
+      ; consumed = 0
+      ; next_line_number = Parse_state.current_line_number t.state
+      }
+    | None ->
+      if Parse_state.at_beginning_of_row t.state
+      then
+        (* An empty header is parsed as a single column with an empty name *)
+        { Success.header_map = t.transform [| "" |]
+        ; consumed = 0
+        ; next_line_number = Parse_state.current_line_number t.state
+        }
+      else (* [Parse_state.finish] would have raised already in the cases  *)
+        assert false
+  ;;
+end
+
+module Streaming = struct
+  type 'a builder_t = 'a t
+
+  type 'a t =
+    | Parsing_header of
+        { partial : Parse_header.Partial.t
+        ; init : 'a
+        ; mk_state : 'a -> ?start_line_number:int -> int String.Map.t -> 'a Parse_state.t
+        }
+    | Parsing_rows of
+        { header_map : int String.Map.t
+        ; state : 'a Parse_state.t
+        }
+
+  let create
+        ?strip
+        ?sep
+        ?quote
+        ?start_line_number
+        ?(on_invalid_row = (On_invalid_row.raise : _ On_invalid_row.t))
+        ?(header : Header.t option)
+        builder
+        ~init
+        ~f
+    =
+    let mk_state init ?start_line_number header_map =
+      let row_to_'a, fields_used = Builder.build ~header_map builder in
+      let f ~line_number init row =
+        try f init (row_to_'a row) with
+        | exn ->
+          (match on_invalid_row ~line_number header_map row exn with
+           | `Yield x -> f init x
+           | `Skip -> init
+           | `Raise exn -> raise exn)
+      in
+      Parse_state.create ?strip ?sep ?quote ?start_line_number ~fields_used ~init ~f ()
+    in
+    match Parse_header.create ?strip ?sep ?quote ?start_line_number ?header () with
+    | First partial -> Parsing_header { partial; mk_state; init }
+    | Second { header_map; consumed = _; next_line_number } ->
+      let state = mk_state init ~start_line_number:next_line_number header_map in
+      Parsing_rows { header_map; state }
+  ;;
+
+  let input_string t ?(pos = 0) ?len input =
+    let len =
+      match len with
+      | None -> String.length input - pos
+      | Some len -> len
+    in
+    match t with
+    | Parsing_header { partial; mk_state; init } ->
+      (match Parse_header.input_string partial ~pos ~len input with
+       | First partial -> Parsing_header { partial; mk_state; init }
+       | Second { consumed; header_map; next_line_number } ->
+         let state = mk_state init header_map ~start_line_number:next_line_number in
+         let state =
+           Parse_state.input_string
+             state
+             ~pos:(pos + consumed)
+             ~len:(len - consumed)
+             input
+         in
+         Parsing_rows { header_map; state })
+    | Parsing_rows { header_map; state } ->
+      Parsing_rows { header_map; state = Parse_state.input_string state ~pos ~len input }
+  ;;
+
+  let input t ?pos ?len input =
+    input_string
+      t
+      ?pos
+      ?len
+      (Bytes.unsafe_to_string ~no_mutation_while_string_reachable:input)
+  ;;
+
+  let finish t =
+    match t with
+    | Parsing_header { partial; mk_state; init } ->
+      let { Parse_header.Success.consumed = _; header_map; next_line_number } =
+        Parse_header.finish_exn partial
+      in
+      let state =
+        Parse_state.finish (mk_state init header_map ~start_line_number:next_line_number)
+      in
+      Parsing_rows { state; header_map }
+    | Parsing_rows { state; header_map } ->
+      Parsing_rows { state = Parse_state.finish state; header_map }
+  ;;
+
+  let acc t =
+    match t with
+    | Parsing_header { init; _ } -> init
+    | Parsing_rows { state; _ } -> Parse_state.acc state
+  ;;
+
+  let state t =
+    match t with
+    | Parsing_header _ -> `Parsing_header
+    | Parsing_rows _ -> `Parsing_rows
+  ;;
+
+  let headers t =
+    match t with
+    | Parsing_header _ -> None
+    | Parsing_rows { header_map; _ } -> Some (Map.key_set header_map)
+  ;;
 end
 
 module Expert = struct
@@ -420,12 +549,12 @@ module Expert = struct
   ;;
 
   let manual_parse_header ?strip ?sep ?quote header_state input =
-    let input =
+    let result =
       match input with
-      | `Eof -> ""
-      | `Data s -> s
+      | `Eof -> Second (Parse_header.finish_exn header_state)
+      | `Data s -> Parse_header.input_string header_state s
     in
-    match Parse_header.input_string header_state ~len:(String.length input) input with
+    match result with
     | First header_state -> First header_state, []
     | Second { header_map; consumed; next_line_number } ->
       let state =
@@ -436,7 +565,10 @@ module Expert = struct
           ~start_line_number:next_line_number
           header_map
       in
-      manual_parse_data state (`Data (String.drop_prefix input consumed))
+      (match input with
+       | `Eof -> Second state, []
+       | `Data input ->
+         manual_parse_data state (`Data (String.drop_prefix input consumed)))
   ;;
 
   let create_partial ?strip ?sep ?quote ?start_line_number ?header () =
@@ -466,47 +598,10 @@ module Expert = struct
 end
 
 let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_string =
-  match
-    match Parse_header.create ?strip ?sep ?quote ~start_line_number:1 ?header () with
-    | Second { header_map; next_line_number; consumed } ->
-      Some (header_map, consumed, next_line_number)
-    | First header_parse ->
-      (match
-         Parse_header.input_string
-           header_parse
-           ~len:(String.length csv_string)
-           csv_string
-       with
-       | First _ ->
-         if String.is_empty csv_string
-         then None
-         else
-           raise_s
-             [%message
-               "String ended mid-header row"
-                 (csv_string : string)
-                 (sep : char option)
-                 (header : Header.t option)]
-       | Second { header_map; consumed; next_line_number } ->
-         Some (header_map, consumed, next_line_number))
-  with
-  | None -> init
-  | Some (header_map, consumed, start_line_number) ->
-    Parse_state.input_string
-      (Expert.create_parse_state
-         ?strip
-         ?sep
-         ?quote
-         ?on_invalid_row
-         ~start_line_number
-         ~header_map
-         builder
-         ~init
-         ~f)
-      csv_string
-      ~pos:consumed
-    |> Parse_state.finish
-    |> Parse_state.acc
+  let state =
+    Streaming.create ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f
+  in
+  Streaming.input_string state csv_string |> Streaming.finish |> Streaming.acc
 ;;
 
 let list_of_string ?strip ?sep ?quote ?header ?on_invalid_row builder csv_string =

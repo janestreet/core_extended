@@ -6,6 +6,7 @@ exception Bad_csv_formatting of string list * string
 
 module Step = struct
   type t =
+    | Row_start
     | Field_start
     | In_unquoted_field
     | In_quoted_field
@@ -35,6 +36,20 @@ module Config = struct
           (Array.of_list
              (List.dedup_and_sort (Array.to_list fields_used) ~compare:Int.ascending))
     in
+    (match quote with
+     | `Using c when Char.equal c sep ->
+       invalid_arg
+         "Delimited_kernel.Parse_state.create: cannot use the same character for [sep] \
+          and [quote]"
+     | `Using (('\r' | '\n') as c) ->
+       invalid_arg
+         (sprintf "Delimited_kernel.Parse_state.create: invalid [quote] character %C" c)
+     | _ -> ());
+    (match sep with
+     | ('\r' | '\n') as c ->
+       invalid_arg
+         (sprintf "Delimited_kernel.Parse_state.create: invalid [sep] character %C" c)
+     | _ -> ());
     { sep
     ; quote =
         (match quote with
@@ -60,20 +75,22 @@ module State = struct
     ; row_line_number : int (** The line number of the beginning of the current row *)
     ; acc : 'a
     ; step : Step.t
+    ; finish : bool
     }
 
   let create ~init ~start_line_number =
     { acc = init
-    ; step = Field_start
+    ; step = Row_start
     ; field_buffer = ""
     ; row_buffer = []
     ; current_field = 0
     ; row_line_number = start_line_number
     ; current_line_number = start_line_number
+    ; finish = false
     }
   ;;
 
-  let acc t = t.acc
+  let acc { acc; _ } = acc
   let set_acc t acc = { t with acc }
 end
 
@@ -106,7 +123,6 @@ module Char_kind = struct
     | Newline
     | Sep
     | Quote
-    | Quote_and_sep
     | Whitespace
     | Normal
 
@@ -115,7 +131,7 @@ module Char_kind = struct
     match c with
     | '\r' -> Backslash_r
     | '\n' -> Newline
-    | _ when c = t.quote && t.use_quoting -> if c = t.sep then Quote_and_sep else Quote
+    | _ when c = t.quote && t.use_quoting -> Quote
     | _ when c = t.sep -> Sep
     | _ when Char.is_whitespace c -> Whitespace
     | _ -> Normal
@@ -208,48 +224,49 @@ module Mutable_state = struct
     ; current_field = t.current_field
     ; current_line_number = t.current_line_number
     ; row_line_number = t.row_line_number
+    ; finish = false
     }
   ;;
 
   let incr_line_number t = t.current_line_number <- t.current_line_number + 1
-
-  let is_empty t =
-    t.current_field = 0
-    && Row_buffer.length t.row_buffer = 0
-    && Buffer.length t.field_buffer = 0
-  ;;
 end
 
 let input_aux ~get t ~pos ~len input =
+  if t.state.finish
+  then
+    raise_s
+      [%message
+        "Delimited.Expert.Parse_state.input: Cannot feed more input to a state that has \
+         already been finalized"];
   let state = Mutable_state.create ~config:t.config ~state:t.state in
   let feed_one c step =
     match step, Char_kind.of_char t.config c with
     | _, Backslash_r -> step
-    | Field_start, (Quote | Quote_and_sep) -> In_quoted_field
-    | Field_start, Sep ->
+    | (Row_start | Field_start), Quote -> In_quoted_field
+    | (Row_start | Field_start), Sep ->
       Mutable_state.emit_field state;
       Field_start
-    | Field_start, Newline ->
+    | (Row_start | Field_start), Newline ->
       Mutable_state.emit_field state;
       Mutable_state.emit_row state;
-      Field_start
-    | Field_start, (Normal | Whitespace) ->
+      Row_start
+    | (Row_start | Field_start), (Normal | Whitespace) ->
       Mutable_state.emit_char state c;
       In_unquoted_field
-    | In_unquoted_field, (Sep | Quote_and_sep) ->
+    | In_unquoted_field, Sep ->
       Mutable_state.emit_field state;
       Field_start
     | In_unquoted_field, Newline ->
       Mutable_state.emit_field state;
       Mutable_state.emit_row state;
-      Field_start
+      Row_start
     | In_unquoted_field, (Whitespace | Normal) ->
       Mutable_state.emit_char state c;
       step
     | In_unquoted_field, Quote ->
       Mutable_state.emit_char state c;
       step
-    | In_quoted_field, (Quote | Quote_and_sep) -> In_quoted_field_after_quote
+    | In_quoted_field, Quote -> In_quoted_field_after_quote
     | In_quoted_field, Newline ->
       Mutable_state.emit_char state c;
       Mutable_state.incr_line_number state;
@@ -257,7 +274,7 @@ let input_aux ~get t ~pos ~len input =
     | In_quoted_field, (Normal | Sep | Whitespace) ->
       Mutable_state.emit_char state c;
       step
-    | In_quoted_field_after_quote, (Quote | Quote_and_sep) ->
+    | In_quoted_field_after_quote, Quote ->
       (* doubled quote *)
       Mutable_state.emit_char state c;
       In_quoted_field
@@ -270,7 +287,7 @@ let input_aux ~get t ~pos ~len input =
     | In_quoted_field_after_quote, Newline ->
       Mutable_state.emit_field state;
       Mutable_state.emit_row state;
-      Field_start
+      Row_start
     | In_quoted_field_after_quote, Whitespace ->
       step
     | In_quoted_field_after_quote, Normal ->
@@ -318,19 +335,28 @@ let input_string t ?(pos = 0) ?len input =
 
 let current_line_number t = t.state.current_line_number
 
+let at_beginning_of_row t =
+  match t.state.step with
+  | Row_start -> true
+  | Field_start | In_quoted_field | In_quoted_field_after_quote | In_unquoted_field ->
+    false
+;;
+
 let finish ({ config; state } as t) =
-  let state = Mutable_state.create ~config ~state in
-  (match t.state.step with
-   | Field_start ->
-     if not (Mutable_state.is_empty state)
-     then (
+  if t.state.finish
+  then t
+  else (
+    let state = Mutable_state.create ~config ~state in
+    (match t.state.step with
+     | Row_start -> ()
+     | Field_start ->
        Mutable_state.emit_field state;
-       Mutable_state.emit_row state)
-   | In_unquoted_field | In_quoted_field_after_quote ->
-     Mutable_state.emit_field state;
-     Mutable_state.emit_row state
-   | In_quoted_field ->
-     raise (Bad_csv_formatting (t.state.row_buffer, t.state.field_buffer)));
-  let state = Mutable_state.freeze ~step:t.state.step state in
-  { t with state }
+       Mutable_state.emit_row state
+     | In_unquoted_field | In_quoted_field_after_quote ->
+       Mutable_state.emit_field state;
+       Mutable_state.emit_row state
+     | In_quoted_field ->
+       raise (Bad_csv_formatting (t.state.row_buffer, t.state.field_buffer)));
+    let state = { (Mutable_state.freeze ~step:t.state.step state) with finish = true } in
+    { t with state })
 ;;
