@@ -180,6 +180,13 @@ module type Expert = sig
 
   type 'a t
 
+  module Builder : sig
+    type nonrec 'a t = 'a t
+
+    val lambda : (int String.Map.t -> string Append_only_buffer.t -> 'a) -> 'a t
+    val return : 'a -> 'a t
+  end
+
   val create_parse_state
     :  ?strip:bool
     -> ?sep:char
@@ -192,13 +199,6 @@ module type Expert = sig
     -> f:('b -> 'a -> 'b)
     -> 'b Parse_state.t
   [@@deprecated "[since 2020-06] use the [Streaming] module instead."]
-
-  module Builder : sig
-    type nonrec 'a t = 'a t
-
-    val lambda : (int String.Map.t -> string Append_only_buffer.t -> 'a) -> 'a t
-    val return : 'a -> 'a t
-  end
 
   module Parse_header : sig
     module Partial : sig
@@ -244,6 +244,7 @@ module type Expert = sig
 
     val finish_exn : Partial.t -> Success.t
   end
+  [@@deprecated "[since 2020-06]"]
 
   (** This creates a function that can be fed partial input to return partial parses.
       Please do not use this in new code. *)
