@@ -32,11 +32,8 @@ type t =
 let bits_per_bucket = 62
 
 let create sz =
-  if sz < 0 || sz > Array.max_length * bits_per_bucket
-  then invalid_argf "invalid size" ();
-  { data = Array.create ~len:(1 + (sz / bits_per_bucket)) Int63_chunk.empty
-  ; length = sz
-  }
+  if sz < 0 || sz > Array.max_length * bits_per_bucket then invalid_argf "invalid size" ();
+  { data = Array.create ~len:(1 + (sz / bits_per_bucket)) Int63_chunk.empty; length = sz }
 ;;
 
 let length t = t.length

@@ -185,8 +185,7 @@ module By_row = struct
       let len = String.length h in
       (match Expert.quote_len h ~quote ~sep ~len ~pos:0 with
        | None -> line_spec_loop ~quote ~sep ((false, h) :: esc_acc) (size + len + 1) t
-       | Some qlen ->
-         line_spec_loop ~quote ~sep ((true, h) :: esc_acc) (size + qlen + 3) t)
+       | Some qlen -> line_spec_loop ~quote ~sep ((true, h) :: esc_acc) (size + qlen + 3) t)
   ;;
 
   let field_blit ~quote ~dst ~pos = function

@@ -6,9 +6,8 @@ let buffer_size = 10 * 65 * 1024
 type ('a, 'b) reader =
   ?strip:bool
   -> ?skip_lines:int
-  -> ?on_parse_error:[ `Raise
-                     | `Handle of string Queue.t -> exn -> [ `Continue | `Finish ]
-                     ]
+  -> ?on_parse_error:
+       [ `Raise | `Handle of string Queue.t -> exn -> [ `Continue | `Finish ] ]
   -> header:'a
   -> 'b
 
@@ -94,9 +93,7 @@ let make_emit_row current_row row_queue header ~lineno =
         |> set_headers header_index
       | `Filter_map f -> Queue.to_list current_row |> f |> set_headers header_index
       | `Yes ->
-        Queue.to_list current_row
-        |> List.map ~f:Option.some
-        |> set_headers header_index)
+        Queue.to_list current_row |> List.map ~f:Option.some |> set_headers header_index)
     else Queue.enqueue row_queue (Row.create header_index (Queue.to_array current_row));
     lineno := !lineno + 1;
     Queue.clear current_row )

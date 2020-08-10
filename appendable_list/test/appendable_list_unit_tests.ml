@@ -10,9 +10,7 @@ let%test_module "individual test cases" =
 
      let test_with_list ~expect expr =
        [%test_result: int list] ~expect (expr |> to_list);
-       [%test_result: int list]
-         ~expect
-         (expr |> to_sequence |> Sequence.to_list)
+       [%test_result: int list] ~expect (expr |> to_sequence |> Sequence.to_list)
      ;;
 
      let empty = empty
@@ -461,8 +459,7 @@ let%test_module "semantics" =
        Quickcheck.test
          For_testing.quickcheck_generator
          ~sexp_of:[%sexp_of: For_testing.Element.t t]
-         ~f:(fun t ->
-           [%test_eq: bool] (is_empty t) (List.is_empty (to_list t)))
+         ~f:(fun t -> [%test_eq: bool] (is_empty t) (List.is_empty (to_list t)))
      ;;
 
      let length = length
@@ -487,8 +484,8 @@ let%test_module "semantics" =
      and to_array = to_array
      and sum = sum
 
-     let%expect_test "For_testing.quickcheck_generator at least generates \
-                      each constructor"
+     let%expect_test "For_testing.quickcheck_generator at least generates each \
+                      constructor"
        =
        let generates f =
          Quickcheck.test_can_generate
