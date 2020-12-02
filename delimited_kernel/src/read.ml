@@ -353,14 +353,6 @@ module Parse_header = struct
       loop t ~pos ~len
   ;;
 
-  let input t ?pos ?len input =
-    input_string
-      t
-      ?pos
-      ?len
-      (Bytes.unsafe_to_string ~no_mutation_while_string_reachable:input)
-  ;;
-
   let finish_exn (t : Partial.t) =
     let t = { t with state = Parse_state.finish t.state } in
     match is_set t with
@@ -492,102 +484,6 @@ module Expert = struct
   module Parse_state = Parse_state
   module Builder = Builder
   module Parse_header = Parse_header
-
-  let create_parse_state
-        ?strip
-        ?sep
-        ?quote
-        ?start_line_number
-        ?(on_invalid_row = On_invalid_row.raise)
-        ~header_map
-        builder
-        ~init
-        ~f
-    =
-    let row_to_'a, fields_used = Builder.build ~header_map builder in
-    let f ~line_number init row =
-      try f init (row_to_'a row) with
-      | exn ->
-        (match on_invalid_row ~line_number header_map row exn with
-         | `Yield x -> f init x
-         | `Skip -> init
-         | `Raise exn -> raise exn)
-    in
-    Parse_state.create ?strip ?sep ?quote ?start_line_number ~fields_used ~init ~f ()
-  ;;
-
-  let manual_parse_state ?strip ?sep ?quote ?start_line_number header_map =
-    Parse_state.create
-      ?strip
-      ?sep
-      ?quote
-      ?start_line_number
-      ~fields_used:None
-      ~init:(Append_only_buffer.create ())
-      ~f:(fun ~line_number:_ queue row ->
-        Append_only_buffer.append queue (Row.Expert.of_buffer header_map row);
-        queue)
-      ()
-  ;;
-
-  let manual_parse_data parse_state input =
-    let parse_state =
-      match input with
-      | `Eof -> Parse_state.finish parse_state
-      | `Data s -> Parse_state.input_string parse_state s
-    in
-    let queue = Parse_state.acc parse_state in
-    let result = Append_only_buffer.to_list queue in
-    Append_only_buffer.lax_clear queue;
-    Second parse_state, result
-  ;;
-
-  let manual_parse_header ?strip ?sep ?quote header_state input =
-    let result =
-      match input with
-      | `Eof -> Second (Parse_header.finish_exn header_state)
-      | `Data s -> Parse_header.input_string header_state s
-    in
-    match result with
-    | First header_state -> First header_state, []
-    | Second { header_map; consumed; next_line_number } ->
-      let state =
-        manual_parse_state
-          ?strip
-          ?sep
-          ?quote
-          ~start_line_number:next_line_number
-          header_map
-      in
-      (match input with
-       | `Eof -> Second state, []
-       | `Data input -> manual_parse_data state (`Data (String.drop_prefix input consumed)))
-  ;;
-
-  let create_partial ?strip ?sep ?quote ?start_line_number ?header () =
-    let state =
-      Parse_header.create ?strip ?sep ?quote ?start_line_number ?header ()
-      |> Either.Second.map ~f:(fun { header_map; next_line_number; consumed } ->
-        assert (consumed = 0);
-        manual_parse_state
-          ?strip
-          ?sep
-          ?quote
-          ~start_line_number:next_line_number
-          header_map)
-      |> ref
-    in
-    let parse_chunk input =
-      let state', results =
-        match !state with
-        | First state -> manual_parse_header ?strip ?sep state input
-        | Second state -> manual_parse_data state input
-      in
-      state := state';
-      results
-    in
-    stage parse_chunk
-  ;;
 end
 
 let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_string =
