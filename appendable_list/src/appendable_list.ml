@@ -39,26 +39,42 @@ type +'a t =
 
 let empty = Empty
 
-let rec non_closure_apply_and_tail_rec_fold nodes ~acc ~f =
-  if List_stack.is_empty nodes
-  then acc
-  else (
-    let acc =
-      match List_stack.pop_exn nodes with
-      | Empty -> acc
-      | Singleton a -> f acc a
-      | List (a, b, cs) -> List.fold ~f ~init:(f (f acc a) b) cs
-      | Node (a, b, cs) ->
-        List_stack.push_list nodes (a :: b :: cs);
-        acc
-    in
-    non_closure_apply_and_tail_rec_fold nodes ~acc ~f)
+let fold_left =
+  let rec go todo ~init ~f =
+    match todo with
+    | [] -> init
+    | Empty :: todo -> go todo ~init ~f
+    | Singleton a :: todo -> go todo ~init:(f init a) ~f
+    | List (a, b, cs) :: todo ->
+      go todo ~init:(List.fold_left ~f ~init:(f (f init a) b) cs) ~f
+    | Node (a, b, cs) :: todo -> go (a :: b :: (cs @ todo)) ~init ~f
+  in
+  fun t ~init ~f -> go [ t ] ~init ~f
 ;;
 
-let fold t ~init ~f =
-  non_closure_apply_and_tail_rec_fold (List_stack.singleton t) ~acc:init ~f
+let fold_right =
+  (* [todo] is the stack of the remaining work, viewed from the right, so [hd todo] is
+     the rightmost node that was not processed yet.
+
+     Right-to-left evaluation of the original appendable list is then accomplished by
+     traversing [todo] from head to tail. We still need to traverse each element of
+     [todo] from right to left. *)
+  let rec go todo ~init ~f =
+    match todo with
+    | [] -> init
+    | Empty :: todo -> go todo ~init ~f
+    | Singleton x :: todo -> go todo ~init:(f x init) ~f
+    | List (a, b, cs) :: todo ->
+      let init = List.fold_right ~f cs ~init in
+      let init = f b init in
+      let init = f a init in
+      go todo ~init ~f
+    | Node (a, b, cs) :: todo -> go (List.rev_append cs (b :: a :: todo)) ~init ~f
+  in
+  fun t ~init ~f -> go [ t ] ~init ~f
 ;;
 
+let fold = fold_left
 let iter t ~f = Container.iter ~fold ~f t
 
 let is_empty = function
@@ -73,7 +89,7 @@ let is_empty = function
 let fold_result t ~init ~f = Container.fold_result ~fold ~init ~f t
 let fold_until t ~init ~f = Container.fold_until ~fold ~init ~f t
 let length t = fold t ~init:0 ~f:(fun acc _ -> Int.succ acc)
-let to_list t = fold t ~init:[] ~f:(fun acc x -> x :: acc) |> List.rev
+let to_list t = fold_right t ~init:[] ~f:(fun x acc -> x :: acc)
 
 (* Mauro Jaskelioff and Exequiel Rivas. 2015. Functional pearl: a smart view on datatypes.
    SIGPLAN Not. 50, 9 (August 2015), 355-361.
