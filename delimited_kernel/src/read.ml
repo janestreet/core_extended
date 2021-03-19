@@ -388,7 +388,7 @@ module Streaming = struct
         ; state : 'a Parse_state.t
         }
 
-  let create
+  let create_indexed
         ?strip
         ?sep
         ?quote
@@ -402,10 +402,10 @@ module Streaming = struct
     let mk_state init ?start_line_number header_map =
       let row_to_'a, fields_used = Builder.build ~header_map builder in
       let f ~line_number init row =
-        try f init (row_to_'a row) with
+        try f line_number init (row_to_'a row) with
         | exn ->
           (match on_invalid_row ~line_number header_map row exn with
-           | `Yield x -> f init x
+           | `Yield x -> f line_number init x
            | `Skip -> init
            | `Raise exn -> raise exn)
       in
@@ -416,6 +416,29 @@ module Streaming = struct
     | Second { header_map; consumed = _; next_line_number } ->
       let state = mk_state init ~start_line_number:next_line_number header_map in
       Parsing_rows { header_map; state }
+  ;;
+
+  let create
+        ?strip
+        ?sep
+        ?quote
+        ?start_line_number
+        ?on_invalid_row
+        ?header
+        builder
+        ~init
+        ~f
+    =
+    create_indexed
+      ?strip
+      ?sep
+      ?quote
+      ?start_line_number
+      ?on_invalid_row
+      ?header
+      builder
+      ~init
+      ~f:(fun (_ : int) -> f)
   ;;
 
   let input_string t ?(pos = 0) ?len input =

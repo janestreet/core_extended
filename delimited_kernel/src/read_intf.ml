@@ -164,6 +164,19 @@ module type Root = sig
       -> f:('b -> 'a -> 'b)
       -> 'b t
 
+    (** Like [create], but additionally passes the line number of the current row to [f] *)
+    val create_indexed
+      :  ?strip:bool
+      -> ?sep:char
+      -> ?quote:[ `No_quoting | `Using of char ]
+      -> ?start_line_number:int
+      -> ?on_invalid_row:'a On_invalid_row.t
+      -> ?header:Header.t
+      -> 'a builder_t
+      -> init:'b
+      -> f:(int -> 'b -> 'a -> 'b)
+      -> 'b t
+
     val input_string : 'a t -> ?pos:int -> ?len:int -> string -> 'a t
     val input : 'a t -> ?pos:int -> ?len:int -> bytes -> 'a t
     val finish : 'a t -> 'a t
