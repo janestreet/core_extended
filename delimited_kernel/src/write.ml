@@ -15,6 +15,10 @@ let column to_string ~header =
   { headers = [ header ]; to_columns = (fun x ~tail -> to_string x :: tail) }
 ;;
 
+let column_opt ?(default = "") to_string ~header =
+  column (Option.value_map ~default ~f:to_string) ~header
+;;
+
 let append l r =
   let to_columns_l = l.to_columns
   and to_columns_r = r.to_columns in
@@ -60,10 +64,7 @@ end
 
 let to_string_m (type t) (module T : To_string with type t = t) = T.to_string
 let column_m m ~header = column (to_string_m m) ~header
-
-let column_m_opt ?(default = "") m ~header =
-  column (Option.value_map ~default ~f:(to_string_m m)) ~header
-;;
+let column_m_opt ?default m ~header = column_opt ?default (to_string_m m) ~header
 
 module Expert = struct
   (* The standard string transformations are split in two:

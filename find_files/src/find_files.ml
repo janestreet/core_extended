@@ -1,5 +1,6 @@
 open Core
 open Poly
+module Unix = Core_unix
 
 type file_info = string * Unix.stats
 type path = string list

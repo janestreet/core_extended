@@ -3,8 +3,8 @@
 (* Implements find (like the unix utility).  Note that t is stateful both because
    filesystems themselves are highly stateful, and for performance reasons *)
 
-
 open! Core
+module Unix := Core_unix
 
 type t
 type file_info = string * Unix.stats

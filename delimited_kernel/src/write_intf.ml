@@ -19,6 +19,8 @@ module type M = sig
   (** [default] is printed in place of [None], and if not supplied
       is the empty string.
   *)
+  val column_opt : ?default:string -> ('a -> string) -> header:string -> 'a option t
+
   val column_m_opt
     :  ?default:string
     -> (module To_string with type t = 'a)
