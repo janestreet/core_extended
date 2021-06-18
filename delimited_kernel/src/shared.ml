@@ -1,4 +1,4 @@
-open Core_kernel
+open Core
 
 (* the maximum read/write I managed to get off of a socket or disk was 65k *)
 let buffer_size = 10 * 65 * 1024

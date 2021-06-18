@@ -1,4 +1,4 @@
-open Core_kernel
+open Core
 
 module type To_string = sig
   type t
@@ -33,6 +33,16 @@ module type M = sig
   val map_headers : 'a t -> f:(string -> string) -> 'a t
   val headers : 'a t -> string list
   val to_columns : 'a t -> 'a -> string list
+
+  (** Convert a list of ['a] to a CSV document in a string. *)
+  val to_string
+    :  ?quote:char
+    -> ?sep:char
+    -> ?line_breaks:[ `Unix | `Windows ] (** default is [`Windows] *)
+    -> write_header:bool
+    -> 'a t
+    -> 'a list
+    -> string
 
   (** Open for prefix operators useful for using with Fields.to_list.
 

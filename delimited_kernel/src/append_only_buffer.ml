@@ -1,5 +1,4 @@
-open Core_kernel
-open! Int.Replace_polymorphic_compare
+open Core
 
 type 'a t =
   { mutable array : 'a Option_array.t

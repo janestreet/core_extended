@@ -1,4 +1,4 @@
-open Core_kernel
+open Core
 
 (** If we can read a row correctly but the ['a t] provided can't convert it,
     your ['a On_invalid_row.t] will define what happens.
@@ -55,15 +55,15 @@ module type Root = sig
           }
 
         (* Describes how to generate a [t] from a row of a csv file *)
-        let parse : t Delimited_kernel.Parse.t =
-          let open Delimited_kernel.Parse.Let_syntax in
+        let parse : t Delimited_kernel.Read.t =
+          let open Delimited_kernel.Read.Let_syntax in
           let%map_open foo = at_header "foo" ~f:Int.of_string
           and bar = at_header "bar" ~f:String.of_string in
           { foo; bar }
         ;;
 
         let _ =
-          Delimited_kernel.Parse.list_of_string ~header:`Yes parse
+          Delimited_kernel.Read.list_of_string ~header:`Yes parse
             "foo,bar\n2,\"hello, world\"\n"
         ;;
       ]}

@@ -1,4 +1,4 @@
-open! Core_kernel
+open! Core
 open! Import
 
 (** A polymorphic data structure parametrized by ['a] to represent lists of elements of

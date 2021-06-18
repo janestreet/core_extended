@@ -1,6 +1,5 @@
-open Core_kernel
+open Core
 module Row_buffer = Append_only_buffer
-open! Int.Replace_polymorphic_compare
 
 exception Bad_csv_formatting of string list * string
 

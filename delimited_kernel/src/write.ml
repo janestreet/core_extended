@@ -1,5 +1,4 @@
-open Core_kernel
-open! Int.Replace_polymorphic_compare
+open Core
 
 module type To_string = Write_intf.To_string
 
@@ -174,6 +173,11 @@ module Expert = struct
   ;;
 end
 
+let line_break_string = function
+  | `Windows -> "\r\n"
+  | `Unix -> "\n"
+;;
+
 module By_row = struct
   type row = string list
 
@@ -232,11 +236,22 @@ module By_row = struct
   ;;
 
   let output_lines ?(quote = '"') ?(sep = ',') ?(line_breaks = `Windows) oc l =
-    let line_break =
-      match line_breaks with
-      | `Windows -> "\r\n"
-      | `Unix -> "\n"
-    in
-    output_lines_loop ~quote ~sep ~buff:(Bytes.create 256) ~line_break oc l
+    output_lines_loop
+      ~quote
+      ~sep
+      ~buff:(Bytes.create 256)
+      ~line_break:(line_break_string line_breaks)
+      oc
+      l
   ;;
 end
+
+let to_string ?quote ?sep ?(line_breaks = `Windows) ~write_header t rows =
+  let line_to_string = By_row.line_to_string ?quote ?sep in
+  let line_break_string = line_break_string line_breaks in
+  let content_rows = List.map rows ~f:(fun row -> line_to_string (to_columns t row)) in
+  String.concat
+    ~sep:line_break_string
+    (if write_header then line_to_string (headers t) :: content_rows else content_rows)
+  ^ line_break_string
+;;

@@ -1,5 +1,4 @@
-open Core_kernel
-open! Int.Replace_polymorphic_compare
+open Core
 
 exception Bad_csv_formatting = Parse_state.Bad_csv_formatting
 

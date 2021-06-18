@@ -1,2 +1,2 @@
 (library (name find_files) (public_name core_extended.find_files)
- (libraries core core.core_unix) (preprocess (pps ppx_jane)))
+ (libraries core_kernel.core core.core_unix) (preprocess (pps ppx_jane)))

@@ -1,4 +1,4 @@
-open Core_kernel
+open Core
 
 (** Kitchen-sink module for functions shared by multiple parsers. *)
 

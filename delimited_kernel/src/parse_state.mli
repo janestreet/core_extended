@@ -1,4 +1,4 @@
-open Core_kernel
+open Core
 
 (** Row up to the error, and the field with the error up to the point of failure *)
 exception Bad_csv_formatting of string list * string

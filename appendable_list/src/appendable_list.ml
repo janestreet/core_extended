@@ -1,4 +1,4 @@
-open! Core_kernel
+open! Core
 open! Import
 
 (* A Stack that supports an efficient push_list operation *)
