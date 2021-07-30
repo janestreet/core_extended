@@ -67,7 +67,21 @@ val is_empty : t -> bool
 
 val to_string : t -> string
 val sexp_of_t : t -> Sexp.t
+
+(** [fold] folds over (header, data) pairs.
+
+    It may throw if header doesn't have a corresponding entry in data array, e.g. when
+    row has fewer columns than headers.
+*)
 val fold : t -> init:'acc -> f:('acc -> header:string -> data:string -> 'acc) -> 'acc
+
+(** [fold_opt] just like [fold] but lets user handle missing data. *)
+val fold_opt
+  :  t
+  -> init:'acc
+  -> f:('acc -> header:string -> data:string option -> 'acc)
+  -> 'acc
+
 val iter : t -> f:(header:string -> data:string -> unit) -> unit
 val create : int String.Table.t -> string array -> t
 val create' : int String.Map.t -> string array -> t

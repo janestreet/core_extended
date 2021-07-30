@@ -129,6 +129,11 @@ let fold t ~init ~f =
     f acc ~header ~data:t.fields.(i))
 ;;
 
+let fold_opt t ~init ~f =
+  Map.fold t.header_map ~init ~f:(fun ~key:header ~data:i acc ->
+    f acc ~header ~data:(nth t i))
+;;
+
 let iter t ~f = fold t ~init:() ~f:(fun () ~header ~data -> f ~header ~data)
 let headers t = t.header_map
 
