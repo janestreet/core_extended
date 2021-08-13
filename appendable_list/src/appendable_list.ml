@@ -306,3 +306,40 @@ module For_testing = struct
         ])
   ;;
 end
+
+module Stable = struct
+  open! Core.Core_stable
+
+  module V1 = struct
+    type nonrec 'a t = 'a t
+
+    (* Binable.V2 requires a uuid. It makes sense for most uses of Binable, where the
+       functions can change behavior across versions. But for us, the functions are the
+       identity (modulo change of representation), so no reason to have a uuid. *)
+    include
+      Binable.Of_binable1.V1
+        (List.V1)
+        (struct
+          type nonrec 'a t = 'a t
+
+          let to_binable = to_list
+          let of_binable = of_list
+        end) [@@alert "-legacy"]
+
+    include
+      Sexpable.Of_sexpable1.V1
+        (List.V1)
+        (struct
+          type nonrec 'a t = 'a t
+
+          let to_sexpable = to_list
+          let of_sexpable = of_list
+        end)
+
+    let compare compare_a t1 t2 = compare_list compare_a (to_list t1) (to_list t2)
+
+    let%expect_test _ =
+      assert (Core.String.( = ) [%bin_digest: unit t] [%bin_digest: unit list])
+    ;;
+  end
+end

@@ -48,3 +48,9 @@ module For_testing : sig
   val map_simple : 'a t -> f:('a -> 'b) -> 'b t
   val quickcheck_generator : Element.t t Quickcheck.Generator.t
 end
+
+module Stable : sig
+  module V1 : sig
+    type nonrec 'a t = 'a t [@@deriving bin_io, compare, sexp]
+  end
+end

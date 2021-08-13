@@ -3,6 +3,7 @@ let%test_module "individual test cases" =
    struct
      open Core
      open Appendable_list
+     module Stable = Stable
 
      type nonrec 'a t = 'a t [@@deriving sexp]
 
@@ -171,6 +172,7 @@ let%test_module "semantics" =
    struct
      open Core
      open Appendable_list
+     module Stable = Stable
 
      (* [to_list] is effectively tested throughout all the tests. *)
      let to_list = to_list
@@ -179,27 +181,63 @@ let%test_module "semantics" =
 
      let sexp_of_t = sexp_of_t
 
+     let test_sexp_of_t ~sexp_of =
+       Quickcheck.test For_testing.quickcheck_generator ~sexp_of ~f:(fun t ->
+         [%test_eq: Sexp.t]
+           (sexp_of t)
+           [%sexp (to_list t : For_testing.Element.t list)])
+     ;;
+
      let%test_unit "sexp_of_t" =
-       Quickcheck.test
-         For_testing.quickcheck_generator
-         ~sexp_of:[%sexp_of: For_testing.Element.t t]
-         ~f:(fun t ->
-           [%test_eq: Sexp.t]
-             [%sexp (t : For_testing.Element.t t)]
-             [%sexp (to_list t : For_testing.Element.t list)])
+       test_sexp_of_t ~sexp_of:[%sexp_of: For_testing.Element.t t]
+     ;;
+
+     let%test_unit "sexp_of_t (Stable.V1)" =
+       test_sexp_of_t ~sexp_of:[%sexp_of: For_testing.Element.t Stable.V1.t]
      ;;
 
      let t_of_sexp = t_of_sexp
 
-     let%test_unit "t_of_sexp" =
+     let test_t_of_sexp ~of_sexp =
        let check sexp =
          [%test_eq: Sexp.t list Or_error.t]
            (Or_error.map
-              (Or_error.try_with (fun () -> [%of_sexp: Sexp.t t] sexp))
+              (Or_error.try_with (fun () -> of_sexp sexp))
               ~f:to_list)
            (Or_error.try_with (fun () -> [%of_sexp: Sexp.t list] sexp))
        in
        Quickcheck.test [%quickcheck.generator: Sexp.t] ~f:check
+     ;;
+
+     let%test_unit "t_of_sexp" = test_t_of_sexp ~of_sexp:[%of_sexp: Sexp.t t]
+
+     let%test_unit "t_of_sexp (Stable.V1)" =
+       test_t_of_sexp ~of_sexp:[%of_sexp: Sexp.t Stable.V1.t]
+     ;;
+
+     let%test_unit "compare (Stable.V1)" =
+       Quickcheck.test
+         [%quickcheck.generator: For_testing.t list]
+         ~sexp_of:[%sexp_of: For_testing.Element.t t list]
+         ~f:(fun ts ->
+           [%test_eq: For_testing.Element.t list option]
+             (List.max_elt
+                (List.map ts ~f:to_list)
+                ~compare:[%compare: For_testing.Element.t list])
+             (Option.map
+                ~f:to_list
+                (List.max_elt
+                   ts
+                   ~compare:[%compare: For_testing.Element.t Stable.V1.t])))
+     ;;
+
+     let%test_unit "bin_io (Stable.V1)" =
+       Quickcheck.test [%quickcheck.generator: int list] ~f:(fun xs ->
+         [%test_eq: bytes]
+           (Bin_prot.Writer.to_bytes [%bin_writer: int list] xs)
+           (Bin_prot.Writer.to_bytes
+              [%bin_writer: int Stable.V1.t]
+              (of_list xs)))
      ;;
 
      let empty = empty
