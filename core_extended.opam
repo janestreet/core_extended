@@ -14,8 +14,9 @@ depends: [
   "core"
   "core_kernel"
   "ppx_jane"
-  "dune"        {>= "2.0.0"}
-  "re"          {>= "1.8.0"}
+  "record_builder"
+  "dune"           {>= "2.0.0"}
+  "re"             {>= "1.8.0"}
 ]
 synopsis: "Extra components that are not as closely vetted or as stable as Core"
 description: "

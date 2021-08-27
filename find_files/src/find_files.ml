@@ -145,8 +145,7 @@ let rec next t =
   in
   let handle_dirs (output_fn, path, stats) =
     let info = output_fn, stats in
-    if
-      match t.options.O.skip_dir with
+    if match t.options.O.skip_dir with
       | None -> false
       | Some f -> f info
     then None

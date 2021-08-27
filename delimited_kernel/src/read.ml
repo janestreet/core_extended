@@ -28,18 +28,18 @@ end
 module Header = Header
 
 module Builder = struct
-  type _ t =
-    | Column : int -> string t
-    | Header : string -> string t
-    | Header_opt : string -> string option t
-    | Return : 'a -> 'a t
-    | Apply : ('b -> 'a) t * 'b t -> 'a t
-    | Map : ('b -> 'a) * 'b t -> 'a t
-    | Map2 : ('b -> 'c -> 'a) * 'b t * 'c t -> 'a t
-    | Both : 'a t * 'b t -> ('a * 'b) t
-    | Lambda : (int String.Map.t -> string Append_only_buffer.t -> 'a) -> 'a t
-
   module T = struct
+    type _ t =
+      | Column : int -> string t
+      | Header : string -> string t
+      | Header_opt : string -> string option t
+      | Return : 'a -> 'a t
+      | Apply : ('b -> 'a) t * 'b t -> 'a t
+      | Map : ('b -> 'a) * 'b t -> 'a t
+      | Map2 : ('b -> 'c -> 'a) * 'b t * 'c t -> 'a t
+      | Both : 'a t * 'b t -> ('a * 'b) t
+      | Lambda : (int String.Map.t -> string Append_only_buffer.t -> 'a) -> 'a t
+
     let return x = Return x
 
     let apply f x =
@@ -90,6 +90,18 @@ module Builder = struct
   let at_header h ~f = Map (f, Header h)
   let at_header_opt h ~f = Map (f, Header_opt h)
   let lambda f = Lambda f
+
+  module Record_builder = Record_builder.Make (T)
+
+  module Fields_O = struct
+    let ( !! ) of_string field =
+      Record_builder.field (at_header (Field.name field) ~f:of_string) field
+    ;;
+
+    let ( !? ) of_string field =
+      Record_builder.field (at_header_opt (Field.name field) ~f:of_string) field
+    ;;
+  end
 
   module Open_on_rhs_intf = struct
     module type S = Read_intf.Open_on_rhs with type 'a t := 'a t

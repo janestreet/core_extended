@@ -94,6 +94,46 @@ module type Root = sig
       string. *)
   val at_header_opt : string -> f:(string option -> 'a) -> 'a t
 
+  module Record_builder : Record_builder.Record_builder_S with type 'a applicative = 'a t
+
+  module Fields_O : sig
+    (** The following are convenience functions that build on [Record_builder.field] to
+        make it easy to define a [t Delimited.Read.t] for some record type [t].
+
+        Example usage:
+
+        {[
+          type t =
+            { foo : int
+            ; bar : bool
+            }
+          [@@deriving fields]
+
+          let read : t Delimited.Read.t =
+            Delimited.Read.Fields_O.(
+              Fields.make_creator
+                ~foo:!!Int.of_string
+                ~bar:!?(Option.value_map ~default:true ~f:Bool.of_string)
+              |> Delimited.Read.Record_builder.build_for_record)
+        ]}
+    *)
+
+    (** Reads a single column from a field of a record. *)
+    val ( !! )
+      :  (string -> 'a)
+      -> (_, 'a) Field.t
+      -> ('a, _, _, _) Record_builder.Make_creator_types.handle_one_field
+
+    (** Reads a single column from a field of a record, if the header exists.
+
+        [( !? )] is to [at_header_opt] as [( !! )] is to [at_header].
+    *)
+    val ( !? )
+      :  (string option -> 'a)
+      -> (_, 'a) Field.t
+      -> ('a, _, _, _) Record_builder.Make_creator_types.handle_one_field
+  end
+
   module On_invalid_row : On_invalid_row
 
   (** Header parsing control *)
