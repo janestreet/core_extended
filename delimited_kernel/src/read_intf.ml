@@ -94,7 +94,7 @@ module type Root = sig
       string. *)
   val at_header_opt : string -> f:(string option -> 'a) -> 'a t
 
-  module Record_builder : Record_builder.Record_builder_S with type 'a applicative = 'a t
+  module Record_builder : Record_builder.S with type 'a applicative = 'a t
 
   module Fields_O : sig
     (** The following are convenience functions that build on [Record_builder.field] to
