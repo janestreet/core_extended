@@ -1,6 +1,6 @@
 open Base
 
-module Dlist = struct
+module _ = struct
   let to_list l = l []
   let cons x l rest = x :: l rest
   let snoc l x rest = l (x :: rest)
@@ -15,7 +15,7 @@ module Dlist = struct
   ;;
 end
 
-module Appendable_list = struct
+module _ = struct
   open Appendable_list
 
   let snoc l x = append l (singleton x)
@@ -40,7 +40,7 @@ module Appendable_list = struct
   ;;
 end
 
-module List = struct
+module _ = struct
   open List
 
   let empty = []

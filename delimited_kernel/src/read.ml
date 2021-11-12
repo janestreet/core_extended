@@ -517,7 +517,6 @@ module Expert = struct
   module Append_only_buffer = Append_only_buffer
   module Parse_state = Parse_state
   module Builder = Builder
-  module Parse_header = Parse_header
 end
 
 let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_string =

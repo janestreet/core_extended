@@ -42,6 +42,7 @@ module For_testing : sig
   module Element : sig
     type t [@@deriving compare, sexp_of]
 
+    val quickcheck_generator : t Quickcheck.Generator.t
     val quickcheck_observer : t Quickcheck.Observer.t
   end
 
