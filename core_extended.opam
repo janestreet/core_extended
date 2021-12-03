@@ -12,7 +12,7 @@ build: [
 depends: [
   "ocaml" {>= "4.08.0"}
   "core"
-  "core_kernel"
+  "core_unix"
   "ppx_jane"
   "record_builder"
   "dune"           {>= "2.0.0"}
