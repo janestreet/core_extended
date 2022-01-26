@@ -38,6 +38,19 @@ let contra_map x ~f =
 ;;
 
 let map_headers t ~f = { t with headers = List.map t.headers ~f }
+
+let optional ?(default = "") t =
+  { t with
+    to_columns =
+      (fun x ~tail ->
+         match x with
+         | Some x -> t.to_columns x ~tail
+         | None ->
+           (* Header order doesn't matter as each column has the same value *)
+           List.fold t.headers ~init:tail ~f:(fun tail _ -> default :: tail))
+  }
+;;
+
 let to_columns t x = to_columns t x ~tail:[]
 
 module Fields_O = struct

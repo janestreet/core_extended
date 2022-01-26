@@ -27,6 +27,9 @@ module type M = sig
     -> header:string
     -> 'a option t
 
+  (** [default] is used for every column in the case of [None]. *)
+  val optional : ?default:string -> 'a t -> 'a option t
+
   val of_list : 'a t list -> 'a t
   val append : 'a t -> 'a t -> 'a t
   val contra_map : 'b t -> f:('a -> 'b) -> 'a t
