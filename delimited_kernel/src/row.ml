@@ -27,7 +27,7 @@ let sexp_of_t t =
 let to_string t = Sexp.to_string_hum (sexp_of_t t)
 
 let index_exn t header =
-  try String.Map.find_exn t.header_map header with
+  try Map.find_exn (t.header_map : _ String.Map.t) header with
   | _ -> raise_s [%message "Header not found" (header : string)]
 ;;
 

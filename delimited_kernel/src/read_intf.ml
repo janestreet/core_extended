@@ -188,6 +188,20 @@ module type Root = sig
     -> In_channel.t
     -> 'a list
 
+  (** Read CSV file, processing line by line. *)
+  val fold_lines
+    :  ?buffer_size:int
+    -> ?strip:bool
+    -> ?sep:char
+    -> ?quote:[ `No_quoting | `Using of char ]
+    -> ?header:Header.t
+    -> ?on_invalid_row:'a On_invalid_row.t
+    -> 'a t
+    -> init:'b
+    -> f:('b -> 'a -> 'b)
+    -> In_channel.t
+    -> 'b
+
   module Streaming : sig
     type 'a builder_t = 'a t
     type 'a t

@@ -198,14 +198,14 @@ module Builder = struct
       | Return x -> Without_headers.Return x
       | Column i -> Without_headers.Column i
       | Header column ->
-        (match String.Map.find_exn header_map column with
+        (match Map.find_exn (header_map : _ String.Map.t) column with
          | index -> Without_headers.Column index
          | exception (Not_found_s _ | Caml.Not_found) ->
            raise_s
              [%message
                "Missing column in header" (column : string) (header_map : int String.Map.t)])
       | Header_opt h ->
-        (match String.Map.find_exn header_map h with
+        (match Map.find_exn (header_map : _ String.Map.t) h with
          | index -> Without_headers.Map (Option.some, Column index)
          | exception (Not_found_s _ | Caml.Not_found) -> Without_headers.Return None)
       | Apply (f, x) -> Without_headers.Apply (transform f, transform x)
@@ -545,6 +545,35 @@ let list_of_string ?strip ?sep ?quote ?header ?on_invalid_row builder csv_string
 let read_lines ?strip ?sep ?quote ?header ?on_invalid_row builder in_channel =
   let contents = In_channel.input_all in_channel in
   list_of_string ?strip ?sep ?quote ?header ?on_invalid_row builder contents
+;;
+
+let fold_lines
+      ?(buffer_size = 8192)
+      ?strip
+      ?sep
+      ?quote
+      ?header
+      ?on_invalid_row
+      builder
+      ~init
+      ~f
+      in_channel
+  =
+  let buf = Bytes.create buffer_size in
+  let rec loop state =
+    match In_channel.input in_channel ~buf ~pos:0 ~len:buffer_size with
+    | 0 -> state
+    | len ->
+      Streaming.input_string
+        state
+        ~len
+        (Bytes.unsafe_to_string ~no_mutation_while_string_reachable:buf)
+      |> loop
+  in
+  Streaming.create ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f
+  |> loop
+  |> Streaming.finish
+  |> Streaming.acc
 ;;
 
 module Row = struct
