@@ -20,13 +20,14 @@ module type On_invalid_row = sig
       - [`Skip]: skip the line. Same as [skip] above.
       - [`Yield]: return the given value for this row.
       - [`Raise]: raise the given exception
+      - [`Fallback]: invoke the given handler instead
   *)
   val create
     :  (line_number:int (** The line number of the bad row.  *)
         -> int String.Map.t (** Map from header to position. *)
         -> string Append_only_buffer.t (** Value at each position. *)
         -> exn (** Exception raised when trying to convert this row. *)
-        -> [ `Skip | `Yield of 'a | `Raise of exn ])
+        -> [ `Skip | `Yield of 'a | `Raise of exn | `Fallback of 'a t ])
     -> 'a t
 end
 

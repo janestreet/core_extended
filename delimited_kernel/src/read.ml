@@ -8,7 +8,7 @@ module On_invalid_row = struct
     -> int String.Map.t
     -> string Append_only_buffer.t
     -> exn
-    -> [ `Skip | `Yield of 'a | `Raise of exn ]
+    -> [ `Skip | `Yield of 'a | `Raise of exn | `Fallback of 'a t ]
 
   let raise ~line_number header_map buffer exn =
     `Raise
@@ -309,7 +309,7 @@ module Parse_header = struct
         List.foldi l ~init ~f:(fun i acc x ->
           match x with
           | None -> acc
-          | Some x -> f i acc x)
+          | Some x -> f i acc x) [@nontail]
       in
       let f headers = header_map ~foldi (f (Array.to_list headers)) in
       First (create' ?strip ?sep ?quote ~start_line_number f)
@@ -415,10 +415,14 @@ module Streaming = struct
       let f ~line_number init row =
         try f line_number init (row_to_'a row) with
         | exn ->
-          (match on_invalid_row ~line_number header_map row exn with
-           | `Yield x -> f line_number init x
-           | `Skip -> init
-           | `Raise exn -> raise exn)
+          let rec loop on_invalid_row =
+            match on_invalid_row ~line_number header_map row exn with
+            | `Yield x -> f line_number init x
+            | `Skip -> init
+            | `Fallback on_invalid_row -> loop on_invalid_row
+            | `Raise exn -> raise exn
+          in
+          loop on_invalid_row
       in
       Parse_state.create ?strip ?sep ?quote ?start_line_number ~fields_used ~init ~f ()
     in

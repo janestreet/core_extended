@@ -237,26 +237,57 @@ module By_row = struct
     Bytes.unsafe_to_string ~no_mutation_while_string_reachable:res
   ;;
 
-  let rec output_lines_loop ~quote ~sep ~buff ~line_break oc = function
-    | [] -> ()
-    | h :: t ->
+  module Out_channel = struct
+    type t =
+      { oc : Out_channel.t
+      ; mutable buff : Bytes.t
+      ; quote : char
+      ; sep : char
+      ; line_break : string
+      }
+
+    let create ?(quote = '"') ?(sep = ',') ?(line_breaks = `Windows) oc =
+      { quote
+      ; sep
+      ; line_break = line_break_string line_breaks
+      ; buff = Bytes.create 256
+      ; oc
+      }
+    ;;
+
+    let output_line t h =
+      let { quote; sep; line_break; oc; _ } = t in
       let spec, len = line_spec_loop ~quote ~sep [] 0 h in
-      let buff = if Bytes.length buff < len then Bytes.create (2 * len) else buff in
-      ignore (line_blit_loop ~quote ~sep ~dst:buff ~pos:0 spec : int);
-      Out_channel.output oc ~buf:buff ~pos:0 ~len;
-      Out_channel.output_string oc line_break;
-      output_lines_loop ~quote ~sep ~buff ~line_break oc t
+      if Bytes.length t.buff < len then t.buff <- Bytes.create (2 * len);
+      ignore (line_blit_loop ~quote ~sep ~dst:t.buff ~pos:0 spec : int);
+      Out_channel.output oc ~buf:t.buff ~pos:0 ~len;
+      Out_channel.output_string oc line_break
+    ;;
+  end
+
+  let output_lines ?quote ?sep ?line_breaks oc l =
+    let ch = Out_channel.create ?quote ?sep ?line_breaks oc in
+    List.iter l ~f:(Out_channel.output_line ch)
+  ;;
+end
+
+module Out_channel = struct
+  type 'a write = 'a t
+
+  type 'a t =
+    { ch : By_row.Out_channel.t
+    ; t : 'a write
+    }
+
+  let channel t = t.ch.oc
+
+  let create ?quote ?sep ?line_breaks ~write_header t ch =
+    let t = { ch = By_row.Out_channel.create ?quote ?sep ?line_breaks ch; t } in
+    if write_header then By_row.Out_channel.output_line t.ch (headers t.t);
+    t
   ;;
 
-  let output_lines ?(quote = '"') ?(sep = ',') ?(line_breaks = `Windows) oc l =
-    output_lines_loop
-      ~quote
-      ~sep
-      ~buff:(Bytes.create 256)
-      ~line_break:(line_break_string line_breaks)
-      oc
-      l
-  ;;
+  let output_row t row = By_row.Out_channel.output_line t.ch (to_columns t.t row)
 end
 
 let to_string ?quote ?sep ?(line_breaks = `Windows) ~write_header t rows =

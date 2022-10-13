@@ -45,11 +45,10 @@ let fold_left =
     | [] -> init
     | Empty :: todo -> go todo ~init ~f
     | Singleton a :: todo -> go todo ~init:(f init a) ~f
-    | List (a, b, cs) :: todo ->
-      go todo ~init:(List.fold_left ~f ~init:(f (f init a) b) cs) ~f
+    | List (a, b, cs) :: todo -> go todo ~init:(List.fold ~f ~init:(f (f init a) b) cs) ~f
     | Node (a, b, cs) :: todo -> go (a :: b :: (cs @ todo)) ~init ~f
   in
-  fun t ~init ~f -> go [ t ] ~init ~f
+  fun t ~init ~f -> go [ t ] ~init ~f [@nontail]
 ;;
 
 let fold_right =
@@ -87,7 +86,7 @@ let is_empty = function
 ;;
 
 let fold_result t ~init ~f = Container.fold_result ~fold ~init ~f t
-let fold_until t ~init ~f = Container.fold_until ~fold ~init ~f t
+let fold_until t ~init ~f ~finish = Container.fold_until ~fold ~init ~f t ~finish
 let length t = fold t ~init:0 ~f:(fun acc _ -> Int.succ acc)
 let to_list t = fold_right t ~init:[] ~f:(fun x acc -> x :: acc)
 

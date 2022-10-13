@@ -118,4 +118,22 @@ module type M = sig
       -> len:int
       -> int
   end
+
+  (** Wraps [Stdio.Out_channel] for writing CSVs one line at a time. *)
+  module Out_channel : sig
+    type 'a write = 'a t
+    type 'a t
+
+    val create
+      :  ?quote:char
+      -> ?sep:char
+      -> ?line_breaks:[ `Unix | `Windows ] (** default is [`Windows] *)
+      -> write_header:bool
+      -> 'a write
+      -> Out_channel.t
+      -> 'a t
+
+    val channel : 'a t -> Out_channel.t
+    val output_row : 'a t -> 'a -> unit
+  end
 end
