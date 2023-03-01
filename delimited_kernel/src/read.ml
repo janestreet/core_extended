@@ -200,14 +200,14 @@ module Builder = struct
       | Header column ->
         (match Map.find_exn (header_map : _ String.Map.t) column with
          | index -> Without_headers.Column index
-         | exception (Not_found_s _ | Caml.Not_found) ->
+         | exception (Not_found_s _ | Stdlib.Not_found) ->
            raise_s
              [%message
                "Missing column in header" (column : string) (header_map : int String.Map.t)])
       | Header_opt h ->
         (match Map.find_exn (header_map : _ String.Map.t) h with
          | index -> Without_headers.Map (Option.some, Column index)
-         | exception (Not_found_s _ | Caml.Not_found) -> Without_headers.Return None)
+         | exception (Not_found_s _ | Stdlib.Not_found) -> Without_headers.Return None)
       | Apply (f, x) -> Without_headers.Apply (transform f, transform x)
       | Map (f, x) -> Without_headers.Map (f, transform x)
       | Map2 (f, x, y) -> Without_headers.Map2 (f, transform x, transform y)
