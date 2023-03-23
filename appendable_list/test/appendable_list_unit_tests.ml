@@ -241,9 +241,7 @@ let%test_module "semantics" =
      ;;
 
      let empty = empty
-
      let%test_unit "empty" = [%test_eq: Nothing.t list] (to_list empty) []
-
      let of_list = of_list
 
      let%test_unit "of_list" =

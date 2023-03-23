@@ -203,7 +203,9 @@ module Builder = struct
          | exception (Not_found_s _ | Stdlib.Not_found) ->
            raise_s
              [%message
-               "Missing column in header" (column : string) (header_map : int String.Map.t)])
+               "Missing column in header"
+                 (column : string)
+                 (header_map : int String.Map.t)])
       | Header_opt h ->
         (match Map.find_exn (header_map : _ String.Map.t) h with
          | index -> Without_headers.Map (Option.some, Column index)
@@ -469,7 +471,11 @@ module Streaming = struct
        | Second { consumed; header_map; next_line_number } ->
          let state = mk_state init header_map ~start_line_number:next_line_number in
          let state =
-           Parse_state.input_string state ~pos:(pos + consumed) ~len:(len - consumed) input
+           Parse_state.input_string
+             state
+             ~pos:(pos + consumed)
+             ~len:(len - consumed)
+             input
          in
          Parsing_rows { header_map; state })
     | Parsing_rows { header_map; state } ->
