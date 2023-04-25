@@ -1,3 +1,13 @@
+## Release v0.16.0
+
+* Added `` `Fallback `` option to `Read.On_invalid_row`.
+
+* Added `Read.fold_lines`.
+
+* Added `Write.Out_channel` to support line-by-line printing to `stdout`.
+
+## Old pre-v0.15 changelogs (very likely stale and incomplete)
+
 ## 113.43.00
 
 - Export the interval map module type.
