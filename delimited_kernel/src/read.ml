@@ -160,14 +160,14 @@ module Builder = struct
     let build t =
       let rec build' : type a. a t -> string Append_only_buffer.t -> a =
         fun t row ->
-          match t with
-          | Return x -> x
-          | Column i -> Append_only_buffer.nth_exn row i
-          | Apply (f, x) -> (build' f row) (build' x row)
-          | Map (f, x) -> f (build' x row)
-          | Map2 (f, x, y) -> f (build' x row) (build' y row)
-          | Both (x, y) -> build' x row, build' y row
-          | Lambda (f, header_map) -> f header_map row
+        match t with
+        | Return x -> x
+        | Column i -> Append_only_buffer.nth_exn row i
+        | Apply (f, x) -> (build' f row) (build' x row)
+        | Map (f, x) -> f (build' x row)
+        | Map2 (f, x, y) -> f (build' x row) (build' y row)
+        | Both (x, y) -> build' x row, build' y row
+        | Lambda (f, header_map) -> f header_map row
       in
       let fields_used = get_fields_used t in
       match fields_used with
@@ -180,14 +180,14 @@ module Builder = struct
         in
         let rec remap : type a. a t -> a t =
           fun t ->
-            match t with
-            | Column i -> Column (Map.find_exn mapping i)
-            | Return x -> Return x
-            | Apply (f, x) -> Apply (remap f, remap x)
-            | Map (f, x) -> Map (f, remap x)
-            | Map2 (f, x, y) -> Map2 (f, remap x, remap y)
-            | Both (x, y) -> Both (remap x, remap y)
-            | Lambda _ -> t
+          match t with
+          | Column i -> Column (Map.find_exn mapping i)
+          | Return x -> Return x
+          | Apply (f, x) -> Apply (remap f, remap x)
+          | Map (f, x) -> Map (f, remap x)
+          | Map2 (f, x, y) -> Map2 (f, remap x, remap y)
+          | Both (x, y) -> Both (remap x, remap y)
+          | Lambda _ -> t
         in
         build' (remap t), Some (Array.of_list fields_used)
     ;;
