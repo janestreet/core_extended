@@ -39,8 +39,10 @@ module Builder = struct
       | Map2 : ('b -> 'c -> 'a) * 'b t * 'c t -> 'a t
       | Both : 'a t * 'b t -> ('a * 'b) t
       | Lambda : (int String.Map.t -> string Append_only_buffer.t -> 'a) -> 'a t
+      | Label : 'a t * Info.t -> 'a t
 
     let return x = Return x
+    let label t info = Label (t, info)
 
     let apply f x =
       match f with
@@ -86,9 +88,18 @@ module Builder = struct
 
   include T
 
-  let at_index i ~f = Map (f, Column i)
-  let at_header h ~f = Map (f, Header h)
-  let at_header_opt h ~f = Map (f, Header_opt h)
+  let at_index i ~f =
+    Label (Map (f, Column i), Info.of_lazy (lazy [%string "[at_index %{i#Int}]"]))
+  ;;
+
+  let at_header h ~f =
+    Label (Map (f, Header h), Info.of_lazy (lazy [%string "[at_header \"%{h}\"]"]))
+  ;;
+
+  let at_header_opt h ~f =
+    Label (Map (f, Header_opt h), Info.of_lazy (lazy [%string "[at_header_opt \"%{h}\"]"]))
+  ;;
+
   let lambda f = Lambda f
 
   module Record_builder = Record_builder.Make (T)
@@ -118,6 +129,7 @@ module Builder = struct
         let at_index = at_index
         let at_header = at_header
         let at_header_opt = at_header_opt
+        let label = label
       end
     end
   end
@@ -133,6 +145,7 @@ module Builder = struct
       | Lambda :
           (int String.Map.t -> string Append_only_buffer.t -> 'a) * int String.Map.t
           -> 'a t
+      | Label : 'a t * Info.t -> 'a t
 
     let get_fields_used t =
       let open Option.Let_syntax in
@@ -153,6 +166,7 @@ module Builder = struct
           let%map y = fields y in
           Set.union x y
         | Lambda _ -> None
+        | Label (t, _) -> fields t
       in
       fields t
     ;;
@@ -168,6 +182,9 @@ module Builder = struct
         | Map2 (f, x, y) -> f (build' x row) (build' y row)
         | Both (x, y) -> build' x row, build' y row
         | Lambda (f, header_map) -> f header_map row
+        | Label (t, info) ->
+          (try build' t row with
+           | exn -> Exn.reraisef exn "Raised in %s" (Info.to_string_hum info) ())
       in
       let fields_used = get_fields_used t in
       match fields_used with
@@ -188,6 +205,7 @@ module Builder = struct
           | Map2 (f, x, y) -> Map2 (f, remap x, remap y)
           | Both (x, y) -> Both (remap x, remap y)
           | Lambda _ -> t
+          | Label (t, info) -> Label (remap t, info)
         in
         build' (remap t), Some (Array.of_list fields_used)
     ;;
@@ -215,6 +233,7 @@ module Builder = struct
       | Map2 (f, x, y) -> Without_headers.Map2 (f, transform x, transform y)
       | Both (x, y) -> Without_headers.Both (transform x, transform y)
       | Lambda f -> Without_headers.Lambda (f, header_map)
+      | Label (t, info) -> Without_headers.Label (transform t, info)
     in
     let transformed = transform t in
     Without_headers.build transformed

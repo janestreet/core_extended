@@ -37,6 +37,7 @@ module type Open_on_rhs = sig
   val at_index : int -> f:(string -> 'a) -> 'a t
   val at_header : string -> f:(string -> 'a) -> 'a t
   val at_header_opt : string -> f:(string option -> 'a) -> 'a t
+  val label : 'a t -> Info.t -> 'a t
 end
 
 module type Root = sig
@@ -94,6 +95,9 @@ module type Root = sig
   (** Read a field at the given header, if it exists. Use [f] to convert the field from
       string. *)
   val at_header_opt : string -> f:(string option -> 'a) -> 'a t
+
+  (** Provide a label to be used in exceptions raised by this builder *)
+  val label : 'a t -> Info.t -> 'a t
 
   module Record_builder : Record_builder.S with type 'a applicative = 'a t
 
