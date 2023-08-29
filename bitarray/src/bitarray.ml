@@ -8,6 +8,8 @@ module Int63_chunk : sig
   val empty : t
   val get : t -> int -> bool
   val set : t -> int -> bool -> t
+  val popcount : t -> int
+  val count : t -> int -> int
 end = struct
   open Int63
 
@@ -21,6 +23,9 @@ end = struct
     then bit_or t (shift_left one i)
     else bit_and t (bit_xor minus_one (shift_left one i))
   ;;
+
+  let popcount = popcount
+  let count t i = bit_and t (shift_left one Int.(i + 1) - one) |> popcount
 end
 
 type t =
@@ -32,8 +37,9 @@ type t =
 let bits_per_bucket = 62
 
 let create sz =
-  if sz < 0 || sz > Array.max_length * bits_per_bucket then invalid_argf "invalid size" ();
-  { data = Array.create ~len:(1 + (sz / bits_per_bucket)) Int63_chunk.empty; length = sz }
+  let len = 1 + (sz / bits_per_bucket) in
+  if sz < 0 || len > Array.max_length then invalid_argf "invalid size" ();
+  { data = Array.create ~len Int63_chunk.empty; length = sz }
 ;;
 
 let length t = t.length
@@ -75,4 +81,18 @@ let t_of_sexp sexp =
   let t = create (Array.length a) in
   Array.iteri a ~f:(fun i v -> set t i v);
   t
+;;
+
+let count ?len t =
+  match Option.value ~default:(length t) len with
+  | 0 -> 0
+  | len ->
+    let max_index = len - 1 in
+    bounds_check t max_index;
+    let bucket = bucket max_index in
+    let c = ref 0 in
+    for b = 0 to bucket - 1 do
+      c := !c + Int63_chunk.popcount t.data.(b)
+    done;
+    !c + Int63_chunk.count t.data.(bucket) (index max_index)
 ;;

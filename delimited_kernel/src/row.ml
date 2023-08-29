@@ -4,7 +4,7 @@ type t =
   { header_map : int String.Map.t
   ; fields : string array
   }
-[@@deriving compare, fields]
+[@@deriving compare]
 
 let is_empty t = Array.for_all t.fields ~f:String.is_empty
 

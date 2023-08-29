@@ -6,7 +6,7 @@ type -'a t =
   { headers : string list
   ; to_columns : 'a -> tail:string list -> string list
   }
-[@@deriving fields]
+[@@deriving fields ~getters]
 
 let empty = { headers = []; to_columns = (fun _ ~tail -> tail) }
 

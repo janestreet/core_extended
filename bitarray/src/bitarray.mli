@@ -30,3 +30,8 @@ val iter : t -> f:(bool -> unit) -> unit
 
 (** [length t] returns the length of [t], i.e., the number of bits it contains *)
 val length : t -> int
+
+(** [count t] returns the number of bits set to [true] in [t].
+
+    When [len] is provided, only count the first [len] bits. *)
+val count : ?len:int -> t -> int

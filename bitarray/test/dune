@@ -1,0 +1,2 @@
+(library (name bitarray_test) (public_name core_extended.bitarray_test)
+ (libraries core bitarray) (preprocess (pps ppx_jane)))
