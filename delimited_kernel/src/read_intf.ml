@@ -80,8 +80,8 @@ module type Root = sig
 
   include
     Applicative.Let_syntax
-    with type 'a t := 'a t
-    with module Open_on_rhs_intf := Open_on_rhs_intf
+      with type 'a t := 'a t
+      with module Open_on_rhs_intf := Open_on_rhs_intf
 
   (** Read a field at the given index. Use [f] to convert the field from string. *)
   val at_index : int -> f:(string -> 'a) -> 'a t
@@ -156,7 +156,6 @@ module type Root = sig
         interface directly, but simpler to use. *)
     val builder : t builder_t
   end
-
 
   (** Fold the CSV rows contained in the given string. *)
   val fold_string

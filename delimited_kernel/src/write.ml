@@ -43,11 +43,11 @@ let optional ?(default = "") t =
   { t with
     to_columns =
       (fun x ~tail ->
-         match x with
-         | Some x -> t.to_columns x ~tail
-         | None ->
-           (* Header order doesn't matter as each column has the same value *)
-           List.fold t.headers ~init:tail ~f:(fun tail _ -> default :: tail))
+        match x with
+        | Some x -> t.to_columns x ~tail
+        | None ->
+          (* Header order doesn't matter as each column has the same value *)
+          List.fold t.headers ~init:tail ~f:(fun tail _ -> default :: tail))
   }
 ;;
 

@@ -421,15 +421,15 @@ module Streaming = struct
         }
 
   let create_indexed
-        ?strip
-        ?sep
-        ?quote
-        ?start_line_number
-        ?(on_invalid_row = (On_invalid_row.raise : _ On_invalid_row.t))
-        ?(header : Header.t option)
-        builder
-        ~init
-        ~f
+    ?strip
+    ?sep
+    ?quote
+    ?start_line_number
+    ?(on_invalid_row = (On_invalid_row.raise : _ On_invalid_row.t))
+    ?(header : Header.t option)
+    builder
+    ~init
+    ~f
     =
     let mk_state init ?start_line_number header_map =
       let row_to_'a, fields_used = Builder.build ~header_map builder in
@@ -455,15 +455,15 @@ module Streaming = struct
   ;;
 
   let create
-        ?strip
-        ?sep
-        ?quote
-        ?start_line_number
-        ?on_invalid_row
-        ?header
-        builder
-        ~init
-        ~f
+    ?strip
+    ?sep
+    ?quote
+    ?start_line_number
+    ?on_invalid_row
+    ?header
+    builder
+    ~init
+    ~f
     =
     create_indexed
       ?strip
@@ -566,8 +566,8 @@ let list_of_string ?strip ?sep ?quote ?header ?on_invalid_row builder csv_string
     csv_string
     ~init:(Append_only_buffer.create ())
     ~f:(fun queue row ->
-      Append_only_buffer.append queue row;
-      queue)
+    Append_only_buffer.append queue row;
+    queue)
   |> Append_only_buffer.to_list
 ;;
 
@@ -577,16 +577,16 @@ let read_lines ?strip ?sep ?quote ?header ?on_invalid_row builder in_channel =
 ;;
 
 let fold_lines
-      ?(buffer_size = 8192)
-      ?strip
-      ?sep
-      ?quote
-      ?header
-      ?on_invalid_row
-      builder
-      ~init
-      ~f
-      in_channel
+  ?(buffer_size = 8192)
+  ?strip
+  ?sep
+  ?quote
+  ?header
+  ?on_invalid_row
+  builder
+  ~init
+  ~f
+  in_channel
   =
   let buf = Bytes.create buffer_size in
   let rec loop state =

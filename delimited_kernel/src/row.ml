@@ -12,7 +12,7 @@ let sexp_of_t t =
   let names_by_indices =
     Map.to_sequence t.header_map
     |> Sequence.fold ~init:Int.Map.empty ~f:(fun init (name, index) ->
-      Map.set init ~key:index ~data:name)
+         Map.set init ~key:index ~data:name)
   in
   Array.mapi t.fields ~f:(fun i v ->
     let k =

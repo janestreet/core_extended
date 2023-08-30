@@ -68,33 +68,33 @@ let make_emit_row current_row row_queue header ~lineno =
   in
   ( `on_eof (fun () -> if not !header_processed then failwith "Header line was not found")
   , fun () ->
-    if not !header_processed
-    then (
-      header_processed := true;
-      match header with
-      | `No | `Add _ -> assert false
-      | `Require at_least ->
-        let headers = Queue.to_list current_row in
-        List.iter at_least ~f:(fun must_exist ->
-          match List.findi headers ~f:(fun _ h -> String.equal h must_exist) with
-          | None ->
-            failwithf
-              "The required header '%s' was not found in '%s' (lineno=%d)"
-              must_exist
-              (String.concat ~sep:"," headers)
-              !lineno
-              ()
-          | Some (i, _) -> Hashtbl.set header_index ~key:must_exist ~data:i)
-      | `Replace _new_headers -> () (* already set above *)
-      | `Transform f ->
-        Queue.to_list current_row
-        |> f
-        |> List.map ~f:Option.some
-        |> set_headers header_index
-      | `Filter_map f -> Queue.to_list current_row |> f |> set_headers header_index
-      | `Yes ->
-        Queue.to_list current_row |> List.map ~f:Option.some |> set_headers header_index)
-    else Queue.enqueue row_queue (Row.create header_index (Queue.to_array current_row));
-    lineno := !lineno + 1;
-    Queue.clear current_row )
+      if not !header_processed
+      then (
+        header_processed := true;
+        match header with
+        | `No | `Add _ -> assert false
+        | `Require at_least ->
+          let headers = Queue.to_list current_row in
+          List.iter at_least ~f:(fun must_exist ->
+            match List.findi headers ~f:(fun _ h -> String.equal h must_exist) with
+            | None ->
+              failwithf
+                "The required header '%s' was not found in '%s' (lineno=%d)"
+                must_exist
+                (String.concat ~sep:"," headers)
+                !lineno
+                ()
+            | Some (i, _) -> Hashtbl.set header_index ~key:must_exist ~data:i)
+        | `Replace _new_headers -> () (* already set above *)
+        | `Transform f ->
+          Queue.to_list current_row
+          |> f
+          |> List.map ~f:Option.some
+          |> set_headers header_index
+        | `Filter_map f -> Queue.to_list current_row |> f |> set_headers header_index
+        | `Yes ->
+          Queue.to_list current_row |> List.map ~f:Option.some |> set_headers header_index)
+      else Queue.enqueue row_queue (Row.create header_index (Queue.to_array current_row));
+      lineno := !lineno + 1;
+      Queue.clear current_row )
 ;;

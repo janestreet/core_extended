@@ -102,14 +102,14 @@ let acc t = State.acc t.state
 let set_acc t acc = { t with state = State.set_acc t.state acc }
 
 let create
-      ?(strip = false)
-      ?(sep = ',')
-      ?(quote = `Using '"')
-      ?(start_line_number = 1)
-      ~fields_used
-      ~init
-      ~f
-      ()
+  ?(strip = false)
+  ?(sep = ',')
+  ?(quote = `Using '"')
+  ?(start_line_number = 1)
+  ~fields_used
+  ~init
+  ~f
+  ()
   =
   { config = Config.create ~sep ~quote ~strip ~f ~fields_used
   ; state = State.create ~init ~start_line_number
@@ -287,8 +287,7 @@ let input_aux ~get t ~pos ~len input =
       Mutable_state.emit_field state;
       Mutable_state.emit_row state;
       Row_start
-    | In_quoted_field_after_quote, Whitespace ->
-      step
+    | In_quoted_field_after_quote, Whitespace -> step
     | In_quoted_field_after_quote, Normal ->
       failwithf
         "In_quoted_field_after_quote looking at '%c' (line_number=%d)"

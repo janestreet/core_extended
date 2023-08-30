@@ -53,8 +53,7 @@ module O = Options
 type t =
   { base : string
   ; options : Options.t
-  ;
-    already_seen : (int * int, unit) Hashtbl.t
+  ; already_seen : (int * int, unit) Hashtbl.t
   ; (* device num * inode *)
     mutable to_visit : (path * int) list
   ; (* dir to traverse and the depth it is at *)
@@ -146,8 +145,8 @@ let rec next t =
   let handle_dirs (output_fn, path, stats) =
     let info = output_fn, stats in
     if match t.options.O.skip_dir with
-      | None -> false
-      | Some f -> f info
+       | None -> false
+       | Some f -> f info
     then None
     else (
       (* if this is a directory we need to decide if we will be traversing into it

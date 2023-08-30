@@ -21,12 +21,12 @@ val create
   -> ?sep:char
   -> ?quote:[ `No_quoting | `Using of char ]
   -> ?start_line_number:int
-  (** Indices of the fields used. E.g., [~fields_used:(Some [| 0; 3; |])] means every
+       (** Indices of the fields used. E.g., [~fields_used:(Some [| 0; 3; |])] means every
       row will be presented to [f] as having two fields, the first and fourth fields of
       the csv. This is for performance; pass [None] to store all fields.*)
   -> fields_used:int array option
   -> init:'a
-  (** [f ~line_number init row] should take the previous accumulator [init]
+       (** [f ~line_number init row] should take the previous accumulator [init]
       and the next complete row [row], and return the next accumulator.
 
       [line_number] gives the line number as counted by the parse state.
