@@ -43,7 +43,7 @@ module Stable = struct
           type t = string * Re.re
 
           let to_string (s, _) = s
-          let of_regexp s = s, Re.Perl.compile_pat s
+          let of_regexp ?opts s = s, Re.Perl.compile_pat ?opts s
           let of_string s = of_regexp s
           let compare t1 t2 = String.V1.compare (to_string t1) (to_string t2)
         end
@@ -159,7 +159,7 @@ module String_selector = struct
   module Regexp : sig
     type t = Stable.String_selector.Regexp.Current.t [@@deriving bin_io, sexp]
 
-    val of_regexp : string -> t
+    val of_regexp : ?opts:Re.Perl.opt list -> string -> t
     val to_string : t -> string
     val matches : t -> string -> bool
     val to_regexp : t -> Re.re

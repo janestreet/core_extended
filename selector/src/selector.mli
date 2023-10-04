@@ -48,7 +48,7 @@ module String_selector : sig
   module Regexp : sig
     type t [@@deriving bin_io, sexp]
 
-    val of_regexp : string -> t
+    val of_regexp : ?opts:Re.Perl.opt list -> string -> t
     val matches : t -> string -> bool
     val to_string : t -> string
     val to_regexp : t -> Re.re
