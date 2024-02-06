@@ -1,2 +1,5 @@
-(library (name appendable_list_test) (libraries appendable_list core)
- (preprocess (pps ppx_jane -dont-apply=sexp_message)))
+(library
+ (name appendable_list_test)
+ (libraries appendable_list core)
+ (preprocess
+  (pps ppx_jane -dont-apply=sexp_message)))

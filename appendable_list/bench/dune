@@ -1,2 +1,5 @@
-(library (name appendable_list_benchmarks) (libraries appendable_list base)
- (preprocess (pps ppx_jane)))
+(library
+ (name appendable_list_benchmarks)
+ (libraries appendable_list base)
+ (preprocess
+  (pps ppx_jane)))

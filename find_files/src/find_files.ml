@@ -2,7 +2,7 @@ open Core
 open Poly
 module Unix = Core_unix
 
-type file_info = string * Unix.stats
+type file_info = Filename.t * Unix.stats
 type path = string list
 
 let path_append path x = x :: path
@@ -20,7 +20,7 @@ module Options = struct
     | Ignore
     | Print
     | Raise
-    | Handle_with of (string -> unit)
+    | Handle_with of (Filename.t -> unit)
 
   type t =
     { min_depth : int

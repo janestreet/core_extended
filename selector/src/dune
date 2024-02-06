@@ -1,2 +1,6 @@
-(library (name selector) (public_name core_extended.selection)
- (libraries re core) (preprocess (pps ppx_jane)))
+(library
+ (name selector)
+ (public_name core_extended.selection)
+ (libraries re core)
+ (preprocess
+  (pps ppx_jane)))

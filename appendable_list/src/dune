@@ -1,2 +1,6 @@
-(library (name appendable_list) (public_name core_extended.appendable_list)
- (libraries core) (preprocess (pps ppx_jane -dont-apply=sexp_message)))
+(library
+ (name appendable_list)
+ (public_name core_extended.appendable_list)
+ (libraries core)
+ (preprocess
+  (pps ppx_jane -dont-apply=sexp_message)))
