@@ -540,6 +540,16 @@ module Streaming = struct
     | Parsing_header _ -> None
     | Parsing_rows { header_map; _ } -> Some (Map.key_set header_map)
   ;;
+
+  let list_of_headers t =
+    match t with
+    | Parsing_header _ -> None
+    | Parsing_rows { header_map; _ } ->
+      Map.to_alist header_map
+      |> List.sort ~compare:(fun a b -> Int.compare (snd a) (snd b))
+      |> List.map ~f:fst
+      |> Option.some
+  ;;
 end
 
 module Expert = struct

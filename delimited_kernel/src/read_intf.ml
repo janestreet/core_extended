@@ -240,6 +240,11 @@ module type Root = sig
     val finish : 'a t -> 'a t
     val acc : 'a t -> 'a
     val headers : 'a t -> String.Set.t option
+
+    (** Same as [headers], but preserves the order in which the headers were present in
+        the file *)
+    val list_of_headers : 'a t -> string list option
+
     val state : 'a t -> [ `Parsing_header | `Parsing_rows ]
   end
 end
