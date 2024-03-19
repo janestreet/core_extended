@@ -84,7 +84,7 @@ module Stable : sig
     end
 
     module V1 : sig
-      type t = String_selector.t [@@deriving bin_io, compare, sexp]
+      type t = String_selector.t [@@deriving bin_io, compare, sexp, stable_witness]
     end
   end
 

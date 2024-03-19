@@ -46,6 +46,18 @@ module Stable = struct
           let of_regexp ?opts s = s, Re.Perl.compile_pat ?opts s
           let of_string s = of_regexp s
           let compare t1 t2 = String.V1.compare (to_string t1) (to_string t2)
+
+          (* The stablility is independent of the type [Re.re]. We rely on
+             - the stability of string
+             - stable [to/of_string]
+             - stable [to/of_sexp]
+             - stable [Re.Perl.compile_pat]
+
+             I included the string part to make the relationship more obvious.
+          *)
+          let stable_witness =
+            Stable_witness.of_serializable String.V1.stable_witness of_string to_string
+          ;;
         end
 
         include T
@@ -80,7 +92,7 @@ module Stable = struct
         | Equal of string list
         | Matches of Regexp.V1.t list
         | Mixed of [ `Regexp of Regexp.V1.t | `Literal of string ] list
-      [@@deriving bin_io, compare, sexp]
+      [@@deriving bin_io, compare, sexp, stable_witness]
 
       let t_of_sexp sexp =
         let parse_atom a =

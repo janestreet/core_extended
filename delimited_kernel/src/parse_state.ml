@@ -67,8 +67,8 @@ end
 
 module State = struct
   type 'a t =
-    { field_buffer : string
-    ; row_buffer : string list
+    { field_buffer : Buffer.t
+    ; row_buffer : string Row_buffer.t
     ; current_field : int
     ; current_line_number : int (** The current line number *)
     ; row_line_number : int (** The line number of the beginning of the current row *)
@@ -80,8 +80,8 @@ module State = struct
   let create ~init ~start_line_number =
     { acc = init
     ; step = Row_start
-    ; field_buffer = ""
-    ; row_buffer = []
+    ; field_buffer = Buffer.create 0
+    ; row_buffer = Row_buffer.create ()
     ; current_field = 0
     ; row_line_number = start_line_number
     ; current_line_number = start_line_number
@@ -170,12 +170,9 @@ module Mutable_state = struct
   ;;
 
   let create ~(config : 'a Config.t) ~(state : 'a State.t) =
-    let field_buffer = Buffer.create (String.length state.field_buffer) in
-    Buffer.add_string field_buffer state.field_buffer;
-    let row_buffer = Row_buffer.of_list state.row_buffer in
     let state =
-      { field_buffer
-      ; row_buffer
+      { field_buffer = state.field_buffer
+      ; row_buffer = state.row_buffer
       ; current_field = state.current_field
       ; enqueue = false
       ; config
@@ -218,8 +215,8 @@ module Mutable_state = struct
   let freeze ~step t : 'a State.t =
     { acc = t.acc
     ; step
-    ; field_buffer = Buffer.contents t.field_buffer
-    ; row_buffer = Row_buffer.to_list t.row_buffer
+    ; field_buffer = t.field_buffer
+    ; row_buffer = t.row_buffer
     ; current_field = t.current_field
     ; current_line_number = t.current_line_number
     ; row_line_number = t.row_line_number
@@ -354,7 +351,9 @@ let finish ({ config; state } as t) =
        Mutable_state.emit_field state;
        Mutable_state.emit_row state
      | In_quoted_field ->
-       raise (Bad_csv_formatting (t.state.row_buffer, t.state.field_buffer)));
+       raise
+         (Bad_csv_formatting
+            (Row_buffer.to_list t.state.row_buffer, Buffer.contents t.state.field_buffer)));
     let state = { (Mutable_state.freeze ~step:t.state.step state) with finish = true } in
     { t with state })
 ;;
