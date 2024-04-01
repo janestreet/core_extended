@@ -20,7 +20,7 @@ module Options = struct
     | Ignore
     | Print
     | Raise
-    | Handle_with of (Filename.t -> unit)
+    | Handle_with of (Filename.t -> exn -> unit)
 
   type t =
     { min_depth : int
@@ -85,7 +85,7 @@ let rec open_next_dir t =
         | O.Ignore -> open_next_dir t
         | O.Raise -> raise e
         | O.Handle_with f ->
-          f (output_path_name t dir_name);
+          f (output_path_name t dir_name) e;
           open_next_dir t
         | O.Print ->
           Printf.eprintf !"unable to open %s - %{Exn}\n" (output_path_name t dir_name) e;
@@ -125,7 +125,7 @@ let rec next t =
        | O.Ignore -> None
        | O.Raise -> raise e
        | O.Handle_with f ->
-         f output_fn;
+         f output_fn e;
          None
        | O.Print ->
          Printf.eprintf !"unable to stat %s - %{Exn}\n" output_fn e;

@@ -1,0 +1,7 @@
+(library
+ (name immediate)
+ (public_name core_extended.immediate)
+ (libraries core immediate_kernel core_kernel.pooled_hashtbl
+   core_kernel.iobuf)
+ (preprocess
+  (pps ppx_jane)))

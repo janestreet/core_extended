@@ -14,7 +14,7 @@ module Options : sig
     | Ignore
     | Print
     | Raise
-    | Handle_with of (Filename.t -> unit)
+    | Handle_with of (Filename.t -> exn -> unit)
 
   type t =
     { min_depth : int (** Equivalent to the [-minDepth] flag in unix [find]. *)

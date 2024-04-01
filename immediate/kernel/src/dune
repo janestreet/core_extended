@@ -1,0 +1,6 @@
+(library
+ (name immediate_kernel)
+ (public_name core_extended.immediate_kernel)
+ (libraries core)
+ (preprocess
+  (pps ppx_jane)))
