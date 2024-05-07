@@ -1,3 +1,22 @@
+## Release v0.17.0
+
+* Added `Bitarray.count`, which returns the number of bits set to `true` in a given prefix of the array.
+
+* New features in `Delimited_kernel`:
+  - Add `label` functions to tag exceptions with additional information about the reader
+  - Add `list_of_headers` function to retrieve the list of headers in the order they appear in the file, at the level of an individual file, as opposed to an individual row.
+
+* Improvements to `Find_files`:
+  - Expose exceptions to error handlers, so e.g. they can be logged.
+  - Added detailed comments to each field in `Find_files.Options.t` explaining their purpose and equivalence to Unix `find` flags.
+
+* Add `Immediate`, containing modules and interfaces for immediate versions of standard datatypes. "Immediate" is used here in the sense of `Obj.is_int`.
+
+* Changes to `Selector`:
+  - `Selector.String_selector.of_regexp` now accepts an optional `opts` parameter for regular expression options.
+  - Added `[@@deriving stable_witness]` to `Selector.Stable.V1`.
+
+
 ## Release v0.16.0
 
 * Added `` `Fallback `` option to `Read.On_invalid_row`.
@@ -267,4 +286,3 @@ with a call to libc `memmem`.
   ```
 - Added function `Sexp.Diff.to_string`.
 - Previously the only option was to print to `Out_channel`.
-
