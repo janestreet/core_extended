@@ -246,11 +246,11 @@ module Stable = struct
 
       let%test_module "Sexpable and Binable" =
         (module Unit_test (struct
-          type t = V1.t [@@deriving bin_io, sexp]
+            type t = V1.t [@@deriving bin_io, sexp]
 
-          let equal = Core.Int.equal
-          let tests = Core.List.map tests ~f:(fun (_, t, s, b) -> t, s, b)
-        end))
+            let equal = Core.Int.equal
+            let tests = Core.List.map tests ~f:(fun (_, t, s, b) -> t, s, b)
+          end))
       ;;
     end)
   ;;
@@ -298,24 +298,27 @@ module Option_stable = struct
       | None -> none
       | Some s -> some (Stable.V1.of_string s)
     ;;
+
+    let of_int_exn n = if is_none n then n else Stable.V1.of_int_exn n
+    let to_int_exn t = t
   end
 
   let%test_module "V1 : Binable and Sexpable" =
     (module Unit_test (struct
-      include V1
+        include V1
 
-      let equal = Core.Int.equal
+        let equal = Core.Int.equal
 
-      let tests =
-        [ V1.of_string_option None, "()", "\252\255\255\255\255\255\255\255?"
-        ; V1.of_string_option (Some "somestr"), "(somestr)", "\252somestr\007"
-        ; V1.of_string_option (Some ""), "(\"\")", "\000"
-        ; ( V1.of_string_option (Some "\000")
-          , "(\"\\000\")"
-          , "\252\000\000\000\000\000\000\000\001" )
-        ]
-      ;;
-    end))
+        let tests =
+          [ V1.of_string_option None, "()", "\252\255\255\255\255\255\255\255?"
+          ; V1.of_string_option (Some "somestr"), "(somestr)", "\252somestr\007"
+          ; V1.of_string_option (Some ""), "(\"\")", "\000"
+          ; ( V1.of_string_option (Some "\000")
+            , "(\"\\000\")"
+            , "\252\000\000\000\000\000\000\000\001" )
+          ]
+        ;;
+      end))
   ;;
 end
 
@@ -490,10 +493,10 @@ let%test_unit "append_exn" =
 ;;
 
 include Identifiable.Make (struct
-  include Stable.V1
+    include Stable.V1
 
-  let module_name = "Immediate.Short_string"
-end)
+    let module_name = "Immediate.Short_string"
+  end)
 
 include Int.Replace_polymorphic_compare
 
@@ -531,13 +534,13 @@ module Lexicographic = struct
   type nonrec t = t
 
   include Identifiable.Make (struct
-    type nonrec t = t [@@deriving bin_io, hash, sexp]
+      type nonrec t = t [@@deriving bin_io, hash, sexp]
 
-    let of_string = of_string
-    let to_string = to_string
-    let module_name = "Immediate.Short_string.Lexicographic"
-    let compare = lexicographic_compare
-  end)
+      let of_string = of_string
+      let to_string = to_string
+      let module_name = "Immediate.Short_string.Lexicographic"
+      let compare = lexicographic_compare
+    end)
 end
 
 let%test_module "Lexicographic" =
@@ -586,11 +589,11 @@ module Option = struct
   end
 
   include Identifiable.Make (struct
-    include Stable.V1
-    include Sexpable.To_stringable (Stable.V1)
+      include Stable.V1
+      include Sexpable.To_stringable (Stable.V1)
 
-    let module_name = "Immediate.Short_string.Option"
-  end)
+      let module_name = "Immediate.Short_string.Option"
+    end)
 end
 
 let quickcheck_shrinker = Quickcheck.Shrinker.empty ()

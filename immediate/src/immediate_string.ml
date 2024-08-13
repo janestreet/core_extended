@@ -311,28 +311,28 @@ module Make (Interned : Immediate_interned_string.S) = struct
   let grow_by, after_grow = Interned_string.(grow_by, after_grow)
 
   include Identifiable.Make (struct
-    include T_hash
+      include T_hash
 
-    let module_name = "Immediate.String"
-  end)
+      let module_name = "Immediate.String"
+    end)
 
   module Lexicographic = struct
     type nonrec t = t
 
     module Comparator :
       Comparator.S
-        with type t := t
-         and type comparator_witness = Stable.V2.comparator_witness =
+      with type t := t
+       and type comparator_witness = Stable.V2.comparator_witness =
       Stable.V2
 
     include Comparator
 
     include Identifiable.Make_using_comparator (struct
-      include T_hash
-      include Comparator
+        include T_hash
+        include Comparator
 
-      let module_name = "Immediate.String.Lexicographic"
-    end)
+        let module_name = "Immediate.String.Lexicographic"
+      end)
   end
 
   module Option = struct
@@ -356,14 +356,14 @@ module Make (Interned : Immediate_interned_string.S) = struct
     end
 
     include Identifiable.Make (struct
-      include Option_stable.V1
+        include Option_stable.V1
 
-      let compare = Int.compare
+        let compare = Int.compare
 
-      include Sexpable.To_stringable (Option_stable.V1)
+        include Sexpable.To_stringable (Option_stable.V1)
 
-      let module_name = "Immediate.String.Option"
-    end)
+        let module_name = "Immediate.String.Option"
+      end)
 
     let to_immediate_string_option = Fn.id
     let of_immediate_string_option = Fn.id

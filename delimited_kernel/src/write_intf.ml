@@ -12,6 +12,13 @@ module type M = sig
   *)
   type -'a t
 
+  module type S = sig
+    type -'a delimited_writer := 'a t
+    type t
+
+    val delimited_writer : t delimited_writer
+  end
+
   val empty : 'a t
   val column : ('a -> string) -> header:string -> 'a t
   val column_m : (module To_string with type t = 'a) -> header:string -> 'a t
@@ -36,6 +43,8 @@ module type M = sig
   val map_headers : 'a t -> f:(string -> string) -> 'a t
   val headers : 'a t -> string list
   val to_columns : 'a t -> 'a -> string list
+  val header_line : ?quote:char -> ?sep:char -> 'a t -> string
+  val line : ?quote:char -> ?sep:char -> 'a t -> 'a -> string
 
   (** Convert a list of ['a] to a CSV document in a string. *)
   val to_string
@@ -94,6 +103,19 @@ module type M = sig
 
     (** Convert one CSV line to a string. *)
     val line_to_string : ?quote:char -> ?sep:char -> row -> string
+
+    module Out_channel : sig
+      type t
+
+      val create
+        :  ?quote:char
+        -> ?sep:char
+        -> ?line_breaks:[ `Windows | `Unix ]
+        -> Out_channel.t
+        -> t
+
+      val output_line : t -> string list -> unit
+    end
   end
 
   module Expert : sig
@@ -136,4 +158,14 @@ module type M = sig
     val channel : 'a t -> Out_channel.t
     val output_row : 'a t -> 'a -> unit
   end
+
+  val save
+    :  ?quote:char
+    -> ?sep:char
+    -> ?line_breaks:[ `Unix | `Windows ] (** default is [`Windows] *)
+    -> write_header:bool
+    -> 'a t
+    -> Filename.t
+    -> 'a list
+    -> unit
 end

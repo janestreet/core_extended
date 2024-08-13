@@ -89,9 +89,9 @@ module Universe = struct
             let after_grow f =
               let g = !after_grow_handler in
               after_grow_handler
-                := fun ~before ~len_before ~len ->
-                     g ~before ~len_before ~len;
-                     f ~before ~len_before ~len
+              := fun ~before ~len_before ~len ->
+                   g ~before ~len_before ~len;
+                   f ~before ~len_before ~len
             ;;
 
             let[@inline] to_string t = Core.Array.unsafe_get !interned_strings t
@@ -172,21 +172,6 @@ module Universe = struct
               -> pos:'pos
               -> 'buf
               -> t
-
-            val unsafe_extract_local
-              :  get_char:('buf -> 'pos -> char)
-              -> blit:
-                   (src:'buf
-                    -> src_pos:'pos
-                    -> dst:bytes
-                    -> dst_pos:int
-                    -> len:int
-                    -> unit)
-              -> sub:('buf -> pos:'pos -> len:int -> string)
-              -> len:int
-              -> pos:'pos
-              -> 'buf
-              -> t
           end = struct
             open Core
 
@@ -233,17 +218,6 @@ module Universe = struct
             (* [@inline always] to remove the indirect function calls we'd get otherwise
             *)
             let[@inline always] unsafe_extract ~get_char ~blit ~sub ~len ~pos buf =
-              match len with
-              | 0 -> empty
-              | 1 -> of_char (get_char buf pos)
-              | _ when Int.( <= ) len max_buffer_string_length ->
-                let dst = find_or_create_buffer len in
-                blit ~src:buf ~src_pos:pos ~dst ~dst_pos:0 ~len;
-                of_string_maybe_copy_buffer dst
-              | _ -> of_string (sub buf ~pos ~len)
-            ;;
-
-            let[@inline always] unsafe_extract_local ~get_char ~blit ~sub ~len ~pos buf =
               match len with
               | 0 -> empty
               | 1 -> of_char (get_char buf pos)
@@ -394,10 +368,10 @@ module Universe = struct
       include (Int : Typerep_lib.Typerepable.S with type t := t)
 
       include Identifiable.Make (struct
-        include Stable.V1
+          include Stable.V1
 
-        let module_name = "Immediate.Interned_string"
-      end)
+          let module_name = "Immediate.Interned_string"
+        end)
 
       include Int.Replace_polymorphic_compare
 
@@ -445,11 +419,11 @@ module Universe = struct
         type nonrec t = t
 
         include Identifiable.Make (struct
-          include Stable.V1
+            include Stable.V1
 
-          let compare x y = String.compare (to_string x) (to_string y)
-          let module_name = "Immediate.Interned_string.Lexicographic"
-        end)
+            let compare x y = String.compare (to_string x) (to_string y)
+            let module_name = "Immediate.Interned_string.Lexicographic"
+          end)
       end
 
       module Option = struct
@@ -481,14 +455,14 @@ module Universe = struct
         end
 
         include Identifiable.Make (struct
-          include Option_stable.V1
+            include Option_stable.V1
 
-          let compare = Int.compare
+            let compare = Int.compare
 
-          include Sexpable.To_stringable (Option_stable.V1)
+            include Sexpable.To_stringable (Option_stable.V1)
 
-          let module_name = "Immediate.Interned_string.Option"
-        end)
+            let module_name = "Immediate.Interned_string.Option"
+          end)
 
         module Stable = Option_stable
       end
@@ -514,7 +488,7 @@ module Universe = struct
         let[@inline] get_char buf pos = Iobuf.Unsafe.Peek.char buf ~pos in
         let[@inline] sub buf ~pos ~len = Iobuf.Unsafe.Peek.stringo buf ~pos ~len in
         fun [@inline] ~pos ~len buf ->
-          Buffered_create.unsafe_extract_local
+          Buffered_create.unsafe_extract
             ~get_char
             ~blit:Iobuf.Unsafe.Peek.To_bytes.blit
             ~sub
@@ -530,7 +504,7 @@ module Universe = struct
         in
         let sub buf ~pos:() ~len = Iobuf.Unsafe.Consume.stringo buf ~len in
         fun ~len buf ->
-          Buffered_create.unsafe_extract_local
+          Buffered_create.unsafe_extract
             ~get_char
             ~blit
             ~sub

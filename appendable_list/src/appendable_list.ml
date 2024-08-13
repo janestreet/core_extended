@@ -207,12 +207,12 @@ let t_of_sexp (type a) (a_of_sexp : Sexp.t -> a) sexp =
 
 include struct
   module Container_gen = Container.Make (struct
-    type nonrec 'a t = 'a t
+      type nonrec 'a t = 'a t
 
-    let fold = fold
-    let iter = `Custom iter
-    let length = `Custom length
-  end)
+      let fold = fold
+      let iter = `Custom iter
+      let length = `Custom length
+    end)
 
   open Container_gen
 
@@ -230,12 +230,12 @@ end
 
 include struct
   module Monad_gen = Monad.Make (struct
-    type nonrec 'a t = 'a t
+      type nonrec 'a t = 'a t
 
-    let return = singleton
-    let map = `Custom map
-    let bind = bind
-  end)
+      let return = singleton
+      let map = `Custom map
+      let bind = bind
+    end)
 
   open Monad_gen
   module Monad_infix = Monad_infix

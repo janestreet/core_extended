@@ -43,8 +43,8 @@ module type S = sig
 
       include
         Stable_comparable.With_stable_witness.V1
-          with type t := t
-           and type comparator_witness = Lexicographic.comparator_witness
+        with type t := t
+         and type comparator_witness = Lexicographic.comparator_witness
 
       val of_v1 : V1.t -> t
 

@@ -1,6 +1,6 @@
 (library
  (name selector)
  (public_name core_extended.selection)
- (libraries re core)
+ (libraries re core sexplib ppx_stable_witness.stable_witness)
  (preprocess
   (pps ppx_jane)))

@@ -576,8 +576,8 @@ let list_of_string ?strip ?sep ?quote ?header ?on_invalid_row builder csv_string
     csv_string
     ~init:(Append_only_buffer.create ())
     ~f:(fun queue row ->
-    Append_only_buffer.append queue row;
-    queue)
+      Append_only_buffer.append queue row;
+      queue)
   |> Append_only_buffer.to_list
 ;;
 

@@ -6,6 +6,11 @@ module type Option = sig
   include Equal.S with type t := t
 end
 
+module type Option_zero_alloc = sig
+  include Option
+  include Immediate_option.S_zero_alloc with type t := t
+end
+
 module type S_no_option = sig
   type t [@@deriving typerep, hash, globalize] [@@immediate]
 
@@ -20,13 +25,14 @@ end
     Exposing [Option.t] as an immediate type is key to avoiding caml_modify calls. *)
 module type Immediate_kernel = sig
   module type Option = Option
+  module type Option_zero_alloc = Option_zero_alloc
   module type S_no_option = S_no_option
 
   module Char : sig
     include S_no_option with type t = char
 
     module Option : sig
-      include Option with type value := t
+      include Option_zero_alloc with type value := t
 
       module Stable : sig
         module V1 : Stable_without_comparator with type t = t
@@ -38,7 +44,7 @@ module type Immediate_kernel = sig
     include S_no_option with type t = bool
 
     module Option : sig
-      include Option with type value := t
+      include Option_zero_alloc with type value := t
 
       module Stable : sig
         module V1 : sig
@@ -58,9 +64,9 @@ module type Immediate_kernel = sig
 
     module Option : sig
       type outer := t
-      type t [@@immediate] [@@deriving globalize]
+      type t [@@deriving globalize] [@@immediate]
 
-      include Option with type value := outer and type t := t
+      include Option_zero_alloc with type value := outer and type t := t
 
       val unchecked_some : int -> t
       val type_immediacy : t Type_immediacy.Always.t

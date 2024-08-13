@@ -40,6 +40,7 @@ module Option : sig
       type nonrec t = t [@@deriving hash]
 
       include Stable_without_comparator with type t := t
+      include Intable with type t := t
     end
   end
 end

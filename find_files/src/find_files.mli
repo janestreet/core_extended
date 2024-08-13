@@ -1,4 +1,7 @@
-(** Unix like [find].*)
+(** Unix like [find].
+ *
+ * Note: Unlike Unix [find], the functions in this module do not produce paths in
+ * depth-first order. *)
 
 (* Implements find (like the unix utility).  Note that t is stateful both because
    filesystems themselves are highly stateful, and for performance reasons *)
@@ -21,16 +24,16 @@ module Options : sig
     ; max_depth : int option (** Equivalent to the [-maxDepth] flag in unix [find]. *)
     ; follow_links : bool (** Equivalent to [find -L]. *)
     ; on_open_errors : error_handler
-        (** Applied to errors raised when calling {!Unix.opendir} on a file. *)
+    (** Applied to errors raised when calling {!Unix.opendir} on a file. *)
     ; on_stat_errors : error_handler
-        (** Applied to errors raised when calling {!Unix.stat} or {!Unix.lstat} on a file. *)
+    (** Applied to errors raised when calling {!Unix.stat} or {!Unix.lstat} on a file. *)
     ; filter : (file_info -> bool) option
-        (** Whether to include a given file or directory in output. For directories, this
+    (** Whether to include a given file or directory in output. For directories, this
         does not affect whether files under the directory are visited. *)
     ; skip_dir : (file_info -> bool) option
-        (** Whether to visit the files under a given directory. *)
+    (** Whether to visit the files under a given directory. *)
     ; relative_paths : bool
-        (** Whether to return filepaths as relative to the base dir. *)
+    (** Whether to return filepaths as relative to the base dir. *)
     }
 
   val default : t

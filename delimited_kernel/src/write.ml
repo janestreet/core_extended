@@ -8,6 +8,13 @@ type -'a t =
   }
 [@@deriving fields ~getters]
 
+module type S = sig
+  type -'a delimited_writer := 'a t
+  type t
+
+  val delimited_writer : t delimited_writer
+end
+
 let empty = { headers = []; to_columns = (fun _ ~tail -> tail) }
 
 let column to_string ~header =
@@ -271,6 +278,9 @@ module By_row = struct
   ;;
 end
 
+let line ?quote ?sep t a = By_row.line_to_string ?quote ?sep (to_columns t a)
+let header_line ?quote ?sep t = By_row.line_to_string ?quote ?sep (headers t)
+
 module Out_channel = struct
   type 'a write = 'a t
 
@@ -289,6 +299,20 @@ module Out_channel = struct
 
   let output_row t row = By_row.Out_channel.output_line t.ch (to_columns t.t row)
 end
+
+let save ?quote ?sep ?line_breaks ~write_header writer file rows =
+  let ch =
+    Out_channel.create
+      ?quote
+      ?sep
+      ?line_breaks
+      ~write_header
+      writer
+      (Core.Out_channel.create file)
+  in
+  List.iter rows ~f:(Out_channel.output_row ch);
+  Core.Out_channel.close ch.ch.oc
+;;
 
 let to_string ?quote ?sep ?(line_breaks = `Windows) ~write_header t rows =
   let line_to_string = By_row.line_to_string ?quote ?sep in

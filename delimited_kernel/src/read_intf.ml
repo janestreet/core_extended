@@ -80,8 +80,8 @@ module type Root = sig
 
   include
     Applicative.Let_syntax
-      with type 'a t := 'a t
-      with module Open_on_rhs_intf := Open_on_rhs_intf
+    with type 'a t := 'a t
+    with module Open_on_rhs_intf := Open_on_rhs_intf
 
   (** Read a field at the given index. Use [f] to convert the field from string. *)
   val at_index : int -> f:(string -> 'a) -> 'a t

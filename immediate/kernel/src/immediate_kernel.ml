@@ -4,17 +4,21 @@ module Char_option_stable = struct
   module V1 = struct
     type t = int [@@deriving bin_io, compare, hash]
 
-    let is_none t = Core.Int.(t < 0 || t > 255)
-    let is_some t = not (is_none t)
+    let[@zero_alloc] is_none t = Core.Int.(t < 0 || t > 255)
+    let[@zero_alloc] is_some t = not (is_none t)
     let none = -1
-    let some = Core.Char.to_int
-    let some_is_representable _ = true
-    let unchecked_value = Core.Char.unsafe_of_int
-    let value_exn = Core.Char.of_int_exn
-    let value t ~default = Core.Bool.select (is_none t) default (unchecked_value t)
+    let[@zero_alloc] some t = Core.Char.to_int t
+    let[@zero_alloc] some_is_representable _ = true
+    let[@zero_alloc] unchecked_value t = Core.Char.unsafe_of_int t
+    let[@zero_alloc] value_exn t = Core.Char.of_int_exn t
+
+    let[@zero_alloc] value t ~default =
+      Core.Bool.select (is_none t) default (unchecked_value t)
+    ;;
+
     let to_option t = if is_some t then Some (unchecked_value t) else None
 
-    let of_option = function
+    let[@zero_alloc] of_option = function
       | None -> none
       | Some v -> some v
     ;;
@@ -31,26 +35,29 @@ module Bool_option_stable = struct
     let to_wire t = t
     let of_wire t = t
     let none = -1
-    let is_none t = t = none
-    let is_some t = t <> none
-    let some = Core.Bool.to_int
-    let some_is_representable _ = true
-    let unchecked_value t = t <> 0
+    let[@zero_alloc] is_none t = t = none
+    let[@zero_alloc] is_some t = t <> none
+    let[@zero_alloc] some t = Core.Bool.to_int t
+    let[@zero_alloc] some_is_representable _ = true
+    let[@zero_alloc] unchecked_value t = t <> 0
 
     let value_exn_not_found =
       Not_found_s [%message "[Immediate.Bool.Option.value_exn]: given [none]"]
     ;;
 
-    let value_exn = function
+    let[@zero_alloc] value_exn = function
       | 0 -> false
       | 1 -> true
       | _ -> raise value_exn_not_found
     ;;
 
-    let value t ~default = Core.Bool.select (is_none t) default (unchecked_value t)
+    let[@zero_alloc] value t ~default =
+      Core.Bool.select (is_none t) default (unchecked_value t)
+    ;;
+
     let to_option t = if is_some t then Some (unchecked_value t) else None
 
-    let of_option = function
+    let[@zero_alloc] of_option = function
       | None -> none
       | Some v -> some v
     ;;
@@ -68,19 +75,19 @@ module Int_option_stable = struct
     [@@deriving bin_io, compare, equal, globalize, hash, stable_witness, typerep]
 
     let none = Core.Int.min_value
-    let is_none t = t = none
-    let is_some t = not (is_none t)
+    let[@zero_alloc] is_none t = t = none
+    let[@zero_alloc] is_some t = not (is_none t)
 
-    let some t =
+    let[@zero_alloc] some t =
       assert (is_some t);
       t
     ;;
 
-    let some_is_representable = is_some
-    let unchecked_value t = t
+    let[@zero_alloc] some_is_representable t = is_some t
+    let[@zero_alloc] unchecked_value t = t
     let to_option t = if is_some t then Some (unchecked_value t) else None
 
-    let of_option = function
+    let[@zero_alloc] of_option = function
       | None -> none
       | Some v -> some v
     ;;
@@ -145,12 +152,12 @@ include Immediate_kernel_intf
 
 module Char = struct
   include (
-    struct
-      include Char
+  struct
+    include Char
 
-      let globalize = globalize_char
-    end :
-      S_no_option with type t = char)
+    let globalize = globalize_char
+  end :
+    S_no_option with type t = char)
 
   module Option = struct
     module Stable = Char_option_stable
@@ -159,18 +166,18 @@ module Char = struct
 
     module Optional_syntax = struct
       module Optional_syntax = struct
-        let is_none = is_none
-        let unsafe_value = unchecked_value
+        let[@zero_alloc] is_none t = is_none t
+        let[@zero_alloc] unsafe_value t = unchecked_value t
       end
     end
 
     include Identifiable.Make (struct
-      include Stable.V1
-      include Sexpable.To_stringable (Stable.V1)
+        include Stable.V1
+        include Sexpable.To_stringable (Stable.V1)
 
-      let hash (t : t) = t
-      let module_name = "Immediate.Char.Option"
-    end)
+        let hash (t : t) = t
+        let module_name = "Immediate.Char.Option"
+      end)
 
     (* Export inlineable comparisons (those from the functor confuse the compiler). *)
     include Int.Replace_polymorphic_compare
@@ -179,12 +186,12 @@ end
 
 module Bool = struct
   include (
-    struct
-      include Bool
+  struct
+    include Bool
 
-      let globalize = globalize_bool
-    end :
-      S_no_option with type t = bool)
+    let globalize = globalize_bool
+  end :
+    S_no_option with type t = bool)
 
   module Option = struct
     module Stable = Bool_option_stable
@@ -193,18 +200,18 @@ module Bool = struct
 
     module Optional_syntax = struct
       module Optional_syntax = struct
-        let is_none = is_none
-        let unsafe_value = unchecked_value
+        let[@zero_alloc] is_none t = is_none t
+        let[@zero_alloc] unsafe_value t = unchecked_value t
       end
     end
 
     include Identifiable.Make (struct
-      include Stable.V1
-      include Sexpable.To_stringable (Stable.V1)
+        include Stable.V1
+        include Sexpable.To_stringable (Stable.V1)
 
-      let hash (t : t) = t
-      let module_name = "Immediate.Bool.Option"
-    end)
+        let hash (t : t) = t
+        let module_name = "Immediate.Bool.Option"
+      end)
 
     (* Export inlineable comparisons (those from the functor confuse the compiler). *)
     include Int.Replace_polymorphic_compare
@@ -213,12 +220,12 @@ end
 
 module Int = struct
   include (
-    struct
-      include Int
+  struct
+    include Int
 
-      let globalize = globalize_int
-    end :
-      S_no_option with type t = int)
+    let globalize = globalize_int
+  end :
+    S_no_option with type t = int)
 
   let type_immediacy = Type_immediacy.Always.of_typerep_exn [%here] typerep_of_t
 
@@ -231,25 +238,25 @@ module Int = struct
       Not_found_s [%message "[Immediate.Int.Option.value_exn]: given [none]"]
     ;;
 
-    let value_exn t = if is_some t then t else raise value_exn_not_found
-    let value t ~default = Core.Bool.select (is_none t) default t
-    let unchecked_some t = t
+    let[@zero_alloc] value_exn t = if is_some t then t else raise value_exn_not_found
+    let[@zero_alloc] value t ~default = Core.Bool.select (is_none t) default t
+    let[@zero_alloc] unchecked_some t = t
     let type_immediacy = Type_immediacy.Always.of_typerep_exn [%here] typerep_of_t
 
     module Optional_syntax = struct
       module Optional_syntax = struct
-        let is_none = is_none
-        let unsafe_value = unchecked_value
+        let[@zero_alloc] is_none t = is_none t
+        let[@zero_alloc] unsafe_value t = unchecked_value t
       end
     end
 
     include Identifiable.Make (struct
-      include Stable.V1
-      include Sexpable.To_stringable (Stable.V1)
+        include Stable.V1
+        include Sexpable.To_stringable (Stable.V1)
 
-      let hash (t : t) = t
-      let module_name = "Immediate.Int.Option"
-    end)
+        let hash (t : t) = t
+        let module_name = "Immediate.Int.Option"
+      end)
 
     (* Export inlineable comparisons (those from the functor confuse the compiler). *)
     include Int.Replace_polymorphic_compare
@@ -267,18 +274,18 @@ module Of_intable = struct
 
       module Optional_syntax = struct
         module Optional_syntax = struct
-          let is_none = is_none
-          let unsafe_value = unchecked_value
+          let is_none t = is_none t
+          let unsafe_value t = unchecked_value t
         end
       end
 
       include Identifiable.Make (struct
-        include Stable.V1
-        include Sexpable.To_stringable (Stable.V1)
+          include Stable.V1
+          include Sexpable.To_stringable (Stable.V1)
 
-        let hash (t : t) = t
-        let module_name = "Immediate.Int.Option"
-      end)
+          let hash (t : t) = t
+          let module_name = "Immediate.Int.Option"
+        end)
 
       (* Export inlineable comparisons (those from the functor confuse the compiler). *)
       include Int.Replace_polymorphic_compare

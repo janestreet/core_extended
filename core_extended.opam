@@ -11,13 +11,17 @@ build: [
 ]
 depends: [
   "ocaml" {>= "5.1.0"}
+  "bin_prot"
   "core"
   "core_kernel"
   "core_unix"
+  "int_repr"
   "ppx_jane"
+  "ppx_stable_witness"
   "record_builder"
-  "dune"           {>= "3.11.0"}
-  "re"             {>= "1.8.0"}
+  "sexplib"
+  "dune"               {>= "3.11.0"}
+  "re"                 {>= "1.8.0"}
 ]
 available: arch != "arm32" & arch != "x86_32"
 synopsis: "Extra components that are not as closely vetted or as stable as Core"
