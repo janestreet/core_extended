@@ -82,13 +82,13 @@ module Make (Interned : Immediate_interned_string.S) = struct
 
         let to_int_exn t = t
 
-        let of_local_string str =
+        let of_local_string (local_ str) =
           if Short_string.is_valid_string str
           then unsafe_of_short (Short_string.of_local_string str)
           else unsafe_of_interned (Interned_string.of_local_string str)
         ;;
 
-        let to_local_string t =
+        let to_local_string t = exclave_
           if is_interned t
           then Interned_string.to_string (unsafe_to_interned t)
           else Short_string.to_local_string (unsafe_to_short t)
@@ -369,7 +369,7 @@ module Make (Interned : Immediate_interned_string.S) = struct
     let of_immediate_string_option = Fn.id
   end
 
-  let of_string_no_intern str =
+  let of_string_no_intern (local_ str) =
     if Short_string.is_valid_string str
     then unsafe_of_short (Short_string.of_local_string str) |> Option.some
     else (

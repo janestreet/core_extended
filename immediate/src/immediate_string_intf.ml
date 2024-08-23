@@ -92,9 +92,9 @@ module type S = sig
     val of_immediate_string_option : t -> t
   end
 
-  val of_local_string : string -> t
-  val to_local_string : t -> string
-  val of_string_no_intern : string -> Option.t
+  val of_local_string : local_ string -> t
+  val to_local_string : t -> local_ string
+  val of_string_no_intern : local_ string -> Option.t
 
   (* This is [Immediate_stringable.S], but written out to avoid a dependency loop. *)
   val of_immediate_string : t -> t

@@ -159,18 +159,18 @@ module Universe = struct
                 [blit], and/or [sub] to have side effects such as advancing an iobuf
                 cursor. *)
             val unsafe_extract
-              :  get_char:('buf -> 'pos -> char)
+              :  get_char:(local_ 'buf -> 'pos -> char)
               -> blit:
-                   (src:'buf
+                   (src:local_ 'buf
                     -> src_pos:'pos
-                    -> dst:bytes
+                    -> dst:local_ bytes
                     -> dst_pos:int
                     -> len:int
                     -> unit)
-              -> sub:('buf -> pos:'pos -> len:int -> string)
+              -> sub:(local_ 'buf -> pos:'pos -> len:int -> string)
               -> len:int
               -> pos:'pos
-              -> 'buf
+              -> local_ 'buf
               -> t
           end = struct
             open Core
@@ -468,9 +468,9 @@ module Universe = struct
       end
 
       let const_none = Fn.const Option.none
-      let i_promise_not_to_persist_this str : string = Obj.magic Obj.magic str
+      let i_promise_not_to_persist_this (local_ str) : string = Obj.magic Obj.magic str
 
-      let of_string_no_intern str =
+      let of_string_no_intern (local_ str) =
         Pooled_hashtbl.find_and_call
           interned_index_table
           (i_promise_not_to_persist_this str)
@@ -478,7 +478,7 @@ module Universe = struct
           ~if_not_found:const_none
       ;;
 
-      let[@inline] of_local_string str =
+      let[@inline] of_local_string (local_ str) =
         match%optional.Option of_string_no_intern str with
         | Some _ as s -> s
         | None -> of_string (String.globalize str)

@@ -12,13 +12,13 @@ include Immediate_intf.String_no_option
 
 val of_bytes : Bytes.t -> t
 val of_uint32 : Int_repr.Uint32.t -> t
-val of_local_string : string -> t
-val to_local_string : t -> string
-val of_substring : string -> pos:int -> len:int -> t
-val to_local_bytes : t -> Bytes.t
+val of_local_string : local_ string -> t
+val to_local_string : t -> local_ string
+val of_substring : local_ string -> pos:int -> len:int -> t
+val to_local_bytes : t -> local_ Bytes.t
 val max_length : int
 val is_valid_length : int -> bool
-val is_valid_string : string -> bool
+val is_valid_string : local_ string -> bool
 val pad_right : t -> char:char -> len:int -> t
 
 (** Raises if the result exceeds [max_length]. *)

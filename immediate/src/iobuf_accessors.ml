@@ -17,7 +17,7 @@ module For_cinaps = struct
   let pos_str = "argument pos"
   let length_str = "length of immediate string"
 
-  let get_pos ~pos_opt ~full_length ~name =
+  let get_pos ~(local_ pos_opt) ~full_length ~name =
     match pos_opt with
     | None -> 0
     | Some pos ->
@@ -25,7 +25,7 @@ module For_cinaps = struct
       if pos >= 0 && pos <= full_length then pos else fail name pos_str pos 0 full_length
   ;;
 
-  let get_len ~len_opt ~pos ~full_length ~name =
+  let get_len ~(local_ len_opt) ~pos ~full_length ~name =
     let upper_bound = full_length - pos in
     match len_opt with
     | None -> upper_bound
@@ -39,7 +39,8 @@ module For_cinaps = struct
     if len <= upper_bound then () else fail name length_str len 0 upper_bound
   ;;
 
-  let checked_read_with_pos_and_len ?pos:pos_opt ?len:len_opt buf f name =
+  let checked_read_with_pos_and_len ?pos:(local_ pos_opt) ?len:(local_ len_opt) buf f name
+    =
     let full_length = Iobuf.length buf in
     let pos = get_pos ~pos_opt ~full_length ~name in
     let len = get_len ~len_opt ~pos ~full_length ~name in
@@ -52,7 +53,15 @@ module For_cinaps = struct
     f ~len buf
   ;;
 
-  let checked_write_with_pos_and_len x ~length ?pos:pos_opt ?len:len_opt buf f name =
+  let checked_write_with_pos_and_len
+    x
+    ~length
+    ?pos:(local_ pos_opt)
+    ?len:(local_ len_opt)
+    buf
+    f
+    name
+    =
     let full_length = Iobuf.length buf in
     let pos = get_pos ~pos_opt ~full_length ~name in
     let len = get_len ~len_opt ~pos ~full_length ~name in
@@ -60,14 +69,14 @@ module For_cinaps = struct
     f x ~pos ~len buf
   ;;
 
-  let checked_write_with_len x ~length ?len:len_opt buf f name =
+  let checked_write_with_len x ~length ?len:(local_ len_opt) buf f name =
     let full_length = Iobuf.length buf in
     let len = get_len ~len_opt ~pos:0 ~full_length ~name in
     check_length x ~length len ~name;
     f x ~len buf
   ;;
 
-  let checked_write_with_pos x ~length ?pos:pos_opt buf f name =
+  let checked_write_with_pos x ~length ?pos:(local_ pos_opt) buf f name =
     let full_length = Iobuf.length buf in
     let pos = get_pos ~pos_opt ~full_length ~name in
     check_length x ~length (full_length - pos) ~name;

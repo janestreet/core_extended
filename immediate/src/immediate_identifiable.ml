@@ -1,7 +1,7 @@
 open Core
 
 module type S_not_binable = sig
-  type t [@@deriving hash, sexp] [@@immediate]
+  type t : immediate [@@deriving hash, sexp]
 
   include Identifiable.S_not_binable with type t := t
   include Immediate_stringable.S with type t := t

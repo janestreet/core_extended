@@ -12,7 +12,7 @@ module type Option_zero_alloc = sig
 end
 
 module type S_no_option = sig
-  type t [@@deriving typerep, hash, globalize] [@@immediate]
+  type t : immediate [@@deriving typerep, hash, globalize]
 
   include Identifiable.S with type t := t
   include Equal.S with type t := t
@@ -64,7 +64,7 @@ module type Immediate_kernel = sig
 
     module Option : sig
       type outer := t
-      type t [@@deriving globalize] [@@immediate]
+      type t : immediate [@@deriving globalize]
 
       include Option_zero_alloc with type value := outer and type t := t
 

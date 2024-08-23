@@ -80,7 +80,7 @@ module Stable = struct
 
       let to_int_exn t = t
 
-      let to_local_bytes t =
+      let to_local_bytes t = exclave_
         let module Bytes = Base.Bytes in
         let len = length t in
         let bytes = Bytes.create_local len in
@@ -90,7 +90,7 @@ module Stable = struct
         bytes
       ;;
 
-      let to_local_string t =
+      let to_local_string t = exclave_
         let str = to_local_bytes t in
         Base.Bytes.unsafe_to_string ~no_mutation_while_string_reachable:str
       ;;
@@ -100,7 +100,7 @@ module Stable = struct
         Base.Bytes.unsafe_to_string ~no_mutation_while_string_reachable:str
       ;;
 
-      let of_substring_failure ~pos ~len ~name str =
+      let of_substring_failure ~pos ~len ~name (local_ str) =
         let str = Core.String.globalize str in
         failwith
           (Printf.sprintf
@@ -112,7 +112,7 @@ module Stable = struct
              str)
       ;;
 
-      let of_string_failure ~len ~name str =
+      let of_string_failure ~len ~name (local_ str) =
         let str = Core.String.globalize str in
         failwith
           (Printf.sprintf
@@ -123,7 +123,7 @@ module Stable = struct
              str)
       ;;
 
-      let of_substring_internal str ~pos ~len ~name =
+      let of_substring_internal (local_ str) ~pos ~len ~name =
         let module String = Core.String in
         let strlen = String.length str in
         if pos < 0 || len < 0 || pos + len < 0 || pos + len > strlen
@@ -142,10 +142,10 @@ module Stable = struct
         of_substring_internal str ~pos:0 ~len:(Core.String.length str) ~name
       ;;
 
-      let of_local_string str = of_string_internal str ~name:"of_local_string"
+      let of_local_string (local_ str) = of_string_internal str ~name:"of_local_string"
       let of_string str = of_string_internal str ~name:"of_string"
 
-      let of_substring str ~pos ~len =
+      let of_substring (local_ str) ~pos ~len =
         of_substring_internal str ~pos ~len ~name:"of_substring"
       ;;
 
@@ -158,7 +158,7 @@ module Stable = struct
 
       let of_uint32 uint32 = unsafe_create 4 lor Int_repr.Uint32.to_base_int_exn uint32
       let[@inline] is_valid_length n = n land max_length = n
-      let[@inline] is_valid_string str = is_valid_length (Core.String.length str)
+      let[@inline] is_valid_string (local_ str) = is_valid_length (Core.String.length str)
     end
 
     include T_stringable

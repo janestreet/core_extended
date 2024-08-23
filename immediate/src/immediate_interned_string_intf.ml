@@ -34,8 +34,8 @@ module type S = sig
     end
   end
 
-  val of_string_no_intern : string -> Option.t
-  val of_local_string : string -> t
+  val of_string_no_intern : local_ string -> Option.t
+  val of_local_string : local_ string -> t
 end
 
 module type Immediate_interned_string = sig

@@ -10,14 +10,14 @@ module type Iobuf_accessors = sig
       :  padding:char
       -> pos:int
       -> padded_length:int
-      -> ([> read ], 'seek) Iobuf.t
+      -> local_ ([> read ], 'seek) Iobuf.t
       -> int
 
     val bigstring_read_padding_and_get_unpadded_length
       :  padding:char
       -> pos:int
       -> padded_length:int
-      -> Bigstring.t
+      -> local_ Bigstring.t
       -> int
 
     val write_padding
@@ -25,7 +25,7 @@ module type Iobuf_accessors = sig
       -> pos:int
       -> unpadded_length:int
       -> padded_length:int
-      -> (read_write, 'seek) Iobuf.t
+      -> local_ (read_write, 'seek) Iobuf.t
       -> unit
 
     val bigstring_write_padding
@@ -33,7 +33,7 @@ module type Iobuf_accessors = sig
       -> pos:int
       -> unpadded_length:int
       -> padded_length:int
-      -> Bigstring.t
+      -> local_ Bigstring.t
       -> unit
 
     (** These functions are bounds-checked wrappers for (potentially) unsafe [Iobuf]
@@ -50,53 +50,53 @@ module type Iobuf_accessors = sig
         each function. *)
 
     val checked_read_with_pos_and_len
-      :  ?pos:int
-      -> ?len:int
-      -> ('rw, 'seek) Iobuf.t
-      -> (pos:int -> len:int -> ('rw, 'seek) Iobuf.t -> 'a)
+      :  ?pos:local_ int
+      -> ?len:local_ int
+      -> local_ ('rw, 'seek) Iobuf.t
+      -> local_ (pos:int -> len:int -> local_ ('rw, 'seek) Iobuf.t -> 'a)
       -> string
       -> 'a
 
     val checked_read_with_len
-      :  ?len:int
-      -> ('rw, 'seek) Iobuf.t
-      -> (len:int -> ('rw, 'seek) Iobuf.t -> 'a)
+      :  ?len:local_ int
+      -> local_ ('rw, 'seek) Iobuf.t
+      -> local_ (len:int -> local_ ('rw, 'seek) Iobuf.t -> 'a)
       -> string
       -> 'a
 
     val checked_write_with_pos_and_len
       :  'a
       -> length:('a -> int)
-      -> ?pos:int
-      -> ?len:int
-      -> ('rw, 'seek) Iobuf.t
-      -> ('a -> pos:int -> len:int -> ('rw, 'seek) Iobuf.t -> unit)
+      -> ?pos:local_ int
+      -> ?len:local_ int
+      -> local_ ('rw, 'seek) Iobuf.t
+      -> local_ ('a -> pos:int -> len:int -> local_ ('rw, 'seek) Iobuf.t -> unit)
       -> string
       -> unit
 
     val checked_write_with_len
       :  'a
       -> length:('a -> int)
-      -> ?len:int
-      -> ('rw, 'seek) Iobuf.t
-      -> ('a -> len:int -> ('rw, 'seek) Iobuf.t -> unit)
+      -> ?len:local_ int
+      -> local_ ('rw, 'seek) Iobuf.t
+      -> local_ ('a -> len:int -> local_ ('rw, 'seek) Iobuf.t -> unit)
       -> string
       -> unit
 
     val checked_write_with_pos
       :  'a
       -> length:('a -> int)
-      -> ?pos:int
-      -> ('rw, 'seek) Iobuf.t
-      -> ('a -> pos:int -> ('rw, 'seek) Iobuf.t -> unit)
+      -> ?pos:local_ int
+      -> local_ ('rw, 'seek) Iobuf.t
+      -> local_ ('a -> pos:int -> local_ ('rw, 'seek) Iobuf.t -> unit)
       -> string
       -> unit
 
     val checked_write
       :  'a
       -> length:('a -> int)
-      -> ('rw, 'seek) Iobuf.t
-      -> ('a -> ('rw, 'seek) Iobuf.t -> unit)
+      -> local_ ('rw, 'seek) Iobuf.t
+      -> local_ ('a -> local_ ('rw, 'seek) Iobuf.t -> unit)
       -> string
       -> unit
   end
