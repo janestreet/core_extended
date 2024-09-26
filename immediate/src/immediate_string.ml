@@ -30,7 +30,8 @@ module Make (Interned : Immediate_interned_string.S) = struct
     module V1 = struct
       module T_stringable = struct
         (* This [int] is not transportable, so don't derive [bin_io]. *)
-        type t = int [@@deriving hash, typerep, globalize]
+        type t = int
+        [@@deriving hash, typerep, globalize, compare ~localize, equal ~localize]
 
         let[@inline] is_interned t = t < 0
         let[@inline] unsafe_of_short s = Short_string.unsafe_to_int s

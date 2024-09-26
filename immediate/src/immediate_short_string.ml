@@ -23,7 +23,8 @@ module Stable = struct
     module T_stringable = struct
       (* In this case, as opposed to interned strings, it is safe to use [int]'s stable
          [bin_io]. *)
-      type t = int [@@deriving bin_io, compare, equal, hash, stable_witness]
+      type t = int
+      [@@deriving bin_io, compare ~localize, equal ~localize, hash, stable_witness]
 
       let max_length = 0b111
       let length_offset = 56

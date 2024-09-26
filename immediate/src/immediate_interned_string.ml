@@ -57,7 +57,9 @@ module Universe = struct
           module T_stringable = struct
             (* We mustn't use [int [@@deriving bin_io]] (or [sexp]). The values (intern
                table keys) are not portable between heap images. *)
-            type t = int [@@deriving compare, hash, globalize, stable_witness]
+            type t = int
+            [@@deriving
+              compare ~localize, equal ~localize, hash, globalize, stable_witness]
 
             let after_grow_handler = ref (fun ~before:_ ~len_before:_ ~len:_ -> ())
 
