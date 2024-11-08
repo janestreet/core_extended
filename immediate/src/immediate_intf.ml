@@ -6,6 +6,7 @@ module type S_no_option = Immediate_kernel.S_no_option
 module type String_no_option = sig
   include S_no_option
   include Quickcheckable with type t := t
+  include Sexpable.S_with_grammar with type t := t
 
   (** [Lexicographic.compare x y = String.compare (to_string x) (to_string y)] *)
   module Lexicographic : Identifiable.S_not_binable with type t = t

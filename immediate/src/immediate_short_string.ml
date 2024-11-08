@@ -23,7 +23,8 @@ module Stable = struct
     module T_stringable = struct
       (* In this case, as opposed to interned strings, it is safe to use [int]'s stable
          [bin_io]. *)
-      type t = int [@@deriving bin_io, compare, equal, hash, stable_witness]
+      type t = int
+      [@@deriving bin_io, compare ~localize, equal ~localize, hash, stable_witness]
 
       let max_length = 0b111
       let length_offset = 56
@@ -212,48 +213,44 @@ module Stable = struct
     ;;
   end
 
-  let%test_module "V1" =
-    (module struct
-      let tests =
-        (* Stringable, Intable, Sexpable, Binable *)
-        [ "", 0x0, "\"\"", "\000"
-        ; "a", 0x100_0000_0000_0061, "a", "\252a\000\000\000\000\000\000\001"
-        ; "AB", 0x200_0000_0000_4241, "AB", "\252AB\000\000\000\000\000\002"
-        ; "Q\000?", 0x300_0000_003f_0051, "Q\000?", "\252Q\000?\000\000\000\000\003"
-        ; "1546024", 0x734_3230_3634_3531, "1546024", "\2521546024\007"
-        ; "abcdef", 0x600_6665_6463_6261, "abcdef", "\252abcdef\000\006"
-        ; "abcdefg", 0x767_6665_6463_6261, "abcdefg", "\252abcdefg\007"
-        ; "\000", 0x100_0000_0000_0000, "\000", "\252\000\000\000\000\000\000\000\001"
-        ; "\001", 0x100_0000_0000_0001, "\001", "\252\001\000\000\000\000\000\000\001"
-        ; "\255", 0x100_0000_0000_00ff, "\255", "\252\255\000\000\000\000\000\000\001"
-        ; "abcde\000", 0x600_0065_6463_6261, "abcde\000", "\252abcde\000\000\006"
-        ; "\000abcde", 0x600_6564_6362_6100, "\000abcde", "\252\000abcde\000\006"
-        ]
-      ;;
+  module%test V1 = struct
+    let tests =
+      (* Stringable, Intable, Sexpable, Binable *)
+      [ "", 0x0, "\"\"", "\000"
+      ; "a", 0x100_0000_0000_0061, "a", "\252a\000\000\000\000\000\000\001"
+      ; "AB", 0x200_0000_0000_4241, "AB", "\252AB\000\000\000\000\000\002"
+      ; "Q\000?", 0x300_0000_003f_0051, "Q\000?", "\252Q\000?\000\000\000\000\003"
+      ; "1546024", 0x734_3230_3634_3531, "1546024", "\2521546024\007"
+      ; "abcdef", 0x600_6665_6463_6261, "abcdef", "\252abcdef\000\006"
+      ; "abcdefg", 0x767_6665_6463_6261, "abcdefg", "\252abcdefg\007"
+      ; "\000", 0x100_0000_0000_0000, "\000", "\252\000\000\000\000\000\000\000\001"
+      ; "\001", 0x100_0000_0000_0001, "\001", "\252\001\000\000\000\000\000\000\001"
+      ; "\255", 0x100_0000_0000_00ff, "\255", "\252\255\000\000\000\000\000\000\001"
+      ; "abcde\000", 0x600_0065_6463_6261, "abcde\000", "\252abcde\000\000\006"
+      ; "\000abcde", 0x600_6564_6362_6100, "\000abcde", "\252\000abcde\000\006"
+      ]
+    ;;
 
-      let%test_unit "Intable and Stringable" =
-        Core.Or_error.combine_errors_unit
-          (Core.List.map tests ~f:(fun (s, t, _, _) ->
-             Core.Or_error.tag
-               (Core.Or_error.try_with (fun () ->
-                  [%test_result: Core.Int.Hex.t] (V1.of_string s) ~expect:t;
-                  [%test_result: string] (V1.to_string t) ~expect:s;
-                  [%test_result: Core.Int.Hex.t] (V1.to_int_exn t) ~expect:t;
-                  [%test_result: V1.t] (V1.of_int_exn t) ~expect:t))
-               ~tag:s))
-        |> Core.ok_exn
-      ;;
+    let%test_unit "Intable and Stringable" =
+      Core.Or_error.combine_errors_unit
+        (Core.List.map tests ~f:(fun (s, t, _, _) ->
+           Core.Or_error.tag
+             (Core.Or_error.try_with (fun () ->
+                [%test_result: Core.Int.Hex.t] (V1.of_string s) ~expect:t;
+                [%test_result: string] (V1.to_string t) ~expect:s;
+                [%test_result: Core.Int.Hex.t] (V1.to_int_exn t) ~expect:t;
+                [%test_result: V1.t] (V1.of_int_exn t) ~expect:t))
+             ~tag:s))
+      |> Core.ok_exn
+    ;;
 
-      let%test_module "Sexpable and Binable" =
-        (module Unit_test (struct
-            type t = V1.t [@@deriving bin_io, sexp]
+    module%test [@name "Sexpable and Binable"] _ = Unit_test (struct
+        type t = V1.t [@@deriving bin_io, sexp]
 
-            let equal = Core.Int.equal
-            let tests = Core.List.map tests ~f:(fun (_, t, s, b) -> t, s, b)
-          end))
-      ;;
-    end)
-  ;;
+        let equal = Core.Int.equal
+        let tests = Core.List.map tests ~f:(fun (_, t, s, b) -> t, s, b)
+      end)
+  end
 end
 
 module Option_stable = struct
@@ -303,91 +300,87 @@ module Option_stable = struct
     let to_int_exn t = t
   end
 
-  let%test_module "V1 : Binable and Sexpable" =
-    (module Unit_test (struct
-        include V1
+  module%test [@name "V1 : Binable and Sexpable"] _ = Unit_test (struct
+      include V1
 
-        let equal = Core.Int.equal
+      let equal = Core.Int.equal
 
-        let tests =
-          [ V1.of_string_option None, "()", "\252\255\255\255\255\255\255\255?"
-          ; V1.of_string_option (Some "somestr"), "(somestr)", "\252somestr\007"
-          ; V1.of_string_option (Some ""), "(\"\")", "\000"
-          ; ( V1.of_string_option (Some "\000")
-            , "(\"\\000\")"
-            , "\252\000\000\000\000\000\000\000\001" )
-          ]
-        ;;
-      end))
-  ;;
+      let tests =
+        [ V1.of_string_option None, "()", "\252\255\255\255\255\255\255\255?"
+        ; V1.of_string_option (Some "somestr"), "(somestr)", "\252somestr\007"
+        ; V1.of_string_option (Some ""), "(\"\")", "\000"
+        ; ( V1.of_string_option (Some "\000")
+          , "(\"\\000\")"
+          , "\252\000\000\000\000\000\000\000\001" )
+        ]
+      ;;
+    end)
 end
 
 open! Core
 open! Int.Replace_polymorphic_compare
 
-let%test_module "Stable.V1" =
-  (module struct
-    open Stable.V1
+module%test [@name "Stable.V1"] _ = struct
+  open Stable.V1
 
-    type hex = int [@@deriving compare]
+  type hex = int [@@deriving compare]
 
-    let sexp_of_hex n = sexp_of_string (sprintf "0x%x" n)
+  let sexp_of_hex n = sexp_of_string (sprintf "0x%x" n)
 
-    let test i s =
-      [%test_eq: hex] i (to_int_exn (of_string s));
-      true
-    ;;
+  let test i s =
+    [%test_eq: hex] i (to_int_exn (of_string s));
+    true
+  ;;
 
-    let%test _ = test 0x0000_0000_0000_0000 ""
-    let%test _ = test 0x0100_0000_0000_0061 "a"
-    let%test _ = test 0x0200_0000_0000_6261 "ab"
-    let%test _ = test 0x0300_0000_0063_6261 "abc"
-    let%test _ = test 0x0400_0000_6463_6261 "abcd"
-    let%test _ = test 0x0500_0065_6463_6261 "abcde"
-    let%test _ = test 0x0600_6665_6463_6261 "abcdef"
-    let%test _ = test 0x0767_6665_6463_6261 "abcdefg"
+  let%test _ = test 0x0000_0000_0000_0000 ""
+  let%test _ = test 0x0100_0000_0000_0061 "a"
+  let%test _ = test 0x0200_0000_0000_6261 "ab"
+  let%test _ = test 0x0300_0000_0063_6261 "abc"
+  let%test _ = test 0x0400_0000_6463_6261 "abcd"
+  let%test _ = test 0x0500_0065_6463_6261 "abcde"
+  let%test _ = test 0x0600_6665_6463_6261 "abcdef"
+  let%test _ = test 0x0767_6665_6463_6261 "abcdefg"
 
-    let test i s =
-      [%test_eq: string] (to_string (of_int_exn i)) s;
-      true
-    ;;
+  let test i s =
+    [%test_eq: string] (to_string (of_int_exn i)) s;
+    true
+  ;;
 
-    let%test _ = test 0x0000_0000_0000_0000 ""
-    let%test _ = test 0x0100_0000_0000_0061 "a"
-    let%test _ = test 0x0200_0000_0000_6261 "ab"
-    let%test _ = test 0x0300_0000_0063_6261 "abc"
-    let%test _ = test 0x0400_0000_6463_6261 "abcd"
-    let%test _ = test 0x0500_0065_6463_6261 "abcde"
-    let%test _ = test 0x0600_6665_6463_6261 "abcdef"
-    let%test _ = test 0x0767_6665_6463_6261 "abcdefg"
+  let%test _ = test 0x0000_0000_0000_0000 ""
+  let%test _ = test 0x0100_0000_0000_0061 "a"
+  let%test _ = test 0x0200_0000_0000_6261 "ab"
+  let%test _ = test 0x0300_0000_0063_6261 "abc"
+  let%test _ = test 0x0400_0000_6463_6261 "abcd"
+  let%test _ = test 0x0500_0065_6463_6261 "abcde"
+  let%test _ = test 0x0600_6665_6463_6261 "abcdef"
+  let%test _ = test 0x0767_6665_6463_6261 "abcdefg"
 
-    (* Fail: of_string with length > 7. *)
-    let%test _ = Exn.does_raise (fun () -> of_string "abcdefgh")
-    let%test _ = Exn.does_raise (fun () -> of_string "abcdefghi")
-    let%test _ = Exn.does_raise (fun () -> of_string "abcdefghij")
-    let%test _ = Exn.does_raise (fun () -> of_string "abcdefghijk")
+  (* Fail: of_string with length > 7. *)
+  let%test _ = Exn.does_raise (fun () -> of_string "abcdefgh")
+  let%test _ = Exn.does_raise (fun () -> of_string "abcdefghi")
+  let%test _ = Exn.does_raise (fun () -> of_string "abcdefghij")
+  let%test _ = Exn.does_raise (fun () -> of_string "abcdefghijk")
 
-    (* Fail: of_int_exn with one or more of bits 59-62 set. *)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn (1 lsl 62))
-    let%test _ = Exn.does_raise (fun () -> of_int_exn (1 lsl 61))
-    let%test _ = Exn.does_raise (fun () -> of_int_exn (1 lsl 60))
-    let%test _ = Exn.does_raise (fun () -> of_int_exn (1 lsl 59))
-    let%test _ = Exn.does_raise (fun () -> of_int_exn (-1))
+  (* Fail: of_int_exn with one or more of bits 59-62 set. *)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn (1 lsl 62))
+  let%test _ = Exn.does_raise (fun () -> of_int_exn (1 lsl 61))
+  let%test _ = Exn.does_raise (fun () -> of_int_exn (1 lsl 60))
+  let%test _ = Exn.does_raise (fun () -> of_int_exn (1 lsl 59))
+  let%test _ = Exn.does_raise (fun () -> of_int_exn (-1))
 
-    (* Fail: of_int_exn where length does not match char data. *)
-    (* Lengths set one too short for character data: *)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0000_0000_0000_0061)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0100_0000_0000_6261)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0200_0000_0063_6261)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0300_0000_6463_6261)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0400_0065_6463_6261)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0500_6665_6463_6261)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0667_6665_6463_6261)
+  (* Fail: of_int_exn where length does not match char data. *)
+  (* Lengths set one too short for character data: *)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0000_0000_0000_0061)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0100_0000_0000_6261)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0200_0000_0063_6261)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0300_0000_6463_6261)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0400_0065_6463_6261)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0500_6665_6463_6261)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0667_6665_6463_6261)
 
-    (* Length set to 0 for 7 characters: *)
-    let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0067_6665_6463_6261)
-  end)
-;;
+  (* Length set to 0 for 7 characters: *)
+  let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0067_6665_6463_6261)
+end
 
 (* This code is very delicate with all the bit banging.  We're relying heavily on the
    tests in immediate_unit_tests.ml. *)
@@ -500,35 +493,29 @@ include Identifiable.Make (struct
 
 include Int.Replace_polymorphic_compare
 
-let%bench_module "comparisons" =
-  (module struct
-    let t = of_string "abc"
+module%bench [@name "comparisons"] _ = struct
+  let t = of_string "abc"
 
-    let%bench_module "built-in" =
-      (module struct
-        open Poly
+  module%bench [@name "built-in"] _ = struct
+    open Poly
 
-        let%bench "=" = t = t
-        let%bench "<" = t < t
-        let%bench ">" = t > t
-        let%bench "<=" = t <= t
-        let%bench ">=" = t >= t
-        let%bench "<>" = t <> t
-      end)
-    ;;
+    let%bench "=" = t = t
+    let%bench "<" = t < t
+    let%bench ">" = t > t
+    let%bench "<=" = t <= t
+    let%bench ">=" = t >= t
+    let%bench "<>" = t <> t
+  end
 
-    let%bench_module "exported" =
-      (module struct
-        let%bench "=" = t = t
-        let%bench "<" = t < t
-        let%bench ">" = t > t
-        let%bench "<=" = t <= t
-        let%bench ">=" = t >= t
-        let%bench "<>" = t <> t
-      end)
-    ;;
-  end)
-;;
+  module%bench [@name "exported"] _ = struct
+    let%bench "=" = t = t
+    let%bench "<" = t < t
+    let%bench ">" = t > t
+    let%bench "<=" = t <= t
+    let%bench ">=" = t >= t
+    let%bench "<>" = t <> t
+  end
+end
 
 module Lexicographic = struct
   type nonrec t = t
@@ -543,38 +530,36 @@ module Lexicographic = struct
     end)
 end
 
-let%test_module "Lexicographic" =
-  (module struct
-    let lex_is_ok (x, y) =
-      String.compare x y = Lexicographic.compare (of_string x) (of_string y)
-    ;;
+module%test Lexicographic = struct
+  let lex_is_ok (x, y) =
+    String.compare x y = Lexicographic.compare (of_string x) (of_string y)
+  ;;
 
-    let test x y = [%test_pred: string * string] lex_is_ok (x, y)
+  let test x y = [%test_pred: string * string] lex_is_ok (x, y)
 
-    let strings =
-      [ ""
-      ; "a"
-      ; "b"
-      ; "aa"
-      ; "ab"
-      ; "ba"
-      ; "bb"
-      ; "aaa"
-      ; "aab"
-      ; "aba"
-      ; "abb"
-      ; "baa"
-      ; "bab"
-      ; "bba"
-      ; "bbb"
-      ]
-    ;;
+  let strings =
+    [ ""
+    ; "a"
+    ; "b"
+    ; "aa"
+    ; "ab"
+    ; "ba"
+    ; "bb"
+    ; "aaa"
+    ; "aab"
+    ; "aba"
+    ; "abb"
+    ; "baa"
+    ; "bab"
+    ; "bba"
+    ; "bbb"
+    ]
+  ;;
 
-    let%test_unit _ =
-      List.iter strings ~f:(fun x -> List.iter strings ~f:(fun y -> test x y))
-    ;;
-  end)
-;;
+  let%test_unit _ =
+    List.iter strings ~f:(fun x -> List.iter strings ~f:(fun y -> test x y))
+  ;;
+end
 
 module Option = struct
   module Stable = Option_stable

@@ -46,6 +46,8 @@ module type S = sig
         with type t := t
          and type comparator_witness = Lexicographic.comparator_witness
 
+      include Sexpable.S_with_grammar with type t := t
+
       val of_v1 : V1.t -> t
 
       module For_testing_only : Stringable with type t := t

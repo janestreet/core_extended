@@ -30,7 +30,8 @@ module Make (Interned : Immediate_interned_string.S) = struct
     module V1 = struct
       module T_stringable = struct
         (* This [int] is not transportable, so don't derive [bin_io]. *)
-        type t = int [@@deriving hash, typerep, globalize]
+        type t = int
+        [@@deriving hash, typerep, globalize, compare ~localize, equal ~localize]
 
         let[@inline] is_interned t = t < 0
         let[@inline] unsafe_of_short s = Short_string.unsafe_to_int s
@@ -639,35 +640,29 @@ let%test_unit "Stable.V2.compare consistent with String.compare" =
         ~message:(Printf.sprintf "compare %S %S" str1 str2)))
 ;;
 
-let%bench_module "comparisons" =
-  (module struct
-    let t = of_string "abc"
+module%bench [@name "comparisons"] _ = struct
+  let t = of_string "abc"
 
-    let%bench_module "built-in" =
-      (module struct
-        open Poly
+  module%bench [@name "built-in"] _ = struct
+    open Poly
 
-        let%bench "=" = t = t
-        let%bench "<" = t < t
-        let%bench ">" = t > t
-        let%bench "<=" = t <= t
-        let%bench ">=" = t >= t
-        let%bench "<>" = t <> t
-      end)
-    ;;
+    let%bench "=" = t = t
+    let%bench "<" = t < t
+    let%bench ">" = t > t
+    let%bench "<=" = t <= t
+    let%bench ">=" = t >= t
+    let%bench "<>" = t <> t
+  end
 
-    let%bench_module "exported" =
-      (module struct
-        let%bench "=" = t = t
-        let%bench "<" = t < t
-        let%bench ">" = t > t
-        let%bench "<=" = t <= t
-        let%bench ">=" = t >= t
-        let%bench "<>" = t <> t
-      end)
-    ;;
-  end)
-;;
+  module%bench [@name "exported"] _ = struct
+    let%bench "=" = t = t
+    let%bench "<" = t < t
+    let%bench ">" = t > t
+    let%bench "<=" = t <= t
+    let%bench ">=" = t >= t
+    let%bench "<>" = t <> t
+  end
+end
 
 let%bench_fun "mem (short string) (found)" =
   let t = of_string "XXX.X  " in
@@ -699,32 +694,31 @@ let%bench_fun "mem (interned string) (found, last char)" =
   fun () -> Sys.opaque_identity (mem t '.')
 ;;
 
-let%test_module "Comparable.Make(Stable.V2).compare antisymmetric (bug repro)" =
-  (module struct
-    let x = of_string "ca"
-    let y = of_string "ac"
-    let z = of_string "bb-interned"
+module%test [@name "Comparable.Make(Stable.V2).compare antisymmetric (bug repro)"] _ =
+struct
+  let x = of_string "ca"
+  let y = of_string "ac"
+  let z = of_string "bb-interned"
 
-    module C = Comparable.Make (Stable.V2)
+  module C = Comparable.Make (Stable.V2)
 
-    let a = C.Set.of_list [ x; y; z ]
-    let a_sexp = [%sexp_of: C.Set.t] a
-    let b = [%of_sexp: C.Set.t] a_sexp
-    let b_sexp = [%sexp_of: C.Set.t] b
-    let a_minus_b = Core.Set.diff a b
-    let b_minus_a = Core.Set.diff b a
+  let a = C.Set.of_list [ x; y; z ]
+  let a_sexp = [%sexp_of: C.Set.t] a
+  let b = [%of_sexp: C.Set.t] a_sexp
+  let b_sexp = [%sexp_of: C.Set.t] b
+  let a_minus_b = Core.Set.diff a b
+  let b_minus_a = Core.Set.diff b a
 
-    let%test_unit _ =
-      [%test_result: string] ~expect:"(ac bb-interned ca)" (Sexp.to_string a_sexp)
-    ;;
+  let%test_unit _ =
+    [%test_result: string] ~expect:"(ac bb-interned ca)" (Sexp.to_string a_sexp)
+  ;;
 
-    let%test_unit _ =
-      [%test_result: string] ~expect:"(ac bb-interned ca)" (Sexp.to_string b_sexp)
-    ;;
+  let%test_unit _ =
+    [%test_result: string] ~expect:"(ac bb-interned ca)" (Sexp.to_string b_sexp)
+  ;;
 
-    let%test _ = C.Set.equal a b
-    let%test _ = Core.Set.is_empty a_minus_b
-    let%test _ = Core.Set.is_empty b_minus_a
-    let%test _ = true && C.( < ) y x && C.( < ) y z && C.( < ) z x
-  end)
-;;
+  let%test _ = C.Set.equal a b
+  let%test _ = Core.Set.is_empty a_minus_b
+  let%test _ = Core.Set.is_empty b_minus_a
+  let%test _ = true && C.( < ) y x && C.( < ) y z && C.( < ) z x
+end

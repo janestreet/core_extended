@@ -12,10 +12,10 @@ module type Option_zero_alloc = sig
 end
 
 module type S_no_option = sig
-  type t : immediate [@@deriving typerep, hash, globalize]
+  type t : immediate
+  [@@deriving typerep, hash, globalize, compare ~localize, equal ~localize]
 
   include Identifiable.S with type t := t
-  include Equal.S with type t := t
 end
 
 (** Obviously, [Char], [Bool], and [Int] are already immediate, but this module is a place

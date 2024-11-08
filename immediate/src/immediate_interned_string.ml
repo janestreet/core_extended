@@ -10,6 +10,8 @@ module Universe = struct
       open Core.Core_stable
 
       module Stable = struct
+        open Typerep_lib.Std (* for [typerep_of_int] *)
+
         module V1 = struct
           let initial_size = 512
           let placeholder_string = ""
@@ -57,7 +59,9 @@ module Universe = struct
           module T_stringable = struct
             (* We mustn't use [int [@@deriving bin_io]] (or [sexp]). The values (intern
                table keys) are not portable between heap images. *)
-            type t = int [@@deriving compare, hash, globalize, stable_witness]
+            type t = int
+            [@@deriving
+              compare ~localize, equal ~localize, hash, globalize, stable_witness, typerep]
 
             let after_grow_handler = ref (fun ~before:_ ~len_before:_ ~len:_ -> ())
 
@@ -375,35 +379,29 @@ module Universe = struct
 
       include Int.Replace_polymorphic_compare
 
-      let%bench_module "comparisons" =
-        (module struct
-          let t = of_string "abc"
+      module%bench [@name "comparisons"] _ = struct
+        let t = of_string "abc"
 
-          let%bench_module "built-in" =
-            (module struct
-              open Poly
+        module%bench [@name "built-in"] _ = struct
+          open Poly
 
-              let%bench "=" = t = t
-              let%bench "<" = t < t
-              let%bench ">" = t > t
-              let%bench "<=" = t <= t
-              let%bench ">=" = t >= t
-              let%bench "<>" = t <> t
-            end)
-          ;;
+          let%bench "=" = t = t
+          let%bench "<" = t < t
+          let%bench ">" = t > t
+          let%bench "<=" = t <= t
+          let%bench ">=" = t >= t
+          let%bench "<>" = t <> t
+        end
 
-          let%bench_module "exported" =
-            (module struct
-              let%bench "=" = t = t
-              let%bench "<" = t < t
-              let%bench ">" = t > t
-              let%bench "<=" = t <= t
-              let%bench ">=" = t >= t
-              let%bench "<>" = t <> t
-            end)
-          ;;
-        end)
-      ;;
+        module%bench [@name "exported"] _ = struct
+          let%bench "=" = t = t
+          let%bench "<" = t < t
+          let%bench ">" = t > t
+          let%bench "<=" = t <= t
+          let%bench ">=" = t >= t
+          let%bench "<>" = t <> t
+        end
+      end
 
       let quickcheck_generator =
         Quickcheck.Generator.map String.quickcheck_generator ~f:of_string
