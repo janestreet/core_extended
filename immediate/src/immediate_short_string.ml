@@ -493,35 +493,29 @@ include Identifiable.Make (struct
 
 include Int.Replace_polymorphic_compare
 
-let%bench_module "comparisons" =
-  (module struct
-    let t = of_string "abc"
+module%bench [@name "comparisons"] _ = struct
+  let t = of_string "abc"
 
-    let%bench_module "built-in" =
-      (module struct
-        open Poly
+  module%bench [@name "built-in"] _ = struct
+    open Poly
 
-        let%bench "=" = t = t
-        let%bench "<" = t < t
-        let%bench ">" = t > t
-        let%bench "<=" = t <= t
-        let%bench ">=" = t >= t
-        let%bench "<>" = t <> t
-      end)
-    ;;
+    let%bench "=" = t = t
+    let%bench "<" = t < t
+    let%bench ">" = t > t
+    let%bench "<=" = t <= t
+    let%bench ">=" = t >= t
+    let%bench "<>" = t <> t
+  end
 
-    let%bench_module "exported" =
-      (module struct
-        let%bench "=" = t = t
-        let%bench "<" = t < t
-        let%bench ">" = t > t
-        let%bench "<=" = t <= t
-        let%bench ">=" = t >= t
-        let%bench "<>" = t <> t
-      end)
-    ;;
-  end)
-;;
+  module%bench [@name "exported"] _ = struct
+    let%bench "=" = t = t
+    let%bench "<" = t < t
+    let%bench ">" = t > t
+    let%bench "<=" = t <= t
+    let%bench ">=" = t >= t
+    let%bench "<>" = t <> t
+  end
+end
 
 module Lexicographic = struct
   type nonrec t = t

@@ -640,35 +640,29 @@ let%test_unit "Stable.V2.compare consistent with String.compare" =
         ~message:(Printf.sprintf "compare %S %S" str1 str2)))
 ;;
 
-let%bench_module "comparisons" =
-  (module struct
-    let t = of_string "abc"
+module%bench [@name "comparisons"] _ = struct
+  let t = of_string "abc"
 
-    let%bench_module "built-in" =
-      (module struct
-        open Poly
+  module%bench [@name "built-in"] _ = struct
+    open Poly
 
-        let%bench "=" = t = t
-        let%bench "<" = t < t
-        let%bench ">" = t > t
-        let%bench "<=" = t <= t
-        let%bench ">=" = t >= t
-        let%bench "<>" = t <> t
-      end)
-    ;;
+    let%bench "=" = t = t
+    let%bench "<" = t < t
+    let%bench ">" = t > t
+    let%bench "<=" = t <= t
+    let%bench ">=" = t >= t
+    let%bench "<>" = t <> t
+  end
 
-    let%bench_module "exported" =
-      (module struct
-        let%bench "=" = t = t
-        let%bench "<" = t < t
-        let%bench ">" = t > t
-        let%bench "<=" = t <= t
-        let%bench ">=" = t >= t
-        let%bench "<>" = t <> t
-      end)
-    ;;
-  end)
-;;
+  module%bench [@name "exported"] _ = struct
+    let%bench "=" = t = t
+    let%bench "<" = t < t
+    let%bench ">" = t > t
+    let%bench "<=" = t <= t
+    let%bench ">=" = t >= t
+    let%bench "<>" = t <> t
+  end
+end
 
 let%bench_fun "mem (short string) (found)" =
   let t = of_string "XXX.X  " in

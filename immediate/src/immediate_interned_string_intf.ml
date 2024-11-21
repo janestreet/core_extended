@@ -10,7 +10,7 @@ module type S = sig
 
   module Stable : sig
     module V1 : sig
-      type nonrec t = t [@@deriving hash, stable_witness]
+      type nonrec t = t [@@deriving hash, stable_witness, typerep]
 
       include Stable_without_comparator with type t := t
       include Stringable.S with type t := t

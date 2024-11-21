@@ -68,7 +68,7 @@ module type Immediate_kernel = sig
 
       include Option_zero_alloc with type value := outer and type t := t
 
-      val unchecked_some : int -> t
+      val unchecked_some : int -> t [@@zero_alloc]
       val type_immediacy : t Type_immediacy.Always.t
 
       module Stable : sig
