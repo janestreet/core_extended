@@ -1,7 +1,5 @@
-(** Unix like [find].
- *
- * Note: Unlike Unix [find], the functions in this module do not produce paths in
- * depth-first order. *)
+(** Unix like [find]. * * Note: Unlike Unix [find], the functions in this module do not
+    produce paths in * depth-first order. *)
 
 (* Implements find (like the unix utility).  Note that t is stateful both because
    filesystems themselves are highly stateful, and for performance reasons *)
@@ -28,8 +26,8 @@ module Options : sig
     ; on_stat_errors : error_handler
     (** Applied to errors raised when calling {!Unix.stat} or {!Unix.lstat} on a file. *)
     ; filter : (file_info -> bool) option
-    (** Whether to include a given file or directory in output. For directories, this
-        does not affect whether files under the directory are visited. *)
+    (** Whether to include a given file or directory in output. For directories, this does
+        not affect whether files under the directory are visited. *)
     ; skip_dir : (file_info -> bool) option
     (** Whether to visit the files under a given directory. *)
     ; relative_paths : bool
@@ -43,13 +41,13 @@ end
 (** [create ?options dir] create a Find.t based in dir *)
 val create : ?options:Options.t -> string -> t
 
-(** [next t] return the next file from the collection of valid files in t or None
-    if no more files remain *)
+(** [next t] return the next file from the collection of valid files in t or None if no
+    more files remain *)
 val next : t -> file_info option
 
-(** [close t] drops all the resources associated with t.  It is a mistake to attempt to
-    use t again.  Any Find.t will be automatically closed after the last file is read by
-    any means. *)
+(** [close t] drops all the resources associated with t. It is a mistake to attempt to use
+    t again. Any Find.t will be automatically closed after the last file is read by any
+    means. *)
 val close : t -> unit
 
 (** [iter t ~f] calls f on every file in t *)
@@ -58,8 +56,8 @@ val iter : t -> f:(file_info -> unit) -> unit
 (** [fold t ~init ~f] folds f over the files in t *)
 val fold : t -> init:'a -> f:('a -> file_info -> 'a) -> 'a
 
-(** [to_list t] returns all of the remaining files in t as a list in the order they
-    would have been returned by subsequent calls to next *)
+(** [to_list t] returns all of the remaining files in t as a list in the order they would
+    have been returned by subsequent calls to next *)
 val to_list : t -> file_info list
 
 (** [find_all ?options dir] short for to_list (create ?options dir) *)

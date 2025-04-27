@@ -24,7 +24,13 @@ module Stable = struct
       (* In this case, as opposed to interned strings, it is safe to use [int]'s stable
          [bin_io]. *)
       type t = int
-      [@@deriving bin_io, compare ~localize, equal ~localize, hash, stable_witness]
+      [@@deriving
+        bin_io ~localize
+        , compare ~localize
+        , equal ~localize
+        , globalize
+        , hash
+        , stable_witness]
 
       let max_length = 0b111
       let length_offset = 56
@@ -255,7 +261,8 @@ end
 
 module Option_stable = struct
   module V1 = struct
-    type t = int [@@deriving bin_io, compare, hash]
+    type t = int
+    [@@deriving bin_io ~localize, compare ~localize, equal ~localize, globalize, hash]
 
     let none = Core.Int.max_value
 
@@ -266,10 +273,10 @@ module Option_stable = struct
     ;;
 
     let some (value : Stable.V1.t) = value
-    let is_none t = t = none
+    let[@zero_alloc] is_none t = t = none
     let is_some t = not (is_none t)
     let some_is_representable _ = true
-    let unchecked_value (t : t) = t
+    let[@zero_alloc] unchecked_value (t : t) = t
 
     let value_exn_not_found =
       Not_found_s [%message "[Immediate.Short_string.Option.value_exn]: given [none]"]
@@ -286,6 +293,10 @@ module Option_stable = struct
 
     let sexp_of_t t = to_option t |> [%sexp_of: Stable.V1.t option]
     let t_of_sexp s = [%of_sexp: Stable.V1.t option] s |> of_option
+
+    let t_sexp_grammar : t Sexplib.Sexp_grammar.t =
+      Sexplib.Sexp_grammar.coerce [%sexp_grammar: string option]
+    ;;
 
     let to_string_option t =
       if is_none t then None else Some (Stable.V1.to_string (unchecked_value t))
@@ -568,8 +579,8 @@ module Option = struct
 
   module Optional_syntax = struct
     module Optional_syntax = struct
-      let is_none = is_none
-      let unsafe_value = unchecked_value
+      let[@zero_alloc] is_none t = is_none t
+      let[@zero_alloc] unsafe_value t = unchecked_value t
     end
   end
 

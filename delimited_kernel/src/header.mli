@@ -8,8 +8,7 @@ open! Core
     - [`Replace]: File has headers, which are ignored; the given headers are used instead.
     - [`Add]: File has no headers. Use the given ones for header access.
     - [`Transform]: File has headers; each will be transformed with the given function.
-    - [`Filter_map]: similar to [`Transform] but [None] headers are ignored.
-*)
+    - [`Filter_map]: similar to [`Transform] but [None] headers are ignored. *)
 type t =
   [ `No
   | `Yes

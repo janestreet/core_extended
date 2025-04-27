@@ -11,8 +11,6 @@ val length : 'a t -> int
 
 (** Clear the buffer so it is empty again.
 
-    This is lax in that clearing the buffer does
-    not necessarily allow things that were in the
-    buffer to be garbage collected.
-*)
+    This is lax in that clearing the buffer does not necessarily allow things that were in
+    the buffer to be garbage collected. *)
 val lax_clear : 'a t -> unit

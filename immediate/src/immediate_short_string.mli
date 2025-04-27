@@ -39,6 +39,7 @@ module Option : sig
     module V1 : sig
       type nonrec t = t [@@deriving hash]
 
+      include Sexpable.S_with_grammar with type t := t
       include Stable_without_comparator with type t := t
       include Intable with type t := t
     end
@@ -49,7 +50,9 @@ module Stable : sig
   module V1 : sig
     type nonrec t = t [@@deriving hash]
 
-    include Stable_without_comparator_with_witness with type t := t
+    include%template Stable_without_comparator_with_witness [@mode local] with type t := t
+
+    include Sexpable.S_with_grammar with type t := t
     include Intable with type t := t
     include Stringable with type t := t
     include Equal.S with type t := t

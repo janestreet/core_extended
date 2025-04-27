@@ -10,9 +10,10 @@ module type S = sig
 
   module Stable : sig
     module V1 : sig
-      type nonrec t = t [@@deriving hash, stable_witness, typerep]
+      type nonrec t = t [@@deriving globalize, hash, stable_witness, typerep]
 
-      include Stable_without_comparator with type t := t
+      include%template Stable_without_comparator [@mode local] with type t := t
+
       include Stringable.S with type t := t
     end
   end
@@ -24,7 +25,7 @@ module type S = sig
       module V1 : sig
         type nonrec t = t [@@deriving hash]
 
-        include Stable_without_comparator with type t := t
+        include%template Stable_without_comparator [@mode local] with type t := t
 
         module For_testing_only : sig
           val of_option : Stable.V1.t option -> t

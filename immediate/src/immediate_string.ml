@@ -150,6 +150,8 @@ module Make (Interned : Immediate_interned_string.S) = struct
           dst_pos + len)
       ;;
 
+      let%template[@mode local] bin_write_t = bin_write_t
+
       let bin_size_t t =
         if is_interned t
         then Interned_string.Stable.V1.bin_size_t (unsafe_to_interned t)
@@ -157,6 +159,8 @@ module Make (Interned : Immediate_interned_string.S) = struct
           let len = Short_string.length (unsafe_to_short t) in
           Bin_prot.Size.bin_size_nat0 (Bin_prot.Nat0.of_int len) + len)
       ;;
+
+      let%template[@mode local] bin_size_t = bin_size_t
 
       let bin_writer_t : t Bin_prot.Type_class.writer =
         { write = bin_write_t; size = bin_size_t }
@@ -190,7 +194,7 @@ module Make (Interned : Immediate_interned_string.S) = struct
 
   module Option_stable = struct
     module V1 = struct
-      type t = int [@@deriving hash]
+      type t = int [@@deriving globalize, hash]
 
       let none = Core.Int.max_value
       let is_none t = t = none
@@ -198,7 +202,14 @@ module Make (Interned : Immediate_interned_string.S) = struct
       let some (t : Stable.V1.t) = t
       let some_is_representable _ = true
       let unchecked_value (t : t) = t
-      let to_option t = if is_none t then None else Some (unchecked_value t)
+
+      let%template[@mode m = (global, local)] to_option t =
+        if is_none t
+        then None
+        else (
+          let v = unchecked_value t in
+          Some v [@exclave_if_local m])
+      ;;
 
       let of_option = function
         | None -> none
@@ -209,16 +220,17 @@ module Make (Interned : Immediate_interned_string.S) = struct
       let t_of_sexp s = [%of_sexp: Stable.V1.t option] s |> of_option
 
       module Serializable = struct
-        type t = Stable.V1.t option [@@deriving bin_io, stable_witness]
+        type t = Stable.V1.t option [@@deriving bin_io ~localize, stable_witness]
       end
 
-      include
-        Binable.Of_binable.V1 [@alert "-legacy"]
+      include%template
+        Binable.Of_binable.V1 [@mode local] [@alert "-legacy"]
           (Serializable)
           (struct
             type nonrec t = t
 
-            let of_binable, to_binable = of_option, to_option
+            let of_binable = of_option
+            let%template[@mode m = (global, local)] to_binable = (to_option [@mode m])
           end)
 
       let stable_witness =
@@ -254,6 +266,7 @@ module Make (Interned : Immediate_interned_string.S) = struct
         else Stable.V2.compare (unchecked_value t) (unchecked_value u)
       ;;
 
+      let%template[@mode local] [@inline] compare t u = compare t u
       let of_v1 t = t
     end
   end
@@ -351,8 +364,8 @@ module Make (Interned : Immediate_interned_string.S) = struct
 
     module Optional_syntax = struct
       module Optional_syntax = struct
-        let is_none = is_none
-        let unsafe_value = unchecked_value
+        let[@zero_alloc] is_none t = is_none t
+        let[@zero_alloc] unsafe_value t = unchecked_value t
       end
     end
 
@@ -366,6 +379,8 @@ module Make (Interned : Immediate_interned_string.S) = struct
         let module_name = "Immediate.String.Option"
       end)
 
+    let%template[@mode local] [@inline] compare t u = compare t u
+    let%template[@mode local] [@inline] equal t u = equal t u
     let to_immediate_string_option = Fn.id
     let of_immediate_string_option = Fn.id
   end

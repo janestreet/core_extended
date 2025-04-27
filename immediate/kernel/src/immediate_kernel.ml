@@ -2,7 +2,17 @@ open Core.Core_stable
 
 module Char_option_stable = struct
   module V1 = struct
-    type t = int [@@deriving bin_io, compare, hash]
+    let typerep_of_int = Core.Typerep.Int
+
+    type t = int
+    [@@deriving
+      bin_io ~localize
+      , compare ~localize
+      , equal ~localize
+      , globalize
+      , hash
+      , stable_witness
+      , typerep]
 
     let[@zero_alloc] is_none t = Core.Int.(t < 0 || t > 255)
     let[@zero_alloc] is_some t = not (is_none t)
@@ -30,7 +40,17 @@ end
 
 module Bool_option_stable = struct
   module V1 = struct
-    type t = int [@@deriving bin_io, compare, hash, stable_witness]
+    let typerep_of_int = Core.Typerep.Int
+
+    type t = int
+    [@@deriving
+      bin_io ~localize
+      , compare ~localize
+      , equal ~localize
+      , globalize
+      , hash
+      , stable_witness
+      , typerep]
 
     let to_wire t = t
     let of_wire t = t
@@ -41,14 +61,14 @@ module Bool_option_stable = struct
     let[@zero_alloc] some_is_representable _ = true
     let[@zero_alloc] unchecked_value t = t <> 0
 
-    let value_exn_not_found =
-      Not_found_s [%message "[Immediate.Bool.Option.value_exn]: given [none]"]
+    let value_exn_not_found () =
+      Not_found_s (Atom "[Immediate.Bool.Option.value_exn]: given [none]")
     ;;
 
     let[@zero_alloc] value_exn = function
       | 0 -> false
       | 1 -> true
-      | _ -> raise value_exn_not_found
+      | _ -> raise (value_exn_not_found ())
     ;;
 
     let[@zero_alloc] value t ~default =
@@ -72,15 +92,37 @@ module Int_option_stable = struct
     let typerep_of_int = Core.Typerep.Int
 
     type t = int
-    [@@deriving bin_io, compare, equal, globalize, hash, stable_witness, typerep]
+    [@@deriving
+      bin_io ~localize
+      , compare ~localize
+      , equal ~localize
+      , globalize
+      , hash
+      , stable_witness
+      , typerep]
 
     let none = Core.Int.min_value
     let[@zero_alloc] is_none t = t = none
     let[@zero_alloc] is_some t = not (is_none t)
 
+    (* We have this accept an argument of type [t] instead of [unit]
+       because OCaml functions must accept at least one argument and
+       sadly [unit] is a *concrete* part of the calling convention which
+       forces the caller to actually [mov eax, 1] before the call. Instead by
+       accepting [t] as an argument, the caller will emit something like
+       [mov rax, rdi] (if [rdi] was the register that held the [t] we were
+       inspecting), which is a 3-byte instruction as opposed the [mov] of
+       the immediate above which is a 5-byte instruction. *)
+    let[@cold] raise_illegal_some (_ : t) =
+      failwith "Attempted to construct an illegal [Immediate_kernel.Int.Option.t]"
+    ;;
+
     let[@zero_alloc] some t =
-      assert (is_some t);
-      t
+      (* The branch-ordering here is important to get optimal codegen.
+         By writing [if is_some t then t] instead of [if is_none t then raise]
+         the happy-path falls through in the generated assembly, instead of
+         having to [jmp] over the exception-raising code. *)
+      if is_some t then t else raise_illegal_some t
     ;;
 
     let[@zero_alloc] some_is_representable t = is_some t
@@ -94,8 +136,8 @@ module Int_option_stable = struct
 
     let sexp_of_t t = to_option t |> [%sexp_of: int option]
     let t_of_sexp s = [%of_sexp: int option] s |> of_option
-    let to_int (t : t) : int = t
-    let of_int (i : int) : t = i
+    let[@zero_alloc] to_int (t : t) : int = t
+    let[@zero_alloc] of_int (i : int) : t = i
   end
 end
 
@@ -107,9 +149,16 @@ module type Intable_sexpable = sig
 end
 
 module Intable_sexpable_option_stable = struct
-  module Make (I : Intable_sexpable) = struct
+  module%template.portable Make (I : Intable_sexpable) = struct
     module V1 = struct
-      type t = int [@@deriving bin_io, compare, hash, stable_witness]
+      type t = int
+      [@@deriving
+        bin_io ~localize
+        , compare ~localize
+        , equal ~localize
+        , globalize
+        , hash
+        , stable_witness]
 
       let bin_shape_t = Bin_shape.annotate I.bin_shape_uuid bin_shape_t
       let none = Int_option_stable.V1.none
@@ -134,12 +183,14 @@ module Intable_sexpable_option_stable = struct
       let to_int (t : t) : int = t
       let of_int (i : int) : t = i
 
-      let value_exn_not_found =
-        Not_found_s
-          [%message "[Immediate.Of_intable.Option.Make(_).value_exn]: given [none]"]
+      let value_exn_not_found () =
+        Not_found_s (Atom "[Immediate.Of_intable.Option.Make(_).value_exn]: given [none]")
       ;;
 
-      let value_exn t = if is_some t then unchecked_value t else raise value_exn_not_found
+      let value_exn t =
+        if is_some t then unchecked_value t else raise (value_exn_not_found ())
+      ;;
+
       let value t ~default = if is_some t then unchecked_value t else default
       let sexp_of_t t = to_option t |> [%sexp_of: I.t option]
       let t_of_sexp s = [%of_sexp: I.t option] s |> of_option
@@ -157,12 +208,14 @@ module Char = struct
 
     let globalize = globalize_char
   end :
-    S_no_option with type t = char)
+  sig
+  @@ portable
+    include S_no_option with type t = char
+  end)
 
   module Option = struct
     module Stable = Char_option_stable
     include Stable.V1
-    include (Int : Typerep_lib.Typerepable.S with type t := t)
 
     module Optional_syntax = struct
       module Optional_syntax = struct
@@ -171,12 +224,13 @@ module Char = struct
       end
     end
 
-    include Identifiable.Make (struct
+    include%template Identifiable.Make [@modality portable] (struct
         include Stable.V1
-        include Sexpable.To_stringable (Stable.V1)
+
+        include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
 
         let hash (t : t) = t
-        let module_name = "Immediate.Char.Option"
+        let module_name = "Immediate_kernel.Char.Option"
       end)
 
     (* Export inlineable comparisons (those from the functor confuse the compiler). *)
@@ -191,12 +245,14 @@ module Bool = struct
 
     let globalize = globalize_bool
   end :
-    S_no_option with type t = bool)
+  sig
+  @@ portable
+    include S_no_option with type t = bool
+  end)
 
   module Option = struct
     module Stable = Bool_option_stable
     include Stable.V1
-    include (Int : Typerep_lib.Typerepable.S with type t := t)
 
     module Optional_syntax = struct
       module Optional_syntax = struct
@@ -205,12 +261,13 @@ module Bool = struct
       end
     end
 
-    include Identifiable.Make (struct
+    include%template Identifiable.Make [@modality portable] (struct
         include Stable.V1
-        include Sexpable.To_stringable (Stable.V1)
+
+        include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
 
         let hash (t : t) = t
-        let module_name = "Immediate.Bool.Option"
+        let module_name = "Immediate_kernel.Bool.Option"
       end)
 
     (* Export inlineable comparisons (those from the functor confuse the compiler). *)
@@ -225,23 +282,25 @@ module Int = struct
 
     let globalize = globalize_int
   end :
-    S_no_option with type t = int)
+  sig
+  @@ portable
+    include S_no_option with type t = int
+  end)
 
-  let type_immediacy = Type_immediacy.Always.of_typerep_exn [%here] typerep_of_t
+  let type_immediacy = Type_immediacy.Always.of_typerep_exn typerep_of_t
 
   module Option = struct
     module Stable = Int_option_stable
     include Stable.V1
-    include (Int : Typerep_lib.Typerepable.S with type t := t)
 
-    let value_exn_not_found =
-      Not_found_s [%message "[Immediate.Int.Option.value_exn]: given [none]"]
+    let value_exn_not_found () =
+      Not_found_s (Atom "[Immediate.Int.Option.value_exn]: given [none]")
     ;;
 
-    let[@zero_alloc] value_exn t = if is_some t then t else raise value_exn_not_found
+    let[@zero_alloc] value_exn t = if is_some t then t else raise (value_exn_not_found ())
     let[@zero_alloc] value t ~default = Core.Bool.select (is_none t) default t
     let[@zero_alloc] unchecked_some t = t
-    let type_immediacy = Type_immediacy.Always.of_typerep_exn [%here] typerep_of_t
+    let type_immediacy = Type_immediacy.Always.of_typerep_exn typerep_of_t
 
     module Optional_syntax = struct
       module Optional_syntax = struct
@@ -250,12 +309,13 @@ module Int = struct
       end
     end
 
-    include Identifiable.Make (struct
+    include%template Identifiable.Make [@modality portable] (struct
         include Stable.V1
-        include Sexpable.To_stringable (Stable.V1)
+
+        include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
 
         let hash (t : t) = t
-        let module_name = "Immediate.Int.Option"
+        let module_name = "Immediate_kernel.Int.Option"
       end)
 
     (* Export inlineable comparisons (those from the functor confuse the compiler). *)
@@ -267,10 +327,15 @@ module Of_intable = struct
   module type S = Intable_sexpable
 
   module Option = struct
-    module Make (I : S) = struct
-      module Stable = Intable_sexpable_option_stable.Make (I)
+    module%template.portable [@modality m] Make (I : S) = struct
+      module Stable = Intable_sexpable_option_stable.Make [@modality m] (I)
       include Stable.V1
-      include (Int : Typerep_lib.Typerepable.S with type t := t)
+
+      let typerep_of_t = [%typerep_of: int]
+
+      let typename_of_t =
+        Typerep_lib.Typename.create ~name:(Bin_shape.Uuid.to_string I.bin_shape_uuid) ()
+      ;;
 
       module Optional_syntax = struct
         module Optional_syntax = struct
@@ -279,12 +344,13 @@ module Of_intable = struct
         end
       end
 
-      include Identifiable.Make (struct
+      include%template Identifiable.Make [@modality m] (struct
           include Stable.V1
-          include Sexpable.To_stringable (Stable.V1)
+
+          include%template Sexpable.To_stringable [@modality m] (Stable.V1)
 
           let hash (t : t) = t
-          let module_name = "Immediate.Int.Option"
+          let module_name = "Immediate_kernel.Int.Option"
         end)
 
       (* Export inlineable comparisons (those from the functor confuse the compiler). *)
