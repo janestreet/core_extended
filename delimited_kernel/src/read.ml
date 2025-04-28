@@ -21,6 +21,18 @@ module On_invalid_row = struct
              (exn : exn)])
   ;;
 
+  let raise_with_filename ~filename ~line_number header_map buffer exn =
+    `Raise
+      (Exn.create_s
+         [%message
+           "Exception raised in Delimited.Read"
+             (filename : string)
+             (line_number : int)
+             (header_map : int String.Map.t)
+             ~buffer:(Append_only_buffer.to_list buffer : string list)
+             (exn : exn)])
+  ;;
+
   let skip ~line_number:_ _ _ _ = `Skip
   let create = Fn.id
 end
@@ -330,7 +342,8 @@ module Parse_header = struct
         List.foldi l ~init ~f:(fun i acc x ->
           match x with
           | None -> acc
-          | Some x -> f i acc x) [@nontail]
+          | Some x -> f i acc x)
+        [@nontail]
       in
       let f headers = header_map ~foldi (f (Array.to_list headers)) in
       First (create' ?strip ?sep ?quote ~start_line_number f)

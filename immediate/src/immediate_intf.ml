@@ -1,6 +1,6 @@
 open Core
 
-module type Option = Immediate_kernel.Option
+module type Option = Immediate_kernel.Option_zero_alloc
 module type S_no_option = Immediate_kernel.S_no_option
 
 module type String_no_option = sig
@@ -124,12 +124,12 @@ module type Intern_table = sig
   end
 
   (** [grow_by n] ensures that the intern table can hold at least [n] additional entries
-      without resizing (again).  This is useful for applications which must not pause
+      without resizing (again). This is useful for applications which must not pause
       online for the (substantial) time required to rehash a large intern table. *)
   val grow_by : int -> unit
 
-  (** [after_grow f] registers a growth logger.  [f] will be called immediately after
-      every growth of the intern table, with the time and size before and the size after.
+  (** [after_grow f] registers a growth logger. [f] will be called immediately after every
+      growth of the intern table, with the time and size before and the size after.
 
       [f] would typically call {!Time_ns.now} to learn the time after. *)
   val after_grow : (before:Time_ns.t -> len_before:int -> len:int -> unit) -> unit

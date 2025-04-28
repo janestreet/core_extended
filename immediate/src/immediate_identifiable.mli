@@ -1,7 +1,7 @@
 open Core
 
-(** Much as [Core.Identifiable.S] models string-like things without exposing
-    unwanted [String.t] type equalities, this models the same for [Immediate.String]. *)
+(** Much as [Core.Identifiable.S] models string-like things without exposing unwanted
+    [String.t] type equalities, this models the same for [Immediate.String]. *)
 module type S_not_binable = sig
   type t [@@deriving hash, sexp] [@@immediate]
 

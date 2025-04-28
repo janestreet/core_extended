@@ -1,9 +1,12 @@
 open! Core
 
 module type Option = sig
-  include Immediate_option.S
+  type t
+  [@@deriving bin_io ~localize, compare ~localize, equal ~localize, globalize]
+  [@@immediate]
+
+  include Immediate_option.S with type t := t
   include Identifiable.S with type t := t
-  include Equal.S with type t := t
 end
 
 module type Option_zero_alloc = sig
@@ -13,7 +16,9 @@ end
 
 module type S_no_option = sig
   type t
-  [@@deriving typerep, hash, globalize, compare ~localize, equal ~localize] [@@immediate]
+  [@@deriving
+    bin_io ~localize, compare ~localize, equal ~localize, globalize, hash, typerep]
+  [@@immediate]
 
   include Identifiable.S with type t := t
 end
@@ -35,7 +40,12 @@ module type Immediate_kernel = sig
       include Option_zero_alloc with type value := t
 
       module Stable : sig
-        module V1 : Stable_without_comparator with type t = t
+        module V1 : sig
+          type nonrec t = t [@@deriving equal ~localize, globalize]
+
+          include%template
+            Stable_without_comparator_with_witness [@mode local] with type t := t
+        end
       end
     end
   end
@@ -48,7 +58,10 @@ module type Immediate_kernel = sig
 
       module Stable : sig
         module V1 : sig
-          include Stable_without_comparator_with_witness with type t = t
+          type nonrec t = t [@@deriving equal ~localize, globalize]
+
+          include%template
+            Stable_without_comparator_with_witness [@mode local] with type t := t
 
           val to_wire : t -> int
           val of_wire : int -> t
@@ -73,12 +86,15 @@ module type Immediate_kernel = sig
 
       module Stable : sig
         module V1 : sig
-          include Stable_without_comparator_with_witness with type t = t
+          type nonrec t = t [@@deriving equal ~localize, globalize]
+
+          include%template
+            Stable_without_comparator_with_witness [@mode local] with type t := t
+
           include Typerep_lib.Typerepable.S with type t := t
 
-          val equal : t -> t -> bool
-          val of_int : int -> t
-          val to_int : t -> int
+          val of_int : int -> t [@@zero_alloc]
+          val to_int : t -> int [@@zero_alloc]
         end
       end
     end
@@ -101,7 +117,7 @@ module type Immediate_kernel = sig
     end
 
     module Option : sig
-      module Make (I : S) : sig
+      module%template.portable Make (I : S) : sig
         include Option with type value := I.t
 
         module Stable : sig
@@ -119,19 +135,22 @@ module type Immediate_kernel = sig
   module Immediate_kernel_stable : sig
     module Char : sig
       module Option : sig
-        module V1 : Stable_without_comparator with type t = Char.Option.t
+        module%template V1 :
+          Stable_without_comparator [@mode local] with type t = Char.Option.t
       end
     end
 
     module Bool : sig
       module Option : sig
-        module V1 : Stable_without_comparator_with_witness with type t = Bool.Option.t
+        module%template V1 :
+          Stable_without_comparator_with_witness [@mode local] with type t = Bool.Option.t
       end
     end
 
     module Int : sig
       module Option : sig
-        module V1 : Stable_without_comparator_with_witness with type t = Int.Option.t
+        module%template V1 :
+          Stable_without_comparator_with_witness [@mode local] with type t = Int.Option.t
       end
     end
   end

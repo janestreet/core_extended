@@ -1,16 +1,19 @@
 open Core
 
-(** If we can read a row correctly but the ['a t] provided can't convert it,
-    your ['a On_invalid_row.t] will define what happens.
+(** If we can read a row correctly but the ['a t] provided can't convert it, your
+    ['a On_invalid_row.t] will define what happens.
 
-    Here, 'read a row correctly' means that it's valid CSV (subject to your
-    delimiter etc) & it has the correct number of columns. If that's not the
-    case the parsers will just raise. *)
+    Here, 'read a row correctly' means that it's valid CSV (subject to your delimiter etc)
+    & it has the correct number of columns. If that's not the case the parsers will just
+    raise. *)
 module type On_invalid_row = sig
   type 'a t
 
   (** The default. Raise with additional context. *)
   val raise : _ t
+
+  (** Same as [raise] but includes the provided filename *)
+  val raise_with_filename : filename:string -> _ t
 
   (** Skip the bad row *)
   val skip : _ t
@@ -20,10 +23,9 @@ module type On_invalid_row = sig
       - [`Skip]: skip the line. Same as [skip] above.
       - [`Yield]: return the given value for this row.
       - [`Raise]: raise the given exception
-      - [`Fallback]: invoke the given handler instead
-  *)
+      - [`Fallback]: invoke the given handler instead *)
   val create
-    :  (line_number:int (** The line number of the bad row.  *)
+    :  (line_number:int (** The line number of the bad row. *)
         -> int String.Map.t (** Map from header to position. *)
         -> string Append_only_buffer.t (** Value at each position. *)
         -> exn (** Exception raised when trying to convert this row. *)
@@ -41,8 +43,8 @@ module type Open_on_rhs = sig
 end
 
 module type Root = sig
-  (** Row up to the error, and the field with the error up to the point of
-      failure. Same as [Expert.Parse_state.Bad_csv_formatting]. *)
+  (** Row up to the error, and the field with the error up to the point of failure. Same
+      as [Expert.Parse_state.Bad_csv_formatting]. *)
   exception Bad_csv_formatting of string list * string
 
   (** This provides an applicative interface for constructing values from a csv file.
@@ -65,11 +67,12 @@ module type Root = sig
         ;;
 
         let _ =
-          Delimited_kernel.Read.list_of_string ~header:`Yes parse
+          Delimited_kernel.Read.list_of_string
+            ~header:`Yes
+            parse
             "foo,bar\n2,\"hello, world\"\n"
         ;;
-      ]}
-  *)
+      ]} *)
   type 'a t
 
   include Applicative.S with type 'a t := 'a t
@@ -88,8 +91,8 @@ module type Root = sig
 
   (** Read a field at the given header. Use [f] to convert the field from string.
 
-      Note that if the given header is not provided through either the file or
-      the [~header] argument to the parsers, this will fail at runtime.  *)
+      Note that if the given header is not provided through either the file or the
+      [~header] argument to the parsers, this will fail at runtime. *)
   val at_header : string -> f:(string -> 'a) -> 'a t
 
   (** Read a field at the given header, if it exists. Use [f] to convert the field from
@@ -120,8 +123,8 @@ module type Root = sig
                 ~foo:!!Int.of_string
                 ~bar:!?(Option.value_map ~default:true ~f:Bool.of_string)
               |> Delimited.Read.Record_builder.build_for_record)
-        ]}
-    *)
+          ;;
+        ]} *)
 
     (** Reads a single column from a field of a record. *)
     val ( !! )
@@ -131,8 +134,7 @@ module type Root = sig
 
     (** Reads a single column from a field of a record, if the header exists.
 
-        [( !? )] is to [at_header_opt] as [( !! )] is to [at_header].
-    *)
+        [( !? )] is to [at_header_opt] as [( !! )] is to [at_header]. *)
     val ( !? )
       :  (string option -> 'a)
       -> (_, 'a) Field.t
@@ -152,8 +154,8 @@ module type Root = sig
 
     (** A builder for [Row.t]s.
 
-        As this parses the whole row it's slower than using the builder
-        interface directly, but simpler to use. *)
+        As this parses the whole row it's slower than using the builder interface
+        directly, but simpler to use. *)
     val builder : t builder_t
   end
 

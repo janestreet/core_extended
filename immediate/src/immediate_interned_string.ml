@@ -247,7 +247,9 @@ module Universe = struct
           include struct
             let bin_shape_t = Bin_prot.Shape.bin_shape_string
             let bin_size_t t = bin_size_string (to_string t)
+            let%template[@mode local] bin_size_t = bin_size_t
             let bin_write_t buf ~pos t = bin_write_string buf ~pos (to_string t)
+            let%template[@mode local] bin_write_t = bin_write_t
 
             let bin_writer_t =
               { Bin_prot.Type_class.size = bin_size_t; write = bin_write_t }
@@ -284,7 +286,8 @@ module Universe = struct
 
       module Option_stable = struct
         module V1 = struct
-          type t = int [@@deriving compare, hash, stable_witness]
+          type t = int
+          [@@deriving compare ~localize, equal ~localize, globalize, hash, stable_witness]
 
           let none = -1
           let is_none t = t < 0
@@ -320,6 +323,8 @@ module Universe = struct
               else bin_size_bool true + Stable.V1.bin_size_t (unchecked_value t)
             ;;
 
+            let%template[@mode local] bin_size_t = bin_size_t
+
             let bin_write_t buf ~pos t =
               if is_none t
               then bin_write_bool buf ~pos false
@@ -328,6 +333,8 @@ module Universe = struct
                 let value = unchecked_value t in
                 Stable.V1.bin_write_t buf ~pos:new_pos value)
             ;;
+
+            let%template[@mode local] bin_write_t = bin_write_t
 
             let bin_writer_t =
               { Bin_prot.Type_class.size = bin_size_t; write = bin_write_t }
@@ -447,8 +454,8 @@ module Universe = struct
 
         module Optional_syntax = struct
           module Optional_syntax = struct
-            let is_none = is_none
-            let unsafe_value = unchecked_value
+            let[@zero_alloc] is_none t = is_none t
+            let[@zero_alloc] unsafe_value t = unchecked_value t
           end
         end
 

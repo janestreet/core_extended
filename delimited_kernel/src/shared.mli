@@ -8,10 +8,9 @@ open Core
     If [skip_lines] is given then that number of lines will be read and discarded from the
     top of the file or Reader.t given.
 
-    If [on_parse_error] is `Raise any lines that fail to parse will raise an exception.
-    If `Handle is given the offending line will be passed to the function given, which may
-    then indicate that processing should continue or finish.
-*)
+    If [on_parse_error] is `Raise any lines that fail to parse will raise an exception. If
+    `Handle is given the offending line will be passed to the function given, which may
+    then indicate that processing should continue or finish. *)
 type ('a, 'b) reader =
   ?strip:bool
   -> ?skip_lines:int

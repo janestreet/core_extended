@@ -1,12 +1,12 @@
 (** [Immediate_string] represents strings using [Immediate_short_string] if they are short
-    enough, or using [Immediate_interned_string] otherwise.  This guarantees that short
-    strings will not be stored in the interned table and longer strings will.  However,
+    enough, or using [Immediate_interned_string] otherwise. This guarantees that short
+    strings will not be stored in the interned table and longer strings will. However,
     there is no guarantee about the particular mapping between strings and integers used
     in this module. *)
 
 open! Core
 
-(** Use fast, non-lexicographic [compare] by default.  This is not stable (as {!Stable});
+(** Use fast, non-lexicographic [compare] by default. This is not stable (as {!Stable});
     for a stable one, use {!Stable.V1.compare} or {!Lexicographic.compare}. *)
 module type S = sig
   include Immediate_intf.String_no_option
@@ -23,7 +23,7 @@ module type S = sig
     module V1 : sig
       type t [@@deriving typerep]
 
-      include Stable_without_comparator with type t := t
+      include%template Stable_without_comparator [@mode local] with type t := t
 
       val compare : [ `removed_because_not_antisymmetric ]
 
@@ -41,8 +41,9 @@ module type S = sig
 
       type nonrec t = t [@@deriving hash, typerep]
 
-      include
+      include%template
         Stable_comparable.With_stable_witness.V1
+        [@mode local]
         with type t := t
          and type comparator_witness = Lexicographic.comparator_witness
 
@@ -74,7 +75,8 @@ module type S = sig
       module V2 : sig
         type nonrec t = t [@@deriving hash]
 
-        include Stable_without_comparator_with_witness with type t := t
+        include%template
+          Stable_without_comparator_with_witness [@mode local] with type t := t
 
         val of_v1 : V1.t -> t
 
