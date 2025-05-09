@@ -37,6 +37,7 @@ module type S = sig
 
   val of_string_no_intern : local_ string -> Option.t
   val of_local_string : local_ string -> t
+  val to_string : t -> string [@@zero_alloc]
 end
 
 module type Immediate_interned_string = sig

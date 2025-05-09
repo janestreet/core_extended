@@ -98,7 +98,9 @@ module Universe = struct
                    f ~before ~len_before ~len
             ;;
 
-            let[@inline] to_string t = Core.Array.unsafe_get !interned_strings t
+            let[@inline] [@zero_alloc] to_string t =
+              Core.Array.unsafe_get !interned_strings t
+            ;;
 
             let[@inline] of_string_maybe_interned str ~if_not_interned =
               Pooled_hashtbl.find_and_call
@@ -375,8 +377,6 @@ module Universe = struct
 
       open Core
       include Immediate_interned_string_intf
-      include Stable.V1
-      include (Int : Typerep_lib.Typerepable.S with type t := t)
 
       include Identifiable.Make (struct
           include Stable.V1
@@ -384,6 +384,8 @@ module Universe = struct
           let module_name = "Immediate.Interned_string"
         end)
 
+      include Stable.V1
+      include (Int : Typerep_lib.Typerepable.S with type t := t)
       include Int.Replace_polymorphic_compare
 
       module%bench [@name "comparisons"] _ = struct

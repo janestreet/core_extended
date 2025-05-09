@@ -3,7 +3,7 @@ open Core
 module type Option = Immediate_kernel.Option_zero_alloc
 module type S_no_option = Immediate_kernel.S_no_option
 
-module type String_no_option = sig
+module type String_no_option_without_zero_alloc_functions = sig
   include S_no_option
   include Quickcheckable with type t := t
   include Sexpable.S_with_grammar with type t := t
@@ -11,17 +11,9 @@ module type String_no_option = sig
   (** [Lexicographic.compare x y = String.compare (to_string x) (to_string y)] *)
   module Lexicographic : Identifiable.S_not_binable with type t = t
 
-  val length : t -> int
-  val get : t -> int -> char
-  val of_char : char -> t
-  val mem : t -> char -> bool
-
   include Intable with type t := t
 
-  val unsafe_to_int : t -> int
-  val unsafe_of_int : int -> t
   val empty : t
-  val is_empty : t -> bool
   val unsafe_of_bigstring : pos:int -> len:int -> local_ Bigstring.t -> t
 
   val of_iobuf_peek
@@ -116,6 +108,30 @@ module type String_no_option = sig
   val unsafe_to_iobuf_poke : t -> pos:int -> local_ (read_write, _) Iobuf.t -> unit
   val unsafe_to_iobuf_fill : t -> local_ (read_write, Iobuf.seek) Iobuf.t -> unit
   val unsafe_to_bigstring : t -> pos:int -> local_ Bigstring.t -> unit
+end
+
+module type String_no_option = sig
+  include String_no_option_without_zero_alloc_functions
+
+  val length : t -> int [@@zero_alloc]
+  val get : t -> int -> char [@@zero_alloc]
+  val of_char : char -> t [@@zero_alloc]
+  val mem : t -> char -> bool [@@zero_alloc]
+  val unsafe_to_int : t -> int [@@zero_alloc]
+  val unsafe_of_int : int -> t [@@zero_alloc]
+  val is_empty : t -> bool [@@zero_alloc]
+end
+
+module type String_no_option_not_zero_alloc = sig
+  include String_no_option_without_zero_alloc_functions
+
+  val length : t -> int
+  val get : t -> int -> char
+  val of_char : char -> t
+  val mem : t -> char -> bool
+  val unsafe_to_int : t -> int
+  val unsafe_of_int : int -> t
+  val is_empty : t -> bool
 end
 
 module type String_option = sig

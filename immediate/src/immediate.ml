@@ -5,6 +5,7 @@ include Immediate_kernel
 
 module type Intern_table = Intern_table
 module type String_no_option = String_no_option
+module type String_no_option_not_zero_alloc = String_no_option_not_zero_alloc
 module type String_option = String_option
 module type String = Immediate_string_intf.S
 
