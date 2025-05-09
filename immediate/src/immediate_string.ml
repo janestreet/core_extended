@@ -38,11 +38,12 @@ module Make (Interned : Immediate_interned_string.S) = struct
         let[@inline] unsafe_of_interned i = Interned_string.unsafe_to_int i lxor -1
         let[@inline] unsafe_to_interned t = Interned_string.unsafe_of_int (t lxor -1)
         let[@inline] unsafe_to_short t = Short_string.unsafe_of_int t
-        let of_short_string = unsafe_of_short
+        let of_short_string = [%eta1 unsafe_of_short]
 
         let[@inline] of_interned_string i =
           if Short_string.is_valid_length (Interned_string.length i)
-          then unsafe_of_short (Short_string.of_string (Interned_string.to_string i))
+          then
+            unsafe_of_short (Short_string.of_local_string (Interned_string.to_string i))
           else unsafe_of_interned i
         ;;
 
@@ -273,7 +274,7 @@ module Make (Interned : Immediate_interned_string.S) = struct
 
   open Core
 
-  let to_immediate_string = Fn.id
+  let to_immediate_string t = t
   let of_immediate_string = Fn.id
 
   module T_hash = struct

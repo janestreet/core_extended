@@ -13,11 +13,11 @@ module type S = sig
   include Immediate_intf.Intern_table
   module Interned : Immediate_interned_string.S
 
-  val is_interned : t -> bool
-  val of_short_string : Immediate_short_string.t -> t
-  val of_interned_string : Interned.t -> t
-  val to_short_string_exn : t -> Immediate_short_string.t
-  val to_interned_string_exn : t -> Interned.t
+  val is_interned : t -> bool [@@zero_alloc]
+  val of_short_string : Immediate_short_string.t -> t [@@zero_alloc]
+  val of_interned_string : Interned.t -> t [@@zero_alloc]
+  val to_short_string_exn : t -> Immediate_short_string.t [@@zero_alloc]
+  val to_interned_string_exn : t -> Interned.t [@@zero_alloc]
 
   module Stable : sig
     module V1 : sig
@@ -97,12 +97,12 @@ module type S = sig
   end
 
   val of_local_string : string -> t
-  val to_local_string : t -> string
+  val to_local_string : t -> string [@@zero_alloc]
   val of_string_no_intern : string -> Option.t
 
   (* This is [Immediate_stringable.S], but written out to avoid a dependency loop. *)
   val of_immediate_string : t -> t
-  val to_immediate_string : t -> t
+  val to_immediate_string : t -> t [@@zero_alloc]
 end
 
 module type Immediate_string = sig

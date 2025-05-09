@@ -414,10 +414,11 @@ let get t i =
 let empty = unsafe_create 0
 let is_empty t = Int.equal t empty
 
-let mem =
+module For_mem = struct
   (* The high byte will be masked with 0, as it contains our tag bit and length. *)
-  let lo_bits = 0x00_01_01_01__01_01_01_01 in
-  let hi_bits = 0x00_80_80_80__80_80_80_80 in
+  let lo_bits = 0x00_01_01_01__01_01_01_01
+  let hi_bits = 0x00_80_80_80__80_80_80_80
+
   let has_non_zero_char t c =
     let mask = lo_bits * Char.to_int c in
     (* [x] evaluates to an integer where any byte in [t] equal to [char] is now zero. *)
@@ -436,7 +437,8 @@ let mem =
        exception, which always leaves at least the rightmost equal byte to witness
        [mem]). *)
     x2 land x3 <> 0
-  in
+  ;;
+
   (* Search for ['\000'] is a special case in two ways. The first is that the initial mask
      is not necessary (though not harmful), the second is that we need to account for the
      length or we would find our zeroed-out pad bytes. *)
@@ -445,11 +447,14 @@ let mem =
     let x2 = t - lo_bits in
     let x3 = lnot t land (hi_bits lsr shift) in
     x2 land x3 <> 0
-  in
-  fun t char ->
-    (* Since [mem] is usually called with a constant search [char], only one version of
+  ;;
+end
+
+let[@zero_alloc] mem t char =
+  let open For_mem in
+  (* Since [mem] is usually called with a constant search [char], only one version of
        this code is typically inlined. *)
-    if Char.equal char '\000' then has_zero_char t else has_non_zero_char t char
+  if Char.equal char '\000' then has_zero_char t else has_non_zero_char t char
 ;;
 
 let%expect_test "works even if we have to carry (from the left) to compute x2" =
