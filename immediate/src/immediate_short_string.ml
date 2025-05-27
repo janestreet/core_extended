@@ -334,7 +334,7 @@ open! Int.Replace_polymorphic_compare
 module%test [@name "Stable.V1"] _ = struct
   open Stable.V1
 
-  type hex = int [@@deriving compare]
+  type hex = int [@@deriving compare ~localize]
 
   let sexp_of_hex n = sexp_of_string (sprintf "0x%x" n)
 
