@@ -252,6 +252,18 @@ module Bool = struct
     module Stable = Bool_option_stable
     include Stable.V1
 
+    include%template
+      Quickcheckable.Of_quickcheckable [@modality portable]
+        (struct
+          type t = bool option [@@deriving quickcheck ~portable]
+        end)
+        (struct
+          type nonrec t = t
+
+          let of_quickcheckable = of_option
+          let to_quickcheckable = to_option
+        end)
+
     module Optional_syntax = struct
       module Optional_syntax = struct
         let[@zero_alloc] is_none t = is_none t
@@ -290,12 +302,36 @@ module Int = struct
     module Stable = Int_option_stable
     include Stable.V1
 
+    include%template
+      Quickcheckable.Of_quickcheckable_filtered [@modality portable]
+        (struct
+          type t = int option [@@deriving quickcheck ~portable]
+        end)
+        (struct
+          type nonrec t = t
+
+          let of_quickcheckable int_option =
+            match int_option with
+            | None -> Some none
+            | Some i -> if some_is_representable i then Some (some i) else None
+          ;;
+
+          let to_quickcheckable = to_option
+        end)
+
     let value_exn_not_found () =
       Not_found_s (Atom "[Immediate.Int.Option.value_exn]: given [none]")
     ;;
 
     let[@zero_alloc] value_exn t = if is_some t then t else raise (value_exn_not_found ())
     let[@zero_alloc] value t ~default = Core.Bool.select (is_none t) default t
+
+    let[@zero_alloc] of_or_null = function
+      | Null -> none
+      | This v -> some v
+    ;;
+
+    let[@zero_alloc] to_or_null t = Or_null.this_if (is_some t) t
     let[@zero_alloc] unchecked_some t = t
     let type_immediacy = Type_immediacy.Always.of_typerep_exn typerep_of_t
 

@@ -9,7 +9,7 @@ module Stable = struct
         | LT of Date.V1.t
         | Between of Date.V1.t * Date.V1.t
         | On of Date.V1.t
-      [@@deriving bin_io, compare, sexp]
+      [@@deriving bin_io, compare ~localize, sexp]
 
       let t_of_sexp sexp =
         let module Date = Core.Date in
@@ -42,10 +42,15 @@ module Stable = struct
              bin_io and sexp conversion functions are explicitly defined below. *)
           type t = string * Re.re
 
-          let to_string (s, _) = s
+          let%template to_string (s, _) = s [@@mode __ = (local, global)]
           let of_regexp ?opts s = s, Re.Perl.compile_pat ?opts s
           let of_string s = of_regexp s
-          let compare t1 t2 = String.V1.compare (to_string t1) (to_string t2)
+
+          let%template[@mode local] compare t1 t2 =
+            (String.V1.compare [@mode local])
+              ((to_string [@mode local]) t1)
+              ((to_string [@mode local]) t2) [@nontail]
+          ;;
 
           (* The stablility is independent of the type [Re.re]. We rely on
              - the stability of string
@@ -92,7 +97,7 @@ module Stable = struct
         | Equal of string list
         | Matches of Regexp.V1.t list
         | Mixed of [ `Regexp of Regexp.V1.t | `Literal of string ] list
-      [@@deriving bin_io, compare, sexp, stable_witness]
+      [@@deriving bin_io, compare ~localize, sexp, stable_witness]
 
       let t_of_sexp sexp =
         let parse_atom a =

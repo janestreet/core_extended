@@ -54,7 +54,10 @@ module type Immediate_kernel = sig
     include S_no_option with type t = bool
 
     module Option : sig
-      include Option_zero_alloc with type value := t
+      type outer := t
+      type t [@@deriving quickcheck] [@@immediate]
+
+      include Option_zero_alloc with type value := outer and type t := t
 
       module Stable : sig
         module V1 : sig
@@ -77,10 +80,12 @@ module type Immediate_kernel = sig
 
     module Option : sig
       type outer := t
-      type t [@@deriving globalize] [@@immediate]
+      type t [@@deriving globalize, quickcheck] [@@immediate]
 
       include Option_zero_alloc with type value := outer and type t := t
 
+      val of_or_null : outer or_null -> t [@@zero_alloc]
+      val to_or_null : t -> outer or_null [@@zero_alloc]
       val unchecked_some : int -> t [@@zero_alloc]
       val type_immediacy : t Type_immediacy.Always.t
 
