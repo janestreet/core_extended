@@ -169,7 +169,7 @@ module Stable = struct
     end
 
     include T_stringable
-    include Sexpable.Of_stringable.V1 (T_stringable)
+    include Sexpable.Of_stringable.V1 [@modality portable] (T_stringable)
 
     let rec lexicographic_compare_from t1 t2 ~len1 ~len2 ~min_len ~pos =
       if pos >= min_len
@@ -501,7 +501,7 @@ let%test_unit "append_exn" =
   assert (does_raise (fun () -> append_exn (of_string "123456") (of_string "654321")))
 ;;
 
-include Identifiable.Make (struct
+include Identifiable.Make [@modality portable] (struct
     include Stable.V1
 
     let module_name = "Immediate.Short_string"
@@ -536,7 +536,7 @@ end
 module Lexicographic = struct
   type nonrec t = t
 
-  include Identifiable.Make (struct
+  include Identifiable.Make [@modality portable] (struct
       type nonrec t = t [@@deriving bin_io, hash, sexp]
 
       let of_string = of_string
@@ -589,9 +589,9 @@ module Option = struct
     end
   end
 
-  include Identifiable.Make (struct
+  include Identifiable.Make [@modality portable] (struct
       include Stable.V1
-      include Sexpable.To_stringable (Stable.V1)
+      include Sexpable.To_stringable [@modality portable] (Stable.V1)
 
       let module_name = "Immediate.Short_string.Option"
     end)
@@ -600,20 +600,23 @@ end
 let quickcheck_shrinker = Quickcheck.Shrinker.empty ()
 
 let quickcheck_observer =
-  Quickcheck.Observer.unmap String.quickcheck_observer ~f:to_string
+  (Quickcheck.Observer.unmap [@mode portable]) String.quickcheck_observer ~f:to_string
 ;;
 
-let gen_with_length len char_gen =
-  String.gen_with_length len char_gen |> Quickcheck.Generator.map ~f:of_string
+let%template gen_with_length len char_gen =
+  (String.gen_with_length [@mode p]) len char_gen
+  |> (Quickcheck.Generator.map [@mode p]) ~f:of_string
+[@@mode p = (portable, nonportable)]
 ;;
 
-let gen' char_gen =
-  let open Quickcheck.Let_syntax in
+let%template gen' char_gen =
+  let open Base_quickcheck.Generator.Let_syntax [@modality p] in
   let%bind len = Int.gen_incl 0 max_length in
-  gen_with_length len char_gen
+  (gen_with_length [@mode p]) len char_gen
+[@@mode p = (portable, nonportable)]
 ;;
 
-let quickcheck_generator = gen' Char.quickcheck_generator
+let quickcheck_generator = (gen' [@mode portable]) Char.quickcheck_generator
 
 let[@inline] unsafe_of_bigstring ~pos ~len buf =
   let t = ref (unsafe_create len) in
@@ -792,7 +795,7 @@ end
    [../test/test_imm_strings.ml] because that requires the source sequence to be mutable.
    However, this is still tested via [Immediate.String.Stable.V2.bin_write_t]. *)
 module To_bigstring =
-  Blit.Make_distinct
+  Blit.Make_distinct [@modality portable]
     (struct
       type nonrec t = t
 
