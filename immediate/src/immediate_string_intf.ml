@@ -57,6 +57,7 @@ module type S = sig
 
   module Option : sig
     include Immediate_intf.String_option with type value := t
+    include Quickcheckable with type t := t
 
     module Stable : sig
       (* The original V1.compare function could differ between heap images, in particular

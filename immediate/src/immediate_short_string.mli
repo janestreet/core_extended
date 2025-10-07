@@ -1,3 +1,5 @@
+@@ portable
+
 open! Core
 
 (** Immediate_short_string represents strings of length 0-7 stored as an integer.
@@ -25,8 +27,14 @@ val pad_right : t -> char:char -> len:int -> t [@@zero_alloc]
 val append_exn : t -> t -> t
 [@@zero_alloc]
 
-val gen' : char Quickcheck.Generator.t -> t Quickcheck.Generator.t
-val gen_with_length : int -> char Quickcheck.Generator.t -> t Quickcheck.Generator.t
+val%template gen' : char Quickcheck.Generator.t @ p -> t Quickcheck.Generator.t @ p
+[@@mode p = (portable, nonportable)]
+
+val%template gen_with_length
+  :  int
+  -> char Quickcheck.Generator.t @ p
+  -> t Quickcheck.Generator.t @ p
+[@@mode p = (portable, nonportable)]
 
 module To_bigstring : Blit.S_distinct with type src := t with type dst := bigstring
 

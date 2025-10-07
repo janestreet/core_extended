@@ -354,6 +354,18 @@ module Make (Interned : Immediate_interned_string.S) = struct
     include Option_stable.V1
     include (Int : Typerep_lib.Typerepable.S with type t := t)
 
+    include
+      Quickcheckable.Of_quickcheckable
+        (struct
+          type t = string option [@@deriving quickcheck]
+        end)
+        (struct
+          type nonrec t = t
+
+          let of_quickcheckable = of_string_option
+          let to_quickcheckable = to_string_option
+        end)
+
     let value_exn_not_found =
       Not_found_s [%message "[Immediate.String.Option.value_exn]: given [none]"]
     ;;

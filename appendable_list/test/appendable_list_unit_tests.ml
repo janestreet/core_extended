@@ -125,6 +125,7 @@ module%test [@name "individual test cases"] _ : module type of Appendable_list =
   let exists = exists
   let fold = fold
   let iter = iter
+  let iter_until = iter_until
   let is_empty = is_empty
   let length = length
   let mem = mem
@@ -348,6 +349,60 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
           !acc
         in
         [%test_eq: Accum.t] iter list_iter)
+  ;;
+
+  let iter_until = iter_until
+
+  let%expect_test "iter_until" =
+    let module Accum = struct
+      type t =
+        | Init
+        | F of t * For_testing.Element.t
+      [@@deriving compare, sexp_of]
+    end
+    in
+    let module Final = struct
+      type t =
+        | Stop of For_testing.Element.t
+        | Finish
+      [@@deriving compare, sexp_of]
+    end
+    in
+    Quickcheck.test
+      [%quickcheck.generator:
+        For_testing.t * (For_testing.Element.t -> [ `Continue | `Stop ])]
+      ~f:(fun (t, f) ->
+        let f e =
+          match f e with
+          | `Continue -> Continue_or_stop.Continue ()
+          | `Stop -> Stop (Final.Stop e)
+        in
+        let finish () = Final.Finish in
+        let iter_until =
+          let acc = ref Accum.Init in
+          let res =
+            iter_until
+              t
+              ~f:(fun e ->
+                acc := Accum.F (!acc, e);
+                f e)
+              ~finish
+          in
+          !acc, res
+        in
+        let list_iter_until =
+          let acc = ref Accum.Init in
+          let res =
+            List.iter_until
+              (to_list t)
+              ~f:(fun e ->
+                acc := Accum.F (!acc, e);
+                f e)
+              ~finish
+          in
+          !acc, res
+        in
+        [%test_eq: Accum.t * Final.t] iter_until list_iter_until)
   ;;
 
   let fold = fold

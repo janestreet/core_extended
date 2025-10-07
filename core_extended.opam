@@ -21,7 +21,7 @@ depends: [
   "record_builder"
   "sexplib"
   "dune"               {>= "3.17.0"}
-  "re"                 {>= "1.8.0"}
+  "re"                 {= "1.14.0+ox"}
 ]
 available: arch != "arm32" & arch != "x86_32"
 synopsis: "Extra components that are not as closely vetted or as stable as Core"

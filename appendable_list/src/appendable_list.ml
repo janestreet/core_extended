@@ -51,7 +51,7 @@ let fold_left =
   fun t ~init ~f -> go [ t ] ~init ~f [@nontail]
 ;;
 
-let fold_right =
+let%template[@alloc a @ m = (heap_global, stack_local)] fold_right =
   (* [todo] is the stack of the remaining work, viewed from the right, so [hd todo] is
      the rightmost node that was not processed yet.
 
@@ -59,22 +59,23 @@ let fold_right =
      traversing [todo] from head to tail. We still need to traverse each element of
      [todo] from right to left. *)
   let rec go todo ~init ~f =
-    match todo with
+    match[@exclave_if_stack a] todo with
     | [] -> init
     | Empty :: todo -> go todo ~init ~f
     | Singleton x :: todo -> go todo ~init:(f x init) ~f
     | List (a, b, cs) :: todo ->
-      let init = List.fold_right ~f cs ~init in
+      let init = (List.fold_right [@mode m m]) ~f cs ~init in
       let init = f b init in
       let init = f a init in
       go todo ~init ~f
-    | Node (a, b, cs) :: todo -> go (List.rev_append cs (b :: a :: todo)) ~init ~f
+    | Node (a, b, cs) :: todo ->
+      go ((List.rev_append [@alloc a]) cs (b :: a :: todo)) ~init ~f
   in
-  fun t ~init ~f -> go [ t ] ~init ~f
+  fun t ~init ~f -> go [ t ] ~init ~f [@exclave_if_stack a]
 ;;
 
 let fold = fold_left
-let iter t ~f = Container.iter ~fold ~f t
+let iter t ~f = Container.iter_via_fold ~fold ~f t
 
 let is_empty = function
   | Empty -> true
@@ -85,10 +86,16 @@ let is_empty = function
       true)
 ;;
 
-let fold_result t ~init ~f = Container.fold_result ~fold ~init ~f t
 let fold_until t ~init ~f ~finish = Container.fold_until ~fold ~init ~f t ~finish
+let fold_result t ~init ~f = Container.fold_result ~fold_until ~init ~f t
+let iter_until t ~f ~finish = Container.iter_until ~fold_until t ~f ~finish
 let length t = fold t ~init:0 ~f:(fun acc _ -> Int.succ acc)
-let to_list t = fold_right t ~init:[] ~f:(fun x acc -> x :: acc)
+
+let%template to_list t =
+  (fold_right [@alloc a]) t ~init:[] ~f:(fun x acc -> x :: acc [@exclave_if_stack a])
+  [@exclave_if_stack a]
+[@@alloc a @ m = (heap_global, stack_local)]
+;;
 
 (* Mauro Jaskelioff and Exequiel Rivas. 2015. Functional pearl: a smart view on datatypes.
    SIGPLAN Not. 50, 9 (August 2015), 355-361.
@@ -209,7 +216,9 @@ include struct
   module Container_gen = Container.Make (struct
       type nonrec 'a t = 'a t
 
-      let fold = fold
+      let fold_until t ~init ~f ~finish = Container.fold_until ~fold t ~init ~f ~finish
+      let fold = `Custom fold
+      let iter_until = `Define_using_fold_until
       let iter = `Custom iter
       let length = `Custom length
     end)
@@ -260,7 +269,7 @@ module For_testing = struct
       | S
       | L of int
       | N of int * t
-    [@@deriving compare, sexp_of, quickcheck]
+    [@@deriving compare ~localize, sexp_of, quickcheck]
   end
 
   (* A reference implementation of [map] that is perhaps not as efficient but more
@@ -336,6 +345,13 @@ module Stable = struct
         end)
 
     let compare compare_a t1 t2 = compare_list compare_a (to_list t1) (to_list t2)
+
+    let%template[@mode local] compare compare_a t1 t2 =
+      (compare_list [@mode local])
+        compare_a
+        ((to_list [@alloc stack]) t1)
+        ((to_list [@alloc stack]) t2) [@nontail]
+    ;;
 
     let%expect_test _ =
       assert (Core.String.( = ) [%bin_digest: unit t] [%bin_digest: unit list])

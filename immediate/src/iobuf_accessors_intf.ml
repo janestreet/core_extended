@@ -1,6 +1,6 @@
 open! Core
 
-module type Iobuf_accessors = sig
+module type Iobuf_accessors = sig @@ portable
   module For_cinaps : sig
     (** These functions read/write padding bytes for padded strings in {!Iobuf}s. Unlike
         the [tail_padded_fixed_string] accessors from [Iobuf], these do not use strings,

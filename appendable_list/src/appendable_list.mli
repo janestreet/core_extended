@@ -40,7 +40,7 @@ include Container.S1 with type 'a t := 'a t
 
 module For_testing : sig
   module Element : sig
-    type t [@@deriving compare, sexp_of]
+    type t [@@deriving compare ~localize, sexp_of]
 
     val quickcheck_generator : t Quickcheck.Generator.t
     val quickcheck_observer : t Quickcheck.Observer.t
@@ -52,6 +52,6 @@ end
 
 module Stable : sig
   module V1 : sig
-    type nonrec 'a t = 'a t [@@deriving bin_io, compare, sexp]
+    type nonrec 'a t = 'a t [@@deriving bin_io, compare ~localize, sexp]
   end
 end
