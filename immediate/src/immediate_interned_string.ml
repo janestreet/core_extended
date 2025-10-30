@@ -501,7 +501,7 @@ module Universe = struct
             ~sub
             ~len
             ~pos
-            (buf :> (read, _) Iobuf.t)
+            (buf :> (read, _, Iobuf.global) Iobuf.t)
       ;;
 
       let unsafe_of_iobuf_consume =
@@ -517,7 +517,7 @@ module Universe = struct
             ~sub
             ~len
             ~pos:()
-            (buf :> (read, _) Iobuf.t)
+            (buf :> (read, _, Iobuf.global) Iobuf.t)
       ;;
 
       let unsafe_to_iobuf_poke t ~pos buf =

@@ -1,7 +1,7 @@
 (library
  (name immediate)
  (public_name core_extended.immediate)
- (libraries core immediate_kernel core_kernel.pooled_hashtbl int_repr
-   core_kernel.iobuf ppx_stable_witness.stable_witness)
+ (libraries core immediate_kernel int_repr core_kernel.iobuf
+   core_kernel.pooled_hashtbl ppx_stable_witness.stable_witness)
  (preprocess
   (pps ppx_jane)))

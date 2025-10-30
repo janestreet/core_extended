@@ -15,10 +15,10 @@ module type String_no_option_without_zero_alloc_functions = sig
 
   val empty : t
   val unsafe_of_bigstring : pos:int -> len:int -> Bigstring.t -> t
-  val of_iobuf_peek : ?pos:int -> ?len:int -> ([> read ], _) Iobuf.t -> t
-  val of_iobuf_consume : ?len:int -> ([> read ], Iobuf.seek) Iobuf.t -> t
-  val to_iobuf_poke : t -> ?pos:int -> (read_write, _) Iobuf.t -> unit
-  val to_iobuf_fill : t -> (read_write, Iobuf.seek) Iobuf.t -> unit
+  val of_iobuf_peek : ?pos:int -> ?len:int -> ([> read ], _, Iobuf.global) Iobuf.t -> t
+  val of_iobuf_consume : ?len:int -> ([> read ], Iobuf.seek, Iobuf.global) Iobuf.t -> t
+  val to_iobuf_poke : t -> ?pos:int -> (read_write, _, Iobuf.global) Iobuf.t -> unit
+  val to_iobuf_fill : t -> (read_write, Iobuf.seek, Iobuf.global) Iobuf.t -> unit
 
   module Padded : sig
     (** WARNING: using the padded functions to convert to a bigstring / iobuf will ignore
@@ -28,13 +28,13 @@ module type String_no_option_without_zero_alloc_functions = sig
       :  padding:char
       -> ?pos:int
       -> ?len:int
-      -> ([> read ], _) Iobuf.t
+      -> ([> read ], _, Iobuf.global) Iobuf.t
       -> t
 
     val of_iobuf_consume
       :  padding:char
       -> ?len:int
-      -> ([> read ], Iobuf.seek) Iobuf.t
+      -> ([> read ], Iobuf.seek, Iobuf.global) Iobuf.t
       -> t
 
     val unsafe_of_bigstring : padding:char -> pos:int -> len:int -> Bigstring.t -> t
@@ -52,27 +52,27 @@ module type String_no_option_without_zero_alloc_functions = sig
       -> padding:char
       -> ?pos:int
       -> ?len:int
-      -> (read_write, _) Iobuf.t
+      -> (read_write, _, Iobuf.global) Iobuf.t
       -> unit
 
     val to_iobuf_fill
       :  t
       -> padding:char
       -> ?len:int
-      -> (read_write, Iobuf.seek) Iobuf.t
+      -> (read_write, Iobuf.seek, Iobuf.global) Iobuf.t
       -> unit
 
     val unsafe_of_iobuf_peek
       :  padding:char
       -> pos:int
       -> len:int
-      -> ([> read ], _) Iobuf.t
+      -> ([> read ], _, Iobuf.global) Iobuf.t
       -> t
 
     val unsafe_of_iobuf_consume
       :  padding:char
       -> len:int
-      -> ([> read ], Iobuf.seek) Iobuf.t
+      -> ([> read ], Iobuf.seek, Iobuf.global) Iobuf.t
       -> t
 
     val unsafe_to_iobuf_poke
@@ -80,22 +80,32 @@ module type String_no_option_without_zero_alloc_functions = sig
       -> padding:char
       -> pos:int
       -> len:int
-      -> (read_write, _) Iobuf.t
+      -> (read_write, _, Iobuf.global) Iobuf.t
       -> unit
 
     val unsafe_to_iobuf_fill
       :  t
       -> padding:char
       -> len:int
-      -> (read_write, Iobuf.seek) Iobuf.t
+      -> (read_write, Iobuf.seek, Iobuf.global) Iobuf.t
       -> unit
   end
 
   val unsafe_get : t -> int -> char
-  val unsafe_of_iobuf_peek : pos:int -> len:int -> ([> read ], _) Iobuf.t -> t
-  val unsafe_of_iobuf_consume : len:int -> ([> read ], Iobuf.seek) Iobuf.t -> t
-  val unsafe_to_iobuf_poke : t -> pos:int -> (read_write, _) Iobuf.t -> unit
-  val unsafe_to_iobuf_fill : t -> (read_write, Iobuf.seek) Iobuf.t -> unit
+
+  val unsafe_of_iobuf_peek
+    :  pos:int
+    -> len:int
+    -> ([> read ], _, Iobuf.global) Iobuf.t
+    -> t
+
+  val unsafe_of_iobuf_consume
+    :  len:int
+    -> ([> read ], Iobuf.seek, Iobuf.global) Iobuf.t
+    -> t
+
+  val unsafe_to_iobuf_poke : t -> pos:int -> (read_write, _, Iobuf.global) Iobuf.t -> unit
+  val unsafe_to_iobuf_fill : t -> (read_write, Iobuf.seek, Iobuf.global) Iobuf.t -> unit
   val unsafe_to_bigstring : t -> pos:int -> Bigstring.t -> unit
 end
 
