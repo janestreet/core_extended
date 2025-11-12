@@ -10,7 +10,7 @@ module type Iobuf_accessors = sig @@ portable
       :  padding:char
       -> pos:int
       -> padded_length:int
-      -> local_ ([> read ], 'seek) Iobuf.t
+      -> local_ ([> read ], 'seek, 'loc) Iobuf.t
       -> int
 
     val bigstring_read_padding_and_get_unpadded_length
@@ -25,7 +25,7 @@ module type Iobuf_accessors = sig @@ portable
       -> pos:int
       -> unpadded_length:int
       -> padded_length:int
-      -> local_ (read_write, 'seek) Iobuf.t
+      -> local_ (read_write, 'seek, 'loc) Iobuf.t
       -> unit
 
     val bigstring_write_padding
@@ -52,15 +52,15 @@ module type Iobuf_accessors = sig @@ portable
     val checked_read_with_pos_and_len
       :  ?pos:local_ int
       -> ?len:local_ int
-      -> local_ ('rw, 'seek) Iobuf.t
-      -> local_ (pos:int -> len:int -> local_ ('rw, 'seek) Iobuf.t -> 'a)
+      -> local_ ('rw, 'seek, 'loc) Iobuf.t
+      -> local_ (pos:int -> len:int -> local_ ('rw, 'seek, 'loc) Iobuf.t -> 'a)
       -> string
       -> 'a
 
     val checked_read_with_len
       :  ?len:local_ int
-      -> local_ ('rw, 'seek) Iobuf.t
-      -> local_ (len:int -> local_ ('rw, 'seek) Iobuf.t -> 'a)
+      -> local_ ('rw, 'seek, 'loc) Iobuf.t
+      -> local_ (len:int -> local_ ('rw, 'seek, 'loc) Iobuf.t -> 'a)
       -> string
       -> 'a
 
@@ -69,8 +69,8 @@ module type Iobuf_accessors = sig @@ portable
       -> length:('a -> int)
       -> ?pos:local_ int
       -> ?len:local_ int
-      -> local_ ('rw, 'seek) Iobuf.t
-      -> local_ ('a -> pos:int -> len:int -> local_ ('rw, 'seek) Iobuf.t -> unit)
+      -> local_ ('rw, 'seek, 'loc) Iobuf.t
+      -> local_ ('a -> pos:int -> len:int -> local_ ('rw, 'seek, 'loc) Iobuf.t -> unit)
       -> string
       -> unit
 
@@ -78,8 +78,8 @@ module type Iobuf_accessors = sig @@ portable
       :  'a
       -> length:('a -> int)
       -> ?len:local_ int
-      -> local_ ('rw, 'seek) Iobuf.t
-      -> local_ ('a -> len:int -> local_ ('rw, 'seek) Iobuf.t -> unit)
+      -> local_ ('rw, 'seek, 'loc) Iobuf.t
+      -> local_ ('a -> len:int -> local_ ('rw, 'seek, 'loc) Iobuf.t -> unit)
       -> string
       -> unit
 
@@ -87,16 +87,16 @@ module type Iobuf_accessors = sig @@ portable
       :  'a
       -> length:('a -> int)
       -> ?pos:local_ int
-      -> local_ ('rw, 'seek) Iobuf.t
-      -> local_ ('a -> pos:int -> local_ ('rw, 'seek) Iobuf.t -> unit)
+      -> local_ ('rw, 'seek, 'loc) Iobuf.t
+      -> local_ ('a -> pos:int -> local_ ('rw, 'seek, 'loc) Iobuf.t -> unit)
       -> string
       -> unit
 
     val checked_write
       :  'a
       -> length:('a -> int)
-      -> local_ ('rw, 'seek) Iobuf.t
-      -> local_ ('a -> local_ ('rw, 'seek) Iobuf.t -> unit)
+      -> local_ ('rw, 'seek, 'loc) Iobuf.t
+      -> local_ ('a -> local_ ('rw, 'seek, 'loc) Iobuf.t -> unit)
       -> string
       -> unit
   end

@@ -169,7 +169,8 @@ module Stable = struct
     end
 
     include T_stringable
-    include Sexpable.Of_stringable.V1 [@modality portable] (T_stringable)
+
+    include%template Sexpable.Of_stringable.V1 [@modality portable] (T_stringable)
 
     let rec lexicographic_compare_from t1 t2 ~len1 ~len2 ~min_len ~pos =
       if pos >= min_len
@@ -501,7 +502,7 @@ let%test_unit "append_exn" =
   assert (does_raise (fun () -> append_exn (of_string "123456") (of_string "654321")))
 ;;
 
-include Identifiable.Make [@modality portable] (struct
+include%template Identifiable.Make [@modality portable] (struct
     include Stable.V1
 
     let module_name = "Immediate.Short_string"
@@ -536,7 +537,7 @@ end
 module Lexicographic = struct
   type nonrec t = t
 
-  include Identifiable.Make [@modality portable] (struct
+  include%template Identifiable.Make [@modality portable] (struct
       type nonrec t = t [@@deriving bin_io, hash, sexp]
 
       let of_string = of_string
@@ -589,7 +590,7 @@ module Option = struct
     end
   end
 
-  include Identifiable.Make [@modality portable] (struct
+  include%template Identifiable.Make [@modality portable] (struct
       include Stable.V1
       include Sexpable.To_stringable [@modality portable] (Stable.V1)
 
@@ -600,7 +601,9 @@ end
 let quickcheck_shrinker = Quickcheck.Shrinker.empty ()
 
 let quickcheck_observer =
-  (Quickcheck.Observer.unmap [@mode portable]) String.quickcheck_observer ~f:to_string
+  [%template Quickcheck.Observer.unmap [@mode portable]]
+    String.quickcheck_observer
+    ~f:to_string
 ;;
 
 let%template gen_with_length len char_gen =
@@ -616,7 +619,7 @@ let%template gen' char_gen =
 [@@mode p = (portable, nonportable)]
 ;;
 
-let quickcheck_generator = (gen' [@mode portable]) Char.quickcheck_generator
+let quickcheck_generator = [%template gen' [@mode portable]] Char.quickcheck_generator
 
 let[@inline] unsafe_of_bigstring ~pos ~len buf =
   let t = ref (unsafe_create len) in
@@ -627,7 +630,10 @@ let[@inline] unsafe_of_bigstring ~pos ~len buf =
 ;;
 
 let[@inline] unsafe_of_iobuf_peek ~pos ~len buf =
-  unsafe_of_bigstring (Iobuf.Expert.buf buf) ~pos:(Iobuf.Expert.lo buf + pos) ~len
+  unsafe_of_bigstring
+    ([%template Iobuf.Expert.buf [@mode local]] buf)
+    ~pos:(Iobuf.Expert.lo buf + pos)
+    ~len [@nontail]
 ;;
 
 let unsafe_of_iobuf_consume ~len buf =
@@ -794,7 +800,7 @@ end
 (* It is not possible to test with [Base_for_tests.Test_blit.Test_distinct] in
    [../test/test_imm_strings.ml] because that requires the source sequence to be mutable.
    However, this is still tested via [Immediate.String.Stable.V2.bin_write_t]. *)
-module To_bigstring =
+module%template To_bigstring =
   Blit.Make_distinct [@modality portable]
     (struct
       type nonrec t = t

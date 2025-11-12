@@ -39,12 +39,17 @@ module For_cinaps = struct
     if len <= upper_bound then () else fail name length_str len 0 upper_bound
   ;;
 
-  let checked_read_with_pos_and_len ?pos:(local_ pos_opt) ?len:(local_ len_opt) buf f name
+  let checked_read_with_pos_and_len
+    ?pos:(local_ pos_opt)
+    ?len:(local_ len_opt)
+    (local_ buf)
+    f
+    name
     =
     let full_length = Iobuf.length buf in
     let pos = get_pos ~pos_opt ~full_length ~name in
     let len = get_len ~len_opt ~pos ~full_length ~name in
-    f ~pos ~len buf
+    f ~pos ~len buf [@nontail]
   ;;
 
   let checked_read_with_len ?len:len_opt buf f name =
@@ -102,7 +107,7 @@ module For_cinaps = struct
       ~padding
       ~padded_length
       ~pos:(Iobuf.Expert.lo buf + pos)
-      (Iobuf.Expert.buf buf)
+      [%template (Iobuf.Expert.buf [@mode local]) buf] [@nontail]
   ;;
 
   let bigstring_write_padding ~padding ~pos ~unpadded_length ~padded_length buf =
@@ -117,6 +122,6 @@ module For_cinaps = struct
       ~pos:(Iobuf.Expert.lo buf + pos)
       ~unpadded_length
       ~padded_length
-      (Iobuf.Expert.buf buf)
+      [%template (Iobuf.Expert.buf [@mode local]) buf] [@nontail]
   ;;
 end
