@@ -109,8 +109,8 @@ let close t =
     t.to_visit <- [])
 ;;
 
-(* returns the next file from the conceptual stream and updates the state of t - this
-   is the only way that t should ever be updated *)
+(* returns the next file from the conceptual stream and updates the state of t - this is
+   the only way that t should ever be updated *)
 let rec next t =
   assert (not t.closed);
   let stat path =
@@ -168,9 +168,9 @@ let rec next t =
       | Some f -> if f file then Some file else None)
   in
   let handle_child path =
-    (* each function in this bind returns None if the file should be skipped, and
-       Some f i if it thinks it's ok to emit - possibly updating the state or
-       transforming f along the way *)
+    (* each function in this bind returns None if the file should be skipped, and Some f i
+       if it thinks it's ok to emit - possibly updating the state or transforming f along
+       the way *)
     let ( >>= ) t f = Option.bind t ~f in
     let skip =
       try stat path >>= is_new >>= handle_dirs >>= filter with

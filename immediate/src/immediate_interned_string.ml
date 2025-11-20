@@ -1,8 +1,8 @@
-(* Interned_string represents strings as indices into a global intern table.  Every value
+(* Interned_string represents strings as indices into a global intern table. Every value
    is therefore a non-negative int63. *)
 
-(* This code is very delicate with all the unsafe array accesses.  We're relying heavily
-   on the tests in immediate_unit_tests.ml. *)
+(* This code is very delicate with all the unsafe array accesses. We're relying heavily on
+   the tests in immediate_unit_tests.ml. *)
 
 module Universe = struct
   module V1 = struct
@@ -310,7 +310,8 @@ module Universe = struct
           include struct
             (* The shape of the bin representation is as follow:
 
-               {v   +--- Boolean value corresponding to [is_some]
+               {v
+  +--- Boolean value corresponding to [is_some]
                     |  +----- [Stable.V1] bin representation iff [is_some]
                     |  |
                     v  v

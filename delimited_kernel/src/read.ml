@@ -355,9 +355,9 @@ module Parse_header = struct
     | None -> None
   ;;
 
-  (* We only want to parse the header here and nothing more.  To achieve that, we feed the
-     parser with chunks of input that does not contain newlines but at the end.  After
-     each chunk, we check whether a header was successfully parsed or not.  *)
+  (* We only want to parse the header here and nothing more. To achieve that, we feed the
+     parser with chunks of input that does not contain newlines but at the end. After each
+     chunk, we check whether a header was successfully parsed or not. *)
   let input_string (t : Partial.t) ?(pos = 0) ?len input : _ Either.t =
     match is_set t with
     | Some _ -> raise_s [%message "Header already parsed, cannot feed more input"]
@@ -414,7 +414,7 @@ module Parse_header = struct
         ; consumed = 0
         ; next_line_number = Parse_state.current_line_number t.state
         }
-      else (* [Parse_state.finish] would have raised already in the cases  *)
+      else (* [Parse_state.finish] would have raised already in the cases *)
         assert false
   ;;
 end

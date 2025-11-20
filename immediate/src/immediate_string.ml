@@ -7,7 +7,7 @@
    representation of all (short) strings.
 
    Short strings are encoded directly using the integer encoding of
-   Immediate_short_string.  Longer strings are encoded by negating the bits of the integer
+   Immediate_short_string. Longer strings are encoded by negating the bits of the integer
    encoding of Immediate_interned_string, which produces a negative number and is
    therefore always distinct from the short string encoding.
 
@@ -15,8 +15,8 @@
    Immediate_short_string.Option.none for None, since it is guaranteed to be non-negative
    and distinct from the encoding of all short strings. *)
 
-(* This code is very delicate with all the bit banging.  We're relying heavily on the
-   tests in immediate_unit_tests.ml. *)
+(* This code is very delicate with all the bit banging. We're relying heavily on the tests
+   in immediate_unit_tests.ml. *)
 
 module Make (Interned : Immediate_interned_string.S) = struct
   open Core.Core_stable

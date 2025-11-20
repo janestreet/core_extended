@@ -36,8 +36,9 @@ module type S = sig
          is stable (lexographic) and the non-stable one is fast but arbitrary.
 
          As a result, [Immediate_string.Stable.V2.Map] is slower than
-         [Immediate_string.Map]; convert via [Immediate_string.Map.to_alist
-         |> Map.of_alist_exn (module Immediate_string.Stable.V2)] or similar. *)
+         [Immediate_string.Map]; convert via
+         [Immediate_string.Map.to_alist |> Map.of_alist_exn (module Immediate_string.Stable.V2)]
+         or similar. *)
 
       type nonrec t = t [@@deriving hash, typerep]
 

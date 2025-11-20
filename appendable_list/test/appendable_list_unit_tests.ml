@@ -136,7 +136,7 @@ module%test [@name "individual test cases"] _ : module type of Appendable_list =
   module For_testing = For_testing
 end
 (* This signature is here to remind us to update the unit tests whenever we change
-      [Appendable_list]. *)
+   [Appendable_list]. *)
 
 (* These tests consider [to_list] to define the semantics of [Appendable_list], which
    means that a correct implementation matches the behavior of [List] for all operations
@@ -510,8 +510,7 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
       ~f:(fun t -> [%test_eq: int] (length t) (List.length (to_list t)))
   ;;
 
-  (* The rest of the container implementation is defined by [fold], [iter], and
-        [length]. *)
+  (* The rest of the container implementation is defined by [fold], [iter], and [length]. *)
   let count = count
   and exists = exists
   and find = find

@@ -52,12 +52,12 @@ let fold_left =
 ;;
 
 let%template[@alloc a @ m = (heap_global, stack_local)] fold_right =
-  (* [todo] is the stack of the remaining work, viewed from the right, so [hd todo] is
-     the rightmost node that was not processed yet.
+  (* [todo] is the stack of the remaining work, viewed from the right, so [hd todo] is the
+     rightmost node that was not processed yet.
 
      Right-to-left evaluation of the original appendable list is then accomplished by
-     traversing [todo] from head to tail. We still need to traverse each element of
-     [todo] from right to left. *)
+     traversing [todo] from head to tail. We still need to traverse each element of [todo]
+     from right to left. *)
   let rec go todo ~init ~f =
     match[@exclave_if_stack a] todo with
     | [] -> init

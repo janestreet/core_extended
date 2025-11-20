@@ -105,23 +105,22 @@ module Int_option_stable = struct
     let[@zero_alloc] is_none t = t = none
     let[@zero_alloc] is_some t = not (is_none t)
 
-    (* We have this accept an argument of type [t] instead of [unit]
-       because OCaml functions must accept at least one argument and
-       sadly [unit] is a *concrete* part of the calling convention which
-       forces the caller to actually [mov eax, 1] before the call. Instead by
-       accepting [t] as an argument, the caller will emit something like
-       [mov rax, rdi] (if [rdi] was the register that held the [t] we were
-       inspecting), which is a 3-byte instruction as opposed the [mov] of
-       the immediate above which is a 5-byte instruction. *)
+    (* We have this accept an argument of type [t] instead of [unit] because OCaml
+       functions must accept at least one argument and sadly [unit] is a *concrete* part
+       of the calling convention which forces the caller to actually [mov eax, 1] before
+       the call. Instead by accepting [t] as an argument, the caller will emit something
+       like [mov rax, rdi] (if [rdi] was the register that held the [t] we were
+       inspecting), which is a 3-byte instruction as opposed the [mov] of the immediate
+       above which is a 5-byte instruction. *)
     let[@cold] raise_illegal_some (_ : t) =
       failwith "Attempted to construct an illegal [Immediate_kernel.Int.Option.t]"
     ;;
 
     let[@zero_alloc] some t =
-      (* The branch-ordering here is important to get optimal codegen.
-         By writing [if is_some t then t] instead of [if is_none t then raise]
-         the happy-path falls through in the generated assembly, instead of
-         having to [jmp] over the exception-raising code. *)
+      (* The branch-ordering here is important to get optimal codegen. By writing
+         [if is_some t then t] instead of [if is_none t then raise] the happy-path falls
+         through in the generated assembly, instead of having to [jmp] over the
+         exception-raising code. *)
       if is_some t then t else raise_illegal_some t
     ;;
 

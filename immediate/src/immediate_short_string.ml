@@ -9,12 +9,11 @@
    v}
 
    Characters are stored in reverse order (first character in the lowest order bits),
-   right-justified, and 0-padded.  This is intended both for efficient manipulation and to
+   right-justified, and 0-padded. This is intended both for efficient manipulation and to
    push entropy toward low-order bits so that the identity hash function is reasonable.
 
-   Conveniently, this also makes the int values relatively easy to read in hex form.  For
-   example, "abc" is 0x0300_0000_0063_6261 (note ASCII codes a=0x61, b=0x62, and
-   c=0x63). *)
+   Conveniently, this also makes the int values relatively easy to read in hex form. For
+   example, "abc" is 0x0300_0000_0063_6261 (note ASCII codes a=0x61, b=0x62, and c=0x63). *)
 
 open Core.Core_stable
 
@@ -394,8 +393,8 @@ module%test [@name "Stable.V1"] _ = struct
   let%test _ = Exn.does_raise (fun () -> of_int_exn 0x0067_6665_6463_6261)
 end
 
-(* This code is very delicate with all the bit banging.  We're relying heavily on the
-   tests in immediate_unit_tests.ml. *)
+(* This code is very delicate with all the bit banging. We're relying heavily on the tests
+   in immediate_unit_tests.ml. *)
 
 include Stable.V1
 include (Int : Typerep_lib.Typerepable.S with type t := t)
@@ -435,8 +434,7 @@ module For_mem = struct
     (* Finally, by ANDing [x2] and [x3] the result is the high bits set of any byte in [x]
        which was zero, since the high bits set due to a value greater than 0x80 in the
        first sub-expression are masked off by the second (again modulo the 0x8100
-       exception, which always leaves at least the rightmost equal byte to witness
-       [mem]). *)
+       exception, which always leaves at least the rightmost equal byte to witness [mem]). *)
     x2 land x3 <> 0
   ;;
 
@@ -453,8 +451,8 @@ end
 
 let[@zero_alloc] mem t char =
   let open For_mem in
-  (* Since [mem] is usually called with a constant search [char], only one version of
-       this code is typically inlined. *)
+  (* Since [mem] is usually called with a constant search [char], only one version of this
+     code is typically inlined. *)
   if Char.equal char '\000' then has_zero_char t else has_non_zero_char t char
 ;;
 
