@@ -154,9 +154,9 @@ module Mutable_state = struct
   let row_length t = Row_buffer.length t.row_buffer
 
   (* To reduce the number of allocations, we keep an array [fields_used] of the field
-     indexes we care about. [current_field] is the position of the parser within the
-     input row, and [next_field_index] is an index into the [fields_used] array
-     indicating the next field that we need to store.
+     indexes we care about. [current_field] is the position of the parser within the input
+     row, and [next_field_index] is an index into the [fields_used] array indicating the
+     next field that we need to store.
 
      If [fields_used] is None, we need to store every field.
   *)

@@ -52,12 +52,12 @@ let fold_left =
 ;;
 
 let%template[@alloc a @ m = (heap_global, stack_local)] fold_right =
-  (* [todo] is the stack of the remaining work, viewed from the right, so [hd todo] is
-     the rightmost node that was not processed yet.
+  (* [todo] is the stack of the remaining work, viewed from the right, so [hd todo] is the
+     rightmost node that was not processed yet.
 
      Right-to-left evaluation of the original appendable list is then accomplished by
-     traversing [todo] from head to tail. We still need to traverse each element of
-     [todo] from right to left. *)
+     traversing [todo] from head to tail. We still need to traverse each element of [todo]
+     from right to left. *)
   let rec go todo ~init ~f =
     match[@exclave_if_stack a] todo with
     | [] -> init
@@ -343,6 +343,17 @@ module Stable = struct
           let to_sexpable = to_list
           let of_sexpable = of_list
         end)
+
+    let stable_witness (type a) (witness : a Stable_witness.t) : a t Stable_witness.t =
+      let module Stable_witness =
+        Stable_witness.Of_serializable1
+          (List.V1)
+          (struct
+            type nonrec 'a t = 'a t
+          end)
+      in
+      Stable_witness.of_serializable List.V1.stable_witness of_list to_list witness
+    ;;
 
     let compare compare_a t1 t2 = compare_list compare_a (to_list t1) (to_list t2)
 

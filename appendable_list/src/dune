@@ -1,6 +1,6 @@
 (library
  (name appendable_list)
  (public_name core_extended.appendable_list)
- (libraries core)
+ (libraries core ppx_stable_witness.stable_witness)
  (preprocess
   (pps ppx_jane -dont-apply=sexp_message)))

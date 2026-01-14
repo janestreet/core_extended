@@ -92,9 +92,8 @@ module Expert = struct
 
      Common arguments
 
-     -> to figure out how to escape/print quote and separators.
-     -> to operate on substrings : pos len
-     -> to perform string transformations: all the blit arguments
+     -> to figure out how to escape/print quote and separators. -> to operate on
+     substrings : pos len -> to perform string transformations: all the blit arguments
   *)
 
   (* Field handling *)
@@ -204,7 +203,7 @@ module By_row = struct
   let rec line_spec_loop ~quote ~sep esc_acc size acc =
     match acc, esc_acc with
     | [], [] -> [], 0
-    | [], _ -> List.rev esc_acc, size - 1 (* We overshot our count by one comma*)
+    | [], _ -> List.rev esc_acc, size - 1 (* We overshot our count by one comma *)
     | h :: t, _ ->
       let len = String.length h in
       (match Expert.quote_len h ~quote ~sep ~len ~pos:0 with

@@ -1,7 +1,7 @@
 (** Unix like [find]. * * Note: Unlike Unix [find], the functions in this module do not
     produce paths in * depth-first order. *)
 
-(* Implements find (like the unix utility).  Note that t is stateful both because
+(* Implements find (like the unix utility). Note that t is stateful both because
    filesystems themselves are highly stateful, and for performance reasons *)
 
 open! Core

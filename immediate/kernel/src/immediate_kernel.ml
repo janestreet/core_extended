@@ -105,23 +105,22 @@ module Int_option_stable = struct
     let[@zero_alloc] is_none t = t = none
     let[@zero_alloc] is_some t = not (is_none t)
 
-    (* We have this accept an argument of type [t] instead of [unit]
-       because OCaml functions must accept at least one argument and
-       sadly [unit] is a *concrete* part of the calling convention which
-       forces the caller to actually [mov eax, 1] before the call. Instead by
-       accepting [t] as an argument, the caller will emit something like
-       [mov rax, rdi] (if [rdi] was the register that held the [t] we were
-       inspecting), which is a 3-byte instruction as opposed the [mov] of
-       the immediate above which is a 5-byte instruction. *)
+    (* We have this accept an argument of type [t] instead of [unit] because OCaml
+       functions must accept at least one argument and sadly [unit] is a *concrete* part
+       of the calling convention which forces the caller to actually [mov eax, 1] before
+       the call. Instead by accepting [t] as an argument, the caller will emit something
+       like [mov rax, rdi] (if [rdi] was the register that held the [t] we were
+       inspecting), which is a 3-byte instruction as opposed the [mov] of the immediate
+       above which is a 5-byte instruction. *)
     let[@cold] raise_illegal_some (_ : t) =
       failwith "Attempted to construct an illegal [Immediate_kernel.Int.Option.t]"
     ;;
 
     let[@zero_alloc] some t =
-      (* The branch-ordering here is important to get optimal codegen.
-         By writing [if is_some t then t] instead of [if is_none t then raise]
-         the happy-path falls through in the generated assembly, instead of
-         having to [jmp] over the exception-raising code. *)
+      (* The branch-ordering here is important to get optimal codegen. By writing
+         [if is_some t then t] instead of [if is_none t then raise] the happy-path falls
+         through in the generated assembly, instead of having to [jmp] over the
+         exception-raising code. *)
       if is_some t then t else raise_illegal_some t
     ;;
 
@@ -129,12 +128,20 @@ module Int_option_stable = struct
     let[@zero_alloc] unchecked_value t = t
     let to_option t = if is_some t then Some (unchecked_value t) else None
 
+    let to_or_null t : _ Core.Or_null.t =
+      if is_some t then This (unchecked_value t) else Null
+    ;;
+
     let[@zero_alloc] of_option = function
       | None -> none
       | Some v -> some v
     ;;
 
-    let sexp_of_t t = to_option t |> [%sexp_of: int option]
+    let%template[@alloc a = (heap, stack)] sexp_of_t t =
+      let o = to_or_null t in
+      [%sexp (o : int Base.Or_null.t)] [@alloc a] [@exclave_if_stack a]
+    ;;
+
     let t_of_sexp s = [%of_sexp: int option] s |> of_option
     let[@zero_alloc] to_int (t : t) : int = t
     let[@zero_alloc] of_int (i : int) : t = i
