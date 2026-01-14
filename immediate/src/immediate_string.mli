@@ -1,1 +1,0 @@
-include Immediate_string_intf.Immediate_string

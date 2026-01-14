@@ -87,7 +87,7 @@ module type Immediate_kernel = sig @@ portable
 
     module Option : sig
       type outer := t
-      type t : immediate [@@deriving globalize, quickcheck]
+      type t : immediate [@@deriving globalize, quickcheck, sexp ~stackify]
 
       include Option_zero_alloc with type value := outer and type t := t
 
@@ -98,7 +98,7 @@ module type Immediate_kernel = sig @@ portable
 
       module Stable : sig
         module V1 : sig
-          type nonrec t = t [@@deriving equal ~localize, globalize]
+          type nonrec t = t [@@deriving equal ~localize, globalize, sexp_of ~stackify]
 
           include%template
             Stable_without_comparator_with_witness [@mode local] with type t := t

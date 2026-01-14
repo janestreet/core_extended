@@ -344,6 +344,17 @@ module Stable = struct
           let of_sexpable = of_list
         end)
 
+    let stable_witness (type a) (witness : a Stable_witness.t) : a t Stable_witness.t =
+      let module Stable_witness =
+        Stable_witness.Of_serializable1
+          (List.V1)
+          (struct
+            type nonrec 'a t = 'a t
+          end)
+      in
+      Stable_witness.of_serializable List.V1.stable_witness of_list to_list witness
+    ;;
+
     let compare compare_a t1 t2 = compare_list compare_a (to_list t1) (to_list t2)
 
     let%template[@mode local] compare compare_a t1 t2 =

@@ -52,6 +52,6 @@ end
 
 module Stable : sig
   module V1 : sig
-    type nonrec 'a t = 'a t [@@deriving bin_io, compare ~localize, sexp]
+    type nonrec 'a t = 'a t [@@deriving bin_io, compare ~localize, sexp, stable_witness]
   end
 end

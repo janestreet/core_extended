@@ -9,7 +9,7 @@ module Stable = struct
         | LT of Date.V1.t
         | Between of Date.V1.t * Date.V1.t
         | On of Date.V1.t
-      [@@deriving bin_io, compare ~localize, sexp]
+      [@@deriving bin_io, compare ~localize, sexp, sexp_grammar, stable_witness]
 
       let t_of_sexp sexp =
         let module Date = Core.Date in
@@ -22,9 +22,9 @@ module Stable = struct
         | List [ (Atom _ as d1); Atom "><"; (Atom _ as d2) ]
         | List [ Atom "><"; (Atom _ as d1); (Atom _ as d2) ]
         | List [ (Atom _ as d1); (Atom _ as d2) ] ->
-          (* The basic cases (GT, LT etc.) are being matched here, since
-             they are lists of two atoms. Here the check whether the first
-             atom is a date is done with try-with. *)
+          (* The basic cases (GT, LT etc.) are being matched here, since they are lists of
+             two atoms. Here the check whether the first atom is a date is done with
+             try-with. *)
           (try Between (Date.t_of_sexp d1, Date.t_of_sexp d2) with
            | _ -> t_of_sexp sexp)
         | _ -> t_of_sexp sexp
@@ -87,6 +87,13 @@ module Stable = struct
         ;;
 
         let sexp_of_t (s, _) = Sexp.V1.Atom ("/" ^ s ^ "/")
+        let t_sexp_grammar : t Sexplib.Sexp_grammar.t = { untyped = String }
+
+        let t_of_sexp, t_sexp_grammar =
+          Sexplib.Sexp_grammar.remember_to_update_these_together
+            ~t_of_sexp
+            ~t_sexp_grammar
+        ;;
       end
 
       module Current = V1
@@ -97,7 +104,7 @@ module Stable = struct
         | Equal of string list
         | Matches of Regexp.V1.t list
         | Mixed of [ `Regexp of Regexp.V1.t | `Literal of string ] list
-      [@@deriving bin_io, compare ~localize, sexp, stable_witness]
+      [@@deriving bin_io, compare ~localize, sexp, sexp_grammar, stable_witness]
 
       let t_of_sexp sexp =
         let parse_atom a =
@@ -134,7 +141,7 @@ module Stable = struct
 
   module String_list_selector = struct
     module V1 = struct
-      type t = string list [@@deriving bin_io, sexp]
+      type t = string list [@@deriving bin_io, sexp, sexp_grammar, stable_witness]
 
       let t_of_sexp sexp =
         match sexp with
@@ -174,7 +181,8 @@ end
 
 module String_selector = struct
   module Regexp : sig
-    type t = Stable.String_selector.Regexp.Current.t [@@deriving bin_io, sexp]
+    type t = Stable.String_selector.Regexp.Current.t
+    [@@deriving bin_io, sexp, sexp_grammar]
 
     val of_regexp : ?opts:Re.Perl.opt list -> string -> t
     val to_string : t -> string

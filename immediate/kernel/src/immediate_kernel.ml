@@ -128,12 +128,20 @@ module Int_option_stable = struct
     let[@zero_alloc] unchecked_value t = t
     let to_option t = if is_some t then Some (unchecked_value t) else None
 
+    let to_or_null t : _ Core.Or_null.t =
+      if is_some t then This (unchecked_value t) else Null
+    ;;
+
     let[@zero_alloc] of_option = function
       | None -> none
       | Some v -> some v
     ;;
 
-    let sexp_of_t t = to_option t |> [%sexp_of: int option]
+    let%template[@alloc a = (heap, stack)] sexp_of_t t =
+      let o = to_or_null t in
+      [%sexp (o : int Base.Or_null.t)] [@alloc a] [@exclave_if_stack a]
+    ;;
+
     let t_of_sexp s = [%of_sexp: int option] s |> of_option
     let[@zero_alloc] to_int (t : t) : int = t
     let[@zero_alloc] of_int (i : int) : t = i
