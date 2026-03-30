@@ -46,12 +46,21 @@ module type Immediate_kernel = sig
   module Char : sig
     include S_no_option with type t = char
 
+    include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
+
     module Option : sig
-      include Option_zero_alloc with type value := t
+      type value := t
+
+      include Option_zero_alloc with type value := value
+      include Or_nullable.S_with_zero_alloc with type t := t and type value := value
+
+      include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
 
       module Stable : sig
         module V1 : sig
           type nonrec t = t [@@deriving equal ~localize, globalize]
+
+          include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
 
           include%template
             Stable_without_comparator_with_witness [@mode local] with type t := t
@@ -64,10 +73,13 @@ module type Immediate_kernel = sig
     include S_no_option with type t = bool
 
     module Option : sig
-      type outer := t
+      type value := t
       type t [@@deriving quickcheck] [@@immediate]
 
-      include Option_zero_alloc with type value := outer and type t := t
+      include Option_zero_alloc with type value := value and type t := t
+      include Or_nullable.S_with_zero_alloc with type t := t and type value := value
+
+      include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
 
       module Stable : sig
         module V1 : sig
@@ -75,6 +87,8 @@ module type Immediate_kernel = sig
 
           include%template
             Stable_without_comparator_with_witness [@mode local] with type t := t
+
+          include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
 
           val to_wire : t -> int
           val of_wire : int -> t
@@ -86,16 +100,19 @@ module type Immediate_kernel = sig
   module Int : sig
     include S_no_option with type t = int
 
+    include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
+
     val type_immediacy : t Type_immediacy.Always.t
 
     module Option : sig
-      type outer := t
+      type value := t
       type t [@@deriving globalize, quickcheck, sexp ~stackify] [@@immediate]
 
-      include Option_zero_alloc with type value := outer and type t := t
+      include Option_zero_alloc with type value := value and type t := t
+      include Or_nullable.S_with_zero_alloc with type t := t and type value := value
 
-      val of_or_null : outer or_null -> t [@@zero_alloc]
-      val to_or_null : t -> outer or_null [@@zero_alloc]
+      val%template to_option : t -> value option [@@alloc stack] [@@zero_alloc]
+
       val unchecked_some : int -> t [@@zero_alloc]
       val type_immediacy : t Type_immediacy.Always.t
 
@@ -126,6 +143,8 @@ module type Immediate_kernel = sig
       (** The immediate option type respects the value type's sexp format. *)
       include Core.Sexpable with type t := t
 
+      include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
+
       (** [bin_shape_uuid] is used to construct the [bin_shape_digest] for the resulting
           bin-io format. *)
       val bin_shape_uuid : Bin_shape.Uuid.t
@@ -134,10 +153,13 @@ module type Immediate_kernel = sig
     module Option : sig
       module%template.portable Make (I : S) : sig
         include Option with type value := I.t
+        include Or_nullable.S with type t := t and type value := I.t
+        include Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
 
         module Stable : sig
           module V1 : sig
             include Stable_without_comparator_with_witness with type t = t
+            include Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
 
             val to_int : t -> int
             val of_int : int -> t

@@ -33,7 +33,21 @@ module Char_option_stable = struct
       | Some v -> some v
     ;;
 
-    let sexp_of_t t = to_option t |> [%sexp_of: char option]
+    include%template
+      Core.Immediate_option.Provide_or_null_conversions_zero_alloc [@modality portable] (struct
+        type nonrec t = t
+        type value = char
+
+        let none = none
+        let is_none t = is_none t
+        let some t = some t
+        let unchecked_value t = unchecked_value t
+      end)
+
+    let%template[@alloc a = (heap, stack)] sexp_of_t t =
+      (to_or_null t |> ([%sexp_of: char Base.Or_null.t] [@alloc a])) [@exclave_if_stack a]
+    ;;
+
     let t_of_sexp s = [%of_sexp: char option] s |> of_option
   end
 end
@@ -82,7 +96,21 @@ module Bool_option_stable = struct
       | Some v -> some v
     ;;
 
-    let sexp_of_t t = to_option t |> [%sexp_of: bool option]
+    include%template
+      Core.Immediate_option.Provide_or_null_conversions_zero_alloc [@modality portable] (struct
+        type nonrec t = t
+        type value = bool
+
+        let none = none
+        let is_none t = is_none t
+        let some t = some t
+        let unchecked_value t = unchecked_value t
+      end)
+
+    let%template[@alloc a = (heap, stack)] sexp_of_t t =
+      (to_or_null t |> ([%sexp_of: bool Base.Or_null.t] [@alloc a])) [@exclave_if_stack a]
+    ;;
+
     let t_of_sexp s = [%of_sexp: bool option] s |> of_option
   end
 end
@@ -126,16 +154,26 @@ module Int_option_stable = struct
 
     let[@zero_alloc] some_is_representable t = is_some t
     let[@zero_alloc] unchecked_value t = t
-    let to_option t = if is_some t then Some (unchecked_value t) else None
 
-    let to_or_null t : _ Core.Or_null.t =
-      if is_some t then This (unchecked_value t) else Null
+    let%template[@alloc a = (heap, stack)] to_option t =
+      (if is_some t then Some (unchecked_value t) else None) [@exclave_if_stack a]
     ;;
 
     let[@zero_alloc] of_option = function
       | None -> none
       | Some v -> some v
     ;;
+
+    include%template
+      Core.Immediate_option.Provide_or_null_conversions_zero_alloc [@modality portable] (struct
+        type nonrec t = t
+        type value = int
+
+        let none = none
+        let is_none t = is_none t
+        let some t = some t
+        let unchecked_value t = unchecked_value t
+      end)
 
     let%template[@alloc a = (heap, stack)] sexp_of_t t =
       let o = to_or_null t in
@@ -152,11 +190,13 @@ module type Intable_sexpable = sig
   include Core.Intable
   include Core.Sexpable with type t := t
 
+  include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
+
   val bin_shape_uuid : Bin_shape.Uuid.t
 end
 
 module Intable_sexpable_option_stable = struct
-  module%template.portable Make (I : Intable_sexpable) = struct
+  module%template.portable [@modality m] Make (I : Intable_sexpable) = struct
     module V1 = struct
       type t = int
       [@@deriving
@@ -180,7 +220,10 @@ module Intable_sexpable_option_stable = struct
 
       let some_is_representable i = I.to_int_exn i |> is_some
       let unchecked_value t = I.of_int_exn t
-      let to_option t = if is_some t then Some (unchecked_value t) else None
+
+      let%template[@alloc a = (heap, stack)] to_option t =
+        (if is_some t then Some (unchecked_value t) else None) [@exclave_if_stack a]
+      ;;
 
       let of_option = function
         | None -> none
@@ -199,8 +242,24 @@ module Intable_sexpable_option_stable = struct
       ;;
 
       let value t ~default = if is_some t then unchecked_value t else default
-      let sexp_of_t t = to_option t |> [%sexp_of: I.t option]
+
+      let%template[@alloc a = (heap, stack)] sexp_of_t t =
+        ((to_option [@alloc a]) t |> ([%sexp_of: I.t option] [@alloc a]))
+        [@exclave_if_stack a]
+      ;;
+
       let t_of_sexp s = [%of_sexp: I.t option] s |> of_option
+
+      include%template
+        Core.Immediate_option.Provide_or_null_conversions [@modality m] (struct
+          type nonrec t = t
+          type value = I.t
+
+          let none = none
+          let is_none t = is_none t
+          let some t = some t
+          let unchecked_value t = unchecked_value t
+        end)
     end
   end
 end
@@ -217,6 +276,8 @@ module Char = struct
   end :
   sig
     include S_no_option with type t = char
+
+    include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
   end)
 
   module Option = struct
@@ -301,6 +362,8 @@ module Int = struct
   end :
   sig
     include S_no_option with type t = int
+
+    include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
   end)
 
   let type_immediacy = Type_immediacy.Always.of_typerep_exn typerep_of_t
@@ -332,13 +395,6 @@ module Int = struct
 
     let[@zero_alloc] value_exn t = if is_some t then t else raise (value_exn_not_found ())
     let[@zero_alloc] value t ~default = Core.Bool.select (is_none t) default t
-
-    let[@zero_alloc] of_or_null = function
-      | Null -> none
-      | This v -> some v
-    ;;
-
-    let[@zero_alloc] to_or_null t = Or_null.this_if (is_some t) t
     let[@zero_alloc] unchecked_some t = t
     let type_immediacy = Type_immediacy.Always.of_typerep_exn typerep_of_t
 
