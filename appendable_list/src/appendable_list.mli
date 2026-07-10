@@ -34,6 +34,7 @@ val concat : 'a t list -> 'a t
 val add_front : 'a -> 'a t -> 'a t
 val add_back : 'a t -> 'a -> 'a t
 val to_sequence : 'a t -> 'a Sequence.t
+val to_iarray : 'a t -> 'a iarray
 
 include Monad.S with type 'a t := 'a t
 include Container.S1 with type 'a t := 'a t

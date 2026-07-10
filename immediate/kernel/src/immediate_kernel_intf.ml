@@ -1,11 +1,11 @@
 open! Core
 
-module type Option = sig
+module type%template [@mode m = (local, global)] Option = sig
   type t : immediate
   [@@deriving bin_io ~localize, compare ~localize, equal ~localize, globalize]
 
   include Immediate_option.S with type t := t
-  include Identifiable.S with type t := t
+  include Identifiable.S [@mode m] with type t := t
 end
 
 module type Option_zero_alloc = sig
@@ -13,20 +13,20 @@ module type Option_zero_alloc = sig
   include Immediate_option.S_zero_alloc with type t := t
 end
 
-module type Option_int63 = sig
+module type%template [@mode m = (local, global)] Option_int63 = sig
   type t : immediate64
   [@@deriving bin_io ~localize, compare ~localize, equal ~localize, globalize]
 
   include Immediate_option.S_int63 with type t := t
-  include Identifiable.S with type t := t
+  include Identifiable.S [@mode m] with type t := t
 end
 
-module type S_no_option = sig
+module type%template [@mode m = (local, global)] S_no_option = sig
   type t : immediate
   [@@deriving
     bin_io ~localize, compare ~localize, equal ~localize, globalize, hash, typerep]
 
-  include Identifiable.S with type t := t
+  include Identifiable.S [@mode m] with type t := t
 end
 
 (** Obviously, [Char], [Bool], and [Int] are already immediate, but this module is a place
@@ -35,10 +35,10 @@ end
 
     Exposing [Option.t] as an immediate type is key to avoiding caml_modify calls. *)
 module type Immediate_kernel = sig @@ portable
-  module type Option = Option
+  module type%template [@mode m = (local, global)] Option = Option [@mode m]
   module type Option_zero_alloc = Option_zero_alloc
-  module type Option_int63 = Option_int63
-  module type S_no_option = S_no_option
+  module type%template [@mode m = (local, global)] Option_int63 = Option_int63 [@mode m]
+  module type%template [@mode m = (local, global)] S_no_option = S_no_option [@mode m]
 
   module Char : sig
     include S_no_option with type t = char
@@ -98,6 +98,7 @@ module type Immediate_kernel = sig @@ portable
     include S_no_option with type t = int
 
     include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
+    include%template Stringable.S [@alloc stack] with type t := t
 
     val type_immediacy : t Type_immediacy.Always.t
 

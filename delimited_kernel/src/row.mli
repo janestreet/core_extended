@@ -1,6 +1,7 @@
 open Core
 
 type t : value mod contended non_float portable
+[@@deriving compare ~localize, equal ~localize]
 
 (** [get_conv_exn t header [%here] conv] extract the cell with column [header] from [row]
     and convert it using [conv]. If there is an error the error is raised including [row]
@@ -95,8 +96,6 @@ val fold_opt
 val iter : t -> f:(header:string -> data:string -> unit) @ local -> unit
 val create : int String.Table.t -> string iarray -> t
 val create' : int String.Map.t -> string iarray -> t
-val equal : t -> t -> bool
-val compare : t -> t -> int
 
 module Expert : sig
   val of_buffer : int String.Map.t -> string Append_only_buffer.t -> t

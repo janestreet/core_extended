@@ -116,6 +116,7 @@ module%test [@name "individual test cases"] _ : module type of Appendable_list =
   let max_elt = max_elt
   let min_elt = min_elt
   let to_array = to_array
+  let to_iarray = to_iarray
   let to_list = to_list
   let find_map = find_map
   let find = find
@@ -520,6 +521,7 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
   and max_elt = max_elt
   and mem = mem
   and to_array = to_array
+  and to_iarray = to_iarray
   and sum = sum
 
   let%expect_test "For_testing.quickcheck_generator at least generates each constructor" =

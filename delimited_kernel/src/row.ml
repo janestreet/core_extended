@@ -4,7 +4,7 @@ type t =
   { header_map : int String.Map.t
   ; fields : string iarray
   }
-[@@deriving compare]
+[@@deriving compare ~localize]
 
 let is_empty t = Iarray.for_all t.fields ~f:String.is_empty
 
@@ -128,7 +128,7 @@ let unsafe_to_array__promise_no_mutation t =
 
 let to_iarray t = t.fields
 let length t = Iarray.length t.fields
-let equal = [%compare.equal: t]
+let%template[@mode m = (local, global)] equal = ([%compare.equal: t] [@mode.explicit m])
 
 let fold t ~init ~f =
   Map.fold t.header_map ~init ~f:(stack_ fun ~key:header ~data:i acc ->

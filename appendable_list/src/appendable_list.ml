@@ -138,6 +138,7 @@ let rec next = function
 ;;
 
 let to_sequence t = Sequence.unfold ~init:t ~f:next
+let to_iarray t = Iarray.of_sequence (to_sequence t)
 
 let concat = function
   | [] -> Empty

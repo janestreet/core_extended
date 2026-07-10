@@ -292,7 +292,7 @@ module Char = struct
       end
     end
 
-    include%template Identifiable.Make [@modality portable] (struct
+    include%template Identifiable.Make [@mode local] [@modality portable] (struct
         include Stable.V1
 
         include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
@@ -341,7 +341,7 @@ module Bool = struct
       end
     end
 
-    include%template Identifiable.Make [@modality portable] (struct
+    include%template Identifiable.Make [@mode local] [@modality portable] (struct
         include Stable.V1
 
         include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
@@ -367,6 +367,7 @@ module Int = struct
     include S_no_option with type t = int
 
     include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
+    include%template Stringable.S [@alloc stack] with type t := t
   end)
 
   let type_immediacy = Type_immediacy.Always.of_typerep_exn typerep_of_t
@@ -408,7 +409,7 @@ module Int = struct
       end
     end
 
-    include%template Identifiable.Make [@modality portable] (struct
+    include%template Identifiable.Make [@mode local] [@modality portable] (struct
         include Stable.V1
 
         include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
@@ -426,8 +427,8 @@ module Of_intable = struct
   module type S = Intable_sexpable
 
   module Option = struct
-    module%template.portable [@modality m] Make (I : S) = struct
-      module Stable = Intable_sexpable_option_stable.Make [@modality m] (I)
+    module%template.portable [@modality p] Make (I : S) = struct
+      module Stable = Intable_sexpable_option_stable.Make [@modality p] (I)
       include Stable.V1
 
       let typerep_of_t = [%typerep_of: int]
@@ -443,10 +444,10 @@ module Of_intable = struct
         end
       end
 
-      include%template Identifiable.Make [@modality m] (struct
+      include%template Identifiable.Make [@mode local] [@modality p] (struct
           include Stable.V1
 
-          include%template Sexpable.To_stringable [@modality m] (Stable.V1)
+          include%template Sexpable.To_stringable [@modality p] (Stable.V1)
 
           let hash (t : t) = t
           let module_name = "Immediate_kernel.Int.Option"

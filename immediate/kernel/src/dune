@@ -3,4 +3,5 @@
  (public_name core_extended.immediate_kernel)
  (libraries bin_prot.shape core)
  (preprocess
-  (pps ppx_jane -require-template-extension)))
+  (pps ppx_jane -compare-require-explicit-locality
+    -require-template-extension)))
