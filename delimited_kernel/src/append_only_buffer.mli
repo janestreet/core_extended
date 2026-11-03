@@ -1,3 +1,5 @@
+@@ portable
+
 open! Core
 
 (** A buffer of items which can grow in size by appending to the end. *)

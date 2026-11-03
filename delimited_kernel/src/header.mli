@@ -1,3 +1,5 @@
+@@ portable
+
 open! Core
 
 (** Control how headers are parsed

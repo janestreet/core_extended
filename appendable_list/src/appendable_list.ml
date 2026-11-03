@@ -30,7 +30,7 @@ end = struct
   ;;
 end
 
-type +'a t =
+type +'a t : immutable_data with 'a =
   | Empty
   | Singleton of 'a
   | List of 'a * 'a * 'a list
@@ -178,7 +178,7 @@ let rec non_closure_apply_and_tail_rec_map nodes acc ~f =
     non_closure_apply_and_tail_rec_map nodes acc ~f)
 ;;
 
-let map t ~f = non_closure_apply_and_tail_rec_map (List_stack.singleton t) empty ~f
+let map t ~f = non_closure_apply_and_tail_rec_map (List_stack.singleton t) Empty ~f
 
 let rec non_closure_apply_and_tail_rec_bind nodes acc ~f =
   if List_stack.is_empty nodes
@@ -200,7 +200,7 @@ let rec non_closure_apply_and_tail_rec_bind nodes acc ~f =
     non_closure_apply_and_tail_rec_bind nodes acc ~f)
 ;;
 
-let bind t ~f = non_closure_apply_and_tail_rec_bind (List_stack.singleton t) empty ~f
+let bind t ~f = non_closure_apply_and_tail_rec_bind (List_stack.singleton t) Empty ~f
 
 let sexp_of_t (type a) (sexp_of_a : a -> Sexp.t) (t : a t) =
   to_list t |> [%sexp_of: a list]
@@ -214,7 +214,7 @@ let t_of_sexp (type a) (a_of_sexp : Sexp.t -> a) sexp =
    functions that do not have a more efficient implementation in that module already *)
 
 include struct
-  module Container_gen = Container.Make (struct
+  module Container_gen = Container.Make [@modality portable] (struct
       type nonrec 'a t = 'a t
 
       let fold_until t ~init ~f ~finish = Container.fold_until ~fold t ~init ~f ~finish
@@ -239,7 +239,7 @@ include struct
 end
 
 include struct
-  module Monad_gen = Monad.Make (struct
+  module Monad_gen = Monad.Make [@modality portable] (struct
       type nonrec 'a t = 'a t
 
       let return = singleton
@@ -326,7 +326,7 @@ module Stable = struct
        functions can change behavior across versions. But for us, the functions are the
        identity (modulo change of representation), so no reason to have a uuid. *)
     include
-      Binable.Of_binable1.V1
+      Binable.Of_binable1.V1 [@modality portable]
         (List.V1)
         (struct
           type nonrec 'a t = 'a t
@@ -336,7 +336,7 @@ module Stable = struct
         end) [@@alert "-legacy"]
 
     include
-      Sexpable.Of_sexpable1.V1
+      Sexpable.Of_sexpable1.V1 [@modality portable]
         (List.V1)
         (struct
           type nonrec 'a t = 'a t
@@ -345,15 +345,19 @@ module Stable = struct
           let of_sexpable = of_list
         end)
 
+    module Stable_witness_of_serializable1 =
+      Stable_witness.Of_serializable1
+        (List.V1)
+        (struct
+          type nonrec 'a t = 'a t
+        end)
+
     let stable_witness (type a) (witness : a Stable_witness.t) : a t Stable_witness.t =
-      let module Stable_witness =
-        Stable_witness.Of_serializable1
-          (List.V1)
-          (struct
-            type nonrec 'a t = 'a t
-          end)
-      in
-      Stable_witness.of_serializable List.V1.stable_witness of_list to_list witness
+      Stable_witness_of_serializable1.of_serializable
+        List.V1.stable_witness
+        of_list
+        to_list
+        witness
     ;;
 
     let compare compare_a t1 t2 = compare_list compare_a (to_list t1) (to_list t2)

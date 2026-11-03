@@ -1,3 +1,5 @@
+@@ portable
+
 open Core
 
 type t : value mod contended non_float portable

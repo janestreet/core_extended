@@ -15,23 +15,26 @@ module type S = sig
   val delimited_writer : t delimited_writer
 end
 
-let empty = { headers = []; to_columns = (fun _ ~tail -> tail) }
+let empty @ portable = { headers = []; to_columns = (fun _ ~tail -> tail) }
 
-let column to_string ~header =
+[%%template
+[@@@mode.default p = (nonportable, portable)]
+
+let column (to_string @ p) ~header =
   { headers = [ header ]; to_columns = (fun x ~tail -> to_string x :: tail) }
 ;;
 
-let column_opt ?(default = "") to_string ~header =
-  column (Option.value_map ~default ~f:to_string) ~header
+let column_opt ?(default = "") (to_string @ p) ~header =
+  (column [@mode p]) (fun x -> Option.value_map x ~default ~f:to_string) ~header
 ;;
 
-let append l r =
+let append (l @ p) (r @ p) =
   let to_columns_l = l.to_columns
   and to_columns_r = r.to_columns in
   { headers = List.append l.headers r.headers
   ; to_columns = (fun x ~tail -> to_columns_l x ~tail:(to_columns_r x ~tail))
   }
-;;
+;;]
 
 let of_list = function
   | [] -> empty
@@ -39,7 +42,18 @@ let of_list = function
   | first :: others -> List.fold others ~init:first ~f:append
 ;;
 
-let contra_map x ~f =
+let%template[@mode p = portable] of_list (ts @ p) =
+  match Modes.Portable.wrap_list ts with
+  | [] -> empty
+  | [ x ] -> Modes.Portable.unwrap x
+  | first :: others ->
+    List.fold others ~init:first ~f:(fun l r ->
+      (append [@mode portable]) (Modes.Portable.unwrap l) (Modes.Portable.unwrap r)
+      |> Modes.Portable.wrap)
+    |> Modes.Portable.unwrap
+;;
+
+let%template[@mode p = (nonportable, portable)] contra_map (x @ p) ~(f @ p) =
   let to_columns = x.to_columns in
   { x with to_columns = (fun x ~tail -> to_columns (f x) ~tail) }
 ;;

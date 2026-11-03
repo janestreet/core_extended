@@ -2,4 +2,4 @@
  (name appendable_list_benchmarks)
  (libraries appendable_list base)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane -compare-require-explicit-locality)))

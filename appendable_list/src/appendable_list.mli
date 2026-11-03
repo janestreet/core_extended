@@ -1,3 +1,5 @@
+@@ portable
+
 open! Core
 open! Import
 
@@ -24,7 +26,7 @@ open! Import
     [bind t f] applies [f] to each element of [t] and append the resulting list respecting
     the order in which the elements appear in [t]. *)
 
-type +'a t [@@deriving sexp]
+type +'a t : immutable_data with 'a [@@deriving sexp]
 
 val empty : _ t
 val of_list : 'a list -> 'a t
@@ -36,10 +38,13 @@ val add_back : 'a t -> 'a -> 'a t
 val to_sequence : 'a t -> 'a Sequence.t
 val to_iarray : 'a t -> 'a iarray
 
+val%template to_list : 'a t @ m -> 'a list @ m
+[@@alloc a @ m = (heap_global, stack_local)]
+
 include Monad.S with type 'a t := 'a t
 include Container.S1 with type 'a t := 'a t
 
-module For_testing : sig
+module (For_testing @@ nonportable) : sig
   module Element : sig
     type t [@@deriving compare ~localize, sexp_of]
 

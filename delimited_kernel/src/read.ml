@@ -41,17 +41,23 @@ module Header = Header
 
 module Builder = struct
   module T = struct
-    type _ t =
+    type (_ : value_or_null) t =
       | Column : int -> string t
       | Header : string -> string t
       | Header_opt : string -> string option t
-      | Return : 'a -> 'a t
-      | Apply : ('b -> 'a) t * 'b t -> 'a t
-      | Map : ('b -> 'a) * 'b t -> 'a t
-      | Map2 : ('b -> 'c -> 'a) * 'b t * 'c t -> 'a t
-      | Both : 'a t * 'b t -> ('a * 'b) t
-      | Lambda : (int String.Map.t -> string Append_only_buffer.t -> 'a) -> 'a t
-      | Label : 'a t * Info.t -> 'a t
+      | Return : ('a : value_or_null). 'a -> 'a t
+      | Apply : ('a : value_or_null) ('b : value_or_null). ('b -> 'a) t * 'b t -> 'a t
+      | Map : ('a : value_or_null) ('b : value_or_null). ('b -> 'a) * 'b t -> 'a t
+      | Map2 :
+          ('a : value_or_null) ('b : value_or_null) ('c : value_or_null).
+          ('b -> 'c -> 'a) * 'b t * 'c t
+          -> 'a t
+      | Both : ('a : value_or_null) ('b : value_or_null). 'a t * 'b t -> ('a * 'b) t
+      | Lambda :
+          ('a : value_or_null).
+          (int String.Map.t -> string Append_only_buffer.t -> 'a)
+          -> 'a t
+      | Label : ('a : value_or_null). 'a t * Info.t -> 'a t
 
     let return x = Return x
     let label t info = Label (t, info)
@@ -114,7 +120,7 @@ module Builder = struct
 
   let lambda f = Lambda f
 
-  module Record_builder = Record_builder.Make (T)
+  module Record_builder = Record_builder.Make [@modality portable] (T)
 
   module Fields_O = struct
     let ( !! ) of_string field =
@@ -127,7 +133,7 @@ module Builder = struct
   end
 
   module Open_on_rhs_intf = struct
-    module type S = Read_intf.Open_on_rhs with type 'a t := 'a t
+    module type S = Read_intf.Open_on_rhs with type ('a : value_or_null) t := 'a t
   end
 
   module Let_syntax = struct
@@ -147,21 +153,25 @@ module Builder = struct
   end
 
   module Without_headers = struct
-    type 'a t =
+    type (_ : value_or_null) t =
       | Column : int -> string t
-      | Return : 'a -> 'a t
-      | Apply : ('b -> 'a) t * 'b t -> 'a t
-      | Map : ('b -> 'a) * 'b t -> 'a t
-      | Map2 : ('b -> 'c -> 'a) * 'b t * 'c t -> 'a t
-      | Both : ('a t * 'b t) -> ('a * 'b) t
+      | Return : ('a : value_or_null). 'a -> 'a t
+      | Apply : ('a : value_or_null) ('b : value_or_null). ('b -> 'a) t * 'b t -> 'a t
+      | Map : ('a : value_or_null) ('b : value_or_null). ('b -> 'a) * 'b t -> 'a t
+      | Map2 :
+          ('a : value_or_null) ('b : value_or_null) ('c : value_or_null).
+          ('b -> 'c -> 'a) * 'b t * 'c t
+          -> 'a t
+      | Both : ('a : value_or_null) ('b : value_or_null). ('a t * 'b t) -> ('a * 'b) t
       | Lambda :
+          ('a : value_or_null).
           (int String.Map.t -> string Append_only_buffer.t -> 'a) * int String.Map.t
           -> 'a t
-      | Label : 'a t * Info.t -> 'a t
+      | Label : ('a : value_or_null). 'a t * Info.t -> 'a t
 
     let get_fields_used t =
       let open Option.Let_syntax in
-      let rec fields : type a. a t -> Int.Set.t option = function
+      let rec fields : type (a : value_or_null). a t -> Int.Set.t option = function
         | Return _ -> Some Int.Set.empty
         | Column i -> Some (Int.Set.singleton i)
         | Apply (f, x) ->
@@ -184,7 +194,7 @@ module Builder = struct
     ;;
 
     let build t =
-      let rec build' : type a. a t -> string Append_only_buffer.t -> a =
+      let rec build' : type (a : value_or_null). a t -> string Append_only_buffer.t -> a =
         fun t row ->
         match t with
         | Return x -> x
@@ -196,7 +206,9 @@ module Builder = struct
         | Lambda (f, header_map) -> f header_map row
         | Label (t, info) ->
           (try build' t row with
-           | exn -> Exn.reraisef exn "Raised in %s" (Info.to_string_hum info) ())
+           | exn ->
+             (match Exn.reraisef exn "Raised in %s" (Info.to_string_hum info) () with
+              | (_ : Nothing.t) -> .))
       in
       let fields_used = get_fields_used t in
       match fields_used with
@@ -207,7 +219,7 @@ module Builder = struct
           List.mapi fields_used ~f:(fun i field_index -> field_index, i)
           |> Int.Map.of_alist_exn
         in
-        let rec remap : type a. a t -> a t =
+        let rec remap : type (a : value_or_null). a t -> a t =
           fun t ->
           match t with
           | Column i -> Column (Map.find_exn mapping i)
@@ -224,7 +236,7 @@ module Builder = struct
   end
 
   let build ~header_map t =
-    let rec transform : type a. a t -> a Without_headers.t = function
+    let rec transform : type (a : value_or_null). a t -> a Without_headers.t = function
       | Return x -> Without_headers.Return x
       | Column i -> Without_headers.Column i
       | Header column ->
@@ -272,13 +284,15 @@ module Parse_header = struct
   end
 
   let header_map ~foldi header_row =
-    foldi header_row ~init:String.Map.empty ~f:(fun i map header ->
-      Map.set map ~key:header ~data:i)
+    foldi
+      header_row
+      ~init:(Map.empty (module String))
+      ~f:(fun i map header -> Map.set map ~key:header ~data:i)
   ;;
 
   let require_header required_headers' csv_headers' =
-    let required_headers = String.Set.of_list required_headers' in
-    let csv_headers = String.Set.of_array csv_headers' in
+    let required_headers = Set.of_list (module String) required_headers' in
+    let csv_headers = Set.of_array (module String) csv_headers' in
     let missing = Set.diff required_headers csv_headers in
     if not (Set.is_empty missing)
     then
@@ -315,7 +329,7 @@ module Parse_header = struct
     match header with
     | `No ->
       Second
-        { Success.header_map = String.Map.empty
+        { Success.header_map = Map.empty (module String)
         ; next_line_number = start_line_number
         ; consumed = 0
         }
@@ -420,7 +434,7 @@ module Parse_header = struct
 end
 
 module Streaming = struct
-  type 'a builder_t = 'a t
+  type ('a : value_or_null) builder_t = 'a t
 
   type 'a t =
     | Parsing_header of
@@ -629,9 +643,9 @@ let fold_lines
 ;;
 
 module Row = struct
-  type 'a builder_t = 'a t
+  type ('a : value_or_null) builder_t = 'a t
 
   include Row
 
-  let builder = lambda Row.Expert.of_buffer
+  let builder : _ Builder.t = Lambda Row.Expert.of_buffer
 end

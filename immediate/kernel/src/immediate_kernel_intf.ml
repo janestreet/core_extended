@@ -1,15 +1,18 @@
 open! Core
 
-module type%template [@mode m = (local, global)] Option = sig
+module type%template
+  [@mode m = (local, global)] [@modality p = (portable, nonportable)]
+  Option = sig
+  @@ p
   type t : immediate
   [@@deriving bin_io ~localize, compare ~localize, equal ~localize, globalize]
 
   include Immediate_option.S with type t := t
-  include Identifiable.S [@mode m] with type t := t
+  include Identifiable.S [@mode m] [@modality p] with type t := t
 end
 
-module type Option_zero_alloc = sig
-  include Option
+module type%template [@modality p = (portable, nonportable)] Option_zero_alloc = sig @@ p
+  include Option [@modality p]
   include Immediate_option.S_zero_alloc with type t := t
 end
 
@@ -35,8 +38,13 @@ end
 
     Exposing [Option.t] as an immediate type is key to avoiding caml_modify calls. *)
 module type Immediate_kernel = sig @@ portable
-  module type%template [@mode m = (local, global)] Option = Option [@mode m]
-  module type Option_zero_alloc = Option_zero_alloc
+  module type%template
+    [@mode m = (local, global)] [@modality p = (portable, nonportable)]
+    Option = Option [@mode m] [@modality p]
+
+  module type%template [@modality p = (portable, nonportable)] Option_zero_alloc =
+    Option_zero_alloc [@modality p]
+
   module type%template [@mode m = (local, global)] Option_int63 = Option_int63 [@mode m]
   module type%template [@mode m = (local, global)] S_no_option = S_no_option [@mode m]
 
@@ -106,7 +114,9 @@ module type Immediate_kernel = sig @@ portable
       type value := t
       type t : immediate [@@deriving globalize, quickcheck, sexp ~stackify]
 
-      include Option_zero_alloc with type value := value and type t := t
+      include%template
+        Option_zero_alloc [@modality portable] with type value := value and type t := t
+
       include Or_nullable.S_with_zero_alloc with type t := t and type value := value
 
       val%template to_option : t -> value option @ local [@@alloc stack] [@@zero_alloc]
@@ -131,7 +141,7 @@ module type Immediate_kernel = sig @@ portable
   end
 
   (** A functor to build an immediate [Option] submodule based on [Intable] conversions. *)
-  module Of_intable : sig
+  module (Of_intable @@ nonportable) : sig
     module type S = sig
       (** [to_int_exn] and [of_int_exn] are used to convert between [t] and immediate
           option values. [Int.min_value] is used to represent [none]; any [t]

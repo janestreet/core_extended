@@ -40,17 +40,11 @@ module Stable = struct
         module T = struct
           (* This type is stable in spite of using the Re2's non-stable type because
              bin_io and sexp conversion functions are explicitly defined below. *)
-          type t = string * Re.re
+          type t = string * (Re.re[@compare.ignore]) [@@deriving compare ~localize]
 
-          let%template to_string (s, _) = s [@@mode __ = (local, global)]
+          let to_string (s, _) = s
           let of_regexp ?opts s = s, Re.Perl.compile_pat ?opts s
           let of_string s = of_regexp s
-
-          let%template[@mode local] compare t1 t2 =
-            (String.V1.compare [@mode local])
-              ((to_string [@mode local]) t1)
-              ((to_string [@mode local]) t2) [@nontail]
-          ;;
 
           (* The stablility is independent of the type [Re.re]. We rely on
              - the stability of string

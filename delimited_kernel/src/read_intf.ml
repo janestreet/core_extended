@@ -6,7 +6,7 @@ open Core
     Here, 'read a row correctly' means that it's valid CSV (subject to your delimiter etc)
     & it has the correct number of columns. If that's not the case the parsers will just
     raise. *)
-module type On_invalid_row = sig
+module type On_invalid_row = sig @@ portable
   type 'a t
 
   (** The default. Raise with additional context. *)
@@ -33,16 +33,16 @@ module type On_invalid_row = sig
     -> 'a t
 end
 
-module type Open_on_rhs = sig
-  type 'a t
+module type Open_on_rhs = sig @@ portable
+  type ('a : value_or_null) t
 
-  val at_index : int -> f:(string -> 'a) -> 'a t
-  val at_header : string -> f:(string -> 'a) -> 'a t
-  val at_header_opt : string -> f:(string option -> 'a) -> 'a t
-  val label : 'a t -> Info.t -> 'a t
+  val at_index : ('a : value_or_null). int -> f:(string -> 'a) -> 'a t
+  val at_header : ('a : value_or_null). string -> f:(string -> 'a) -> 'a t
+  val at_header_opt : ('a : value_or_null). string -> f:(string option -> 'a) -> 'a t
+  val label : ('a : value_or_null). 'a t -> Info.t -> 'a t
 end
 
-module type Root = sig
+module type Root = sig @@ portable
   (** Row up to the error, and the field with the error up to the point of failure. Same
       as [Expert.Parse_state.Bad_csv_formatting]. *)
   exception Bad_csv_formatting of string list * string
@@ -73,34 +73,38 @@ module type Root = sig
             "foo,bar\n2,\"hello, world\"\n"
         ;;
       ]} *)
-  type 'a t
+  type ('a : value_or_null) t
 
-  include Applicative.S with type 'a t := 'a t
+  include%template
+    Applicative.S
+    [@kind value_or_null mod maybe_null]
+    with type ('a : value_or_null) t := 'a t
 
   module Open_on_rhs_intf : sig
-    module type S = Open_on_rhs with type 'a t := 'a t
+    module type S = Open_on_rhs with type ('a : value_or_null) t := 'a t
   end
 
-  include
+  include%template
     Applicative.Let_syntax
-    with type 'a t := 'a t
+    [@kind value_or_null mod maybe_null]
+    with type ('a : value_or_null) t := 'a t
     with module Open_on_rhs_intf := Open_on_rhs_intf
 
   (** Read a field at the given index. Use [f] to convert the field from string. *)
-  val at_index : int -> f:(string -> 'a) -> 'a t
+  val at_index : ('a : value_or_null). int -> f:(string -> 'a) -> 'a t
 
   (** Read a field at the given header. Use [f] to convert the field from string.
 
       Note that if the given header is not provided through either the file or the
       [~header] argument to the parsers, this will fail at runtime. *)
-  val at_header : string -> f:(string -> 'a) -> 'a t
+  val at_header : ('a : value_or_null). string -> f:(string -> 'a) -> 'a t
 
   (** Read a field at the given header, if it exists. Use [f] to convert the field from
       string. *)
-  val at_header_opt : string -> f:(string option -> 'a) -> 'a t
+  val at_header_opt : ('a : value_or_null). string -> f:(string option -> 'a) -> 'a t
 
   (** Provide a label to be used in exceptions raised by this builder *)
-  val label : 'a t -> Info.t -> 'a t
+  val label : ('a : value_or_null). 'a t -> Info.t -> 'a t
 
   module Record_builder : Record_builder.S with type 'a applicative = 'a t
 
@@ -251,7 +255,7 @@ module type Root = sig
   end
 end
 
-module type Expert = sig
+module type Expert = sig @@ portable
   module Append_only_buffer = Append_only_buffer
   module Parse_state = Parse_state
   module On_invalid_row : On_invalid_row

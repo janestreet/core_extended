@@ -117,7 +117,7 @@ module%test [@name "individual test cases"] _ : module type of Appendable_list =
   let min_elt = min_elt
   let to_array = to_array
   let to_iarray = to_iarray
-  let to_list = to_list
+  let%template to_list = (to_list [@alloc a]) [@@alloc a = (heap, stack)]
   let find_map = find_map
   let find = find
   let sum = sum
@@ -153,7 +153,7 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
   module Stable = Stable
 
   (* [to_list] is effectively tested throughout all the tests. *)
-  let to_list = to_list
+  let%template to_list = (to_list [@alloc a]) [@@alloc a = (heap, stack)]
 
   type nonrec 'a t = 'a t
 
@@ -195,10 +195,12 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
         [%test_eq: For_testing.Element.t list option]
           (List.max_elt
              (List.map ts ~f:to_list)
-             ~compare:[%compare: For_testing.Element.t list])
+             ~compare:([%compare: For_testing.Element.t list] [@mode local]))
           (Option.map
              ~f:to_list
-             (List.max_elt ts ~compare:[%compare: For_testing.Element.t Stable.V1.t])))
+             (List.max_elt
+                ts
+                ~compare:([%compare: For_testing.Element.t Stable.V1.t] [@mode local]))))
   ;;
 
   let%test_unit "bin_io (Stable.V1)" =
@@ -332,7 +334,7 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
       type t =
         | Init
         | F of t * For_testing.Element.t
-      [@@deriving compare, sexp_of]
+      [@@deriving compare ~localize, sexp_of]
     end
     in
     Quickcheck.test
@@ -359,14 +361,14 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
       type t =
         | Init
         | F of t * For_testing.Element.t
-      [@@deriving compare, sexp_of]
+      [@@deriving compare ~localize, sexp_of]
     end
     in
     let module Final = struct
       type t =
         | Stop of For_testing.Element.t
         | Finish
-      [@@deriving compare, sexp_of]
+      [@@deriving compare ~localize, sexp_of]
     end
     in
     Quickcheck.test
@@ -413,7 +415,7 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
       type t =
         | Init
         | F of t * For_testing.Element.t
-      [@@deriving compare, sexp_of]
+      [@@deriving compare ~localize, sexp_of]
     end
     in
     Quickcheck.test
@@ -433,7 +435,7 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
         [ `Init
         | `Continue of t * For_testing.Element.t
         ]
-      [@@deriving compare, sexp_of]
+      [@@deriving compare ~localize, sexp_of]
 
       let quickcheck_observer =
         Quickcheck.Observer.fixed_point (fun quickcheck_observer ->
@@ -445,7 +447,7 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
       type t =
         | Stop of Accum.t * For_testing.Element.t
         | Finish of Accum.t
-      [@@deriving compare, sexp_of]
+      [@@deriving compare ~localize, sexp_of]
     end
     in
     Quickcheck.test
@@ -471,7 +473,7 @@ module%test [@name "semantics"] _ : module type of Appendable_list = struct
         [ `Init
         | `Ok of t * For_testing.Element.t
         ]
-      [@@deriving compare, sexp_of]
+      [@@deriving compare ~localize, sexp_of]
 
       let quickcheck_observer =
         Quickcheck.Observer.fixed_point (fun quickcheck_observer ->

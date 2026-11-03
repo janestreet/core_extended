@@ -8,7 +8,7 @@ end
 
 module type M = sig
   (** Used to describe a way to create a single row of a CSV from a given type. *)
-  type -'a t
+  type -'a t : value mod contended
 
   module type S = sig
     type -'a delimited_writer := 'a t
@@ -17,12 +17,20 @@ module type M = sig
     val delimited_writer : t delimited_writer
   end
 
-  val empty : 'a t
-  val column : ('a -> string) -> header:string -> 'a t
+  val empty : 'a t @@ portable
+
+  val%template column : ('a -> string) @ p -> header:string -> 'a t @ p
+  [@@mode p = (nonportable, portable)]
+
   val column_m : (module To_string with type t = 'a) -> header:string -> 'a t
 
   (** [default] is printed in place of [None], and if not supplied is the empty string. *)
-  val column_opt : ?default:string -> ('a -> string) -> header:string -> 'a option t
+  val%template column_opt
+    :  ?default:string
+    -> ('a -> string) @ p
+    -> header:string
+    -> 'a option t @ p
+  [@@mode p = (nonportable, portable)]
 
   val column_m_opt
     :  ?default:string
@@ -33,9 +41,13 @@ module type M = sig
   (** [default] is used for every column in the case of [None]. *)
   val optional : ?default:string -> 'a t -> 'a option t
 
-  val of_list : 'a t list -> 'a t
-  val append : 'a t -> 'a t -> 'a t
-  val contra_map : 'b t -> f:('a -> 'b) -> 'a t
+  [%%template:
+  [@@@mode.default p = (nonportable, portable)]
+
+  val of_list : 'a t list @ p -> 'a t @ p
+  val append : 'a t @ p -> 'a t @ p -> 'a t @ p
+  val contra_map : 'b t @ p -> f:('a -> 'b) @ p -> 'a t @ p]
+
   val map_headers : 'a t -> f:(string -> string) -> 'a t
   val headers : 'a t -> string list
   val to_columns : 'a t -> 'a -> string list
@@ -51,6 +63,7 @@ module type M = sig
     -> 'a t
     -> 'a list
     -> string
+    @@ portable
 
   (** Open for prefix operators useful for using with Fields.to_list.
 
@@ -158,4 +171,5 @@ module type M = sig
     -> Filename.t
     -> 'a list
     -> unit
+    @@ portable
 end

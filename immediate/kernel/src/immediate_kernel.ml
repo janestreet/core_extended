@@ -121,7 +121,7 @@ module Int_option_stable = struct
 
     type t = int
     [@@deriving
-      bin_io ~localize
+      bin_io ~localize ~portable
       , compare ~localize
       , equal ~localize
       , globalize
