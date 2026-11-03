@@ -51,7 +51,7 @@ let fold_left =
   fun t ~init ~f -> go [ t ] ~init ~f [@nontail]
 ;;
 
-let%template[@alloc a @ m = (heap_global, stack_local)] fold_right =
+let fold_right =
   (* [todo] is the stack of the remaining work, viewed from the right, so [hd todo] is the
      rightmost node that was not processed yet.
 
@@ -59,19 +59,18 @@ let%template[@alloc a @ m = (heap_global, stack_local)] fold_right =
      traversing [todo] from head to tail. We still need to traverse each element of [todo]
      from right to left. *)
   let rec go todo ~init ~f =
-    match[@exclave_if_stack a] todo with
+    match todo with
     | [] -> init
     | Empty :: todo -> go todo ~init ~f
     | Singleton x :: todo -> go todo ~init:(f x init) ~f
     | List (a, b, cs) :: todo ->
-      let init = (List.fold_right [@mode m m]) ~f cs ~init in
+      let init = List.fold_right ~f cs ~init in
       let init = f b init in
       let init = f a init in
       go todo ~init ~f
-    | Node (a, b, cs) :: todo ->
-      go ((List.rev_append [@alloc a]) cs (b :: a :: todo)) ~init ~f
+    | Node (a, b, cs) :: todo -> go (List.rev_append cs (b :: a :: todo)) ~init ~f
   in
-  fun t ~init ~f -> go [ t ] ~init ~f [@exclave_if_stack a]
+  fun t ~init ~f -> go [ t ] ~init ~f
 ;;
 
 let fold = fold_left
@@ -90,12 +89,7 @@ let fold_until t ~init ~f ~finish = Container.fold_until ~fold ~init ~f t ~finis
 let fold_result t ~init ~f = Container.fold_result ~fold_until ~init ~f t
 let iter_until t ~f ~finish = Container.iter_until ~fold_until t ~f ~finish
 let length t = fold t ~init:0 ~f:(fun acc _ -> Int.succ acc)
-
-let%template to_list t =
-  (fold_right [@alloc a]) t ~init:[] ~f:(fun x acc -> x :: acc [@exclave_if_stack a])
-  [@exclave_if_stack a]
-[@@alloc a @ m = (heap_global, stack_local)]
-;;
+let to_list t = fold_right t ~init:[] ~f:(fun x acc -> x :: acc)
 
 (* Mauro Jaskelioff and Exequiel Rivas. 2015. Functional pearl: a smart view on datatypes.
    SIGPLAN Not. 50, 9 (August 2015), 355-361.
@@ -178,7 +172,7 @@ let rec non_closure_apply_and_tail_rec_map nodes acc ~f =
     non_closure_apply_and_tail_rec_map nodes acc ~f)
 ;;
 
-let map t ~f = non_closure_apply_and_tail_rec_map (List_stack.singleton t) empty ~f
+let map t ~f = non_closure_apply_and_tail_rec_map (List_stack.singleton t) Empty ~f
 
 let rec non_closure_apply_and_tail_rec_bind nodes acc ~f =
   if List_stack.is_empty nodes
@@ -200,7 +194,7 @@ let rec non_closure_apply_and_tail_rec_bind nodes acc ~f =
     non_closure_apply_and_tail_rec_bind nodes acc ~f)
 ;;
 
-let bind t ~f = non_closure_apply_and_tail_rec_bind (List_stack.singleton t) empty ~f
+let bind t ~f = non_closure_apply_and_tail_rec_bind (List_stack.singleton t) Empty ~f
 
 let sexp_of_t (type a) (sexp_of_a : a -> Sexp.t) (t : a t) =
   to_list t |> [%sexp_of: a list]
@@ -270,7 +264,7 @@ module For_testing = struct
       | S
       | L of int
       | N of int * t
-    [@@deriving compare ~localize, sexp_of, quickcheck]
+    [@@deriving compare, sexp_of, quickcheck]
   end
 
   (* A reference implementation of [map] that is perhaps not as efficient but more
@@ -345,25 +339,22 @@ module Stable = struct
           let of_sexpable = of_list
         end)
 
+    module Stable_witness_of_serializable1 =
+      Stable_witness.Of_serializable1
+        (List.V1)
+        (struct
+          type nonrec 'a t = 'a t
+        end)
+
     let stable_witness (type a) (witness : a Stable_witness.t) : a t Stable_witness.t =
-      let module Stable_witness =
-        Stable_witness.Of_serializable1
-          (List.V1)
-          (struct
-            type nonrec 'a t = 'a t
-          end)
-      in
-      Stable_witness.of_serializable List.V1.stable_witness of_list to_list witness
+      Stable_witness_of_serializable1.of_serializable
+        List.V1.stable_witness
+        of_list
+        to_list
+        witness
     ;;
 
     let compare compare_a t1 t2 = compare_list compare_a (to_list t1) (to_list t2)
-
-    let%template[@mode local] compare compare_a t1 t2 =
-      (compare_list [@mode local])
-        compare_a
-        ((to_list [@alloc stack]) t1)
-        ((to_list [@alloc stack]) t2) [@nontail]
-    ;;
 
     let%expect_test _ =
       assert (Core.String.( = ) [%bin_digest: unit t] [%bin_digest: unit list])

@@ -5,14 +5,7 @@ module Char_option_stable = struct
     let typerep_of_int = Core.Typerep.Int
 
     type t = int
-    [@@deriving
-      bin_io ~localize
-      , compare ~localize
-      , equal ~localize
-      , globalize
-      , hash
-      , stable_witness
-      , typerep]
+    [@@deriving bin_io, compare, equal, globalize, hash, stable_witness, typerep]
 
     let[@zero_alloc] is_none t = Core.Int.(t < 0 || t > 255)
     let[@zero_alloc] is_some t = not (is_none t)
@@ -33,8 +26,7 @@ module Char_option_stable = struct
       | Some v -> some v
     ;;
 
-    include%template
-      Core.Immediate_option.Provide_or_null_conversions_zero_alloc [@modality portable] (struct
+    include Core.Immediate_option.Provide_or_null_conversions_zero_alloc (struct
         type nonrec t = t
         type value = char
 
@@ -44,10 +36,7 @@ module Char_option_stable = struct
         let unchecked_value t = unchecked_value t
       end)
 
-    let%template[@alloc a = (heap, stack)] sexp_of_t t =
-      (to_or_null t |> ([%sexp_of: char Base.Or_null.t] [@alloc a])) [@exclave_if_stack a]
-    ;;
-
+    let sexp_of_t t = to_or_null t |> [%sexp_of: char Base.Or_null.t]
     let t_of_sexp s = [%of_sexp: char option] s |> of_option
   end
 end
@@ -57,14 +46,7 @@ module Bool_option_stable = struct
     let typerep_of_int = Core.Typerep.Int
 
     type t = int
-    [@@deriving
-      bin_io ~localize
-      , compare ~localize
-      , equal ~localize
-      , globalize
-      , hash
-      , stable_witness
-      , typerep]
+    [@@deriving bin_io, compare, equal, globalize, hash, stable_witness, typerep]
 
     let to_wire t = t
     let of_wire t = t
@@ -96,8 +78,7 @@ module Bool_option_stable = struct
       | Some v -> some v
     ;;
 
-    include%template
-      Core.Immediate_option.Provide_or_null_conversions_zero_alloc [@modality portable] (struct
+    include Core.Immediate_option.Provide_or_null_conversions_zero_alloc (struct
         type nonrec t = t
         type value = bool
 
@@ -107,10 +88,7 @@ module Bool_option_stable = struct
         let unchecked_value t = unchecked_value t
       end)
 
-    let%template[@alloc a = (heap, stack)] sexp_of_t t =
-      (to_or_null t |> ([%sexp_of: bool Base.Or_null.t] [@alloc a])) [@exclave_if_stack a]
-    ;;
-
+    let sexp_of_t t = to_or_null t |> [%sexp_of: bool Base.Or_null.t]
     let t_of_sexp s = [%of_sexp: bool option] s |> of_option
   end
 end
@@ -120,14 +98,7 @@ module Int_option_stable = struct
     let typerep_of_int = Core.Typerep.Int
 
     type t = int
-    [@@deriving
-      bin_io ~localize
-      , compare ~localize
-      , equal ~localize
-      , globalize
-      , hash
-      , stable_witness
-      , typerep]
+    [@@deriving bin_io, compare, equal, globalize, hash, stable_witness, typerep]
 
     let none = Core.Int.min_value
     let[@zero_alloc] is_none t = t = none
@@ -154,18 +125,14 @@ module Int_option_stable = struct
 
     let[@zero_alloc] some_is_representable t = is_some t
     let[@zero_alloc] unchecked_value t = t
-
-    let%template[@alloc a = (heap, stack)] to_option t =
-      (if is_some t then Some (unchecked_value t) else None) [@exclave_if_stack a]
-    ;;
+    let to_option t = if is_some t then Some (unchecked_value t) else None
 
     let[@zero_alloc] of_option = function
       | None -> none
       | Some v -> some v
     ;;
 
-    include%template
-      Core.Immediate_option.Provide_or_null_conversions_zero_alloc [@modality portable] (struct
+    include Core.Immediate_option.Provide_or_null_conversions_zero_alloc (struct
         type nonrec t = t
         type value = int
 
@@ -175,9 +142,9 @@ module Int_option_stable = struct
         let unchecked_value t = unchecked_value t
       end)
 
-    let%template[@alloc a = (heap, stack)] sexp_of_t t =
+    let sexp_of_t t =
       let o = to_or_null t in
-      [%sexp (o : int Base.Or_null.t)] [@alloc a] [@exclave_if_stack a]
+      [%sexp (o : int Base.Or_null.t)]
     ;;
 
     let t_of_sexp s = [%of_sexp: int option] s |> of_option
@@ -189,23 +156,15 @@ end
 module type Intable_sexpable = sig
   include Core.Intable
   include Core.Sexpable with type t := t
-
-  include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
+  include Sexplib0.Sexpable.Sexp_of with type t := t
 
   val bin_shape_uuid : Bin_shape.Uuid.t
 end
 
 module Intable_sexpable_option_stable = struct
-  module%template.portable [@modality m] Make (I : Intable_sexpable) = struct
+  module Make (I : Intable_sexpable) = struct
     module V1 = struct
-      type t = int
-      [@@deriving
-        bin_io ~localize
-        , compare ~localize
-        , equal ~localize
-        , globalize
-        , hash
-        , stable_witness]
+      type t = int [@@deriving bin_io, compare, equal, globalize, hash, stable_witness]
 
       let bin_shape_t = Bin_shape.annotate I.bin_shape_uuid bin_shape_t
       let none = Int_option_stable.V1.none
@@ -220,10 +179,7 @@ module Intable_sexpable_option_stable = struct
 
       let some_is_representable i = I.to_int_exn i |> is_some
       let unchecked_value t = I.of_int_exn t
-
-      let%template[@alloc a = (heap, stack)] to_option t =
-        (if is_some t then Some (unchecked_value t) else None) [@exclave_if_stack a]
-      ;;
+      let to_option t = if is_some t then Some (unchecked_value t) else None
 
       let of_option = function
         | None -> none
@@ -242,16 +198,10 @@ module Intable_sexpable_option_stable = struct
       ;;
 
       let value t ~default = if is_some t then unchecked_value t else default
-
-      let%template[@alloc a = (heap, stack)] sexp_of_t t =
-        ((to_option [@alloc a]) t |> ([%sexp_of: I.t option] [@alloc a]))
-        [@exclave_if_stack a]
-      ;;
-
+      let sexp_of_t t = to_option t |> [%sexp_of: I.t option]
       let t_of_sexp s = [%of_sexp: I.t option] s |> of_option
 
-      include%template
-        Core.Immediate_option.Provide_or_null_conversions [@modality m] (struct
+      include Core.Immediate_option.Provide_or_null_conversions (struct
           type nonrec t = t
           type value = I.t
 
@@ -276,8 +226,7 @@ module Char = struct
   end :
   sig
     include S_no_option with type t = char
-
-    include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
+    include Sexplib0.Sexpable.Sexp_of with type t := t
   end)
 
   module Option = struct
@@ -291,10 +240,9 @@ module Char = struct
       end
     end
 
-    include%template Identifiable.Make [@mode local] [@modality portable] (struct
+    include Identifiable.Make (struct
         include Stable.V1
-
-        include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
+        include Sexpable.To_stringable (Stable.V1)
 
         let hash (t : t) = t
         let module_name = "Immediate_kernel.Char.Option"
@@ -320,10 +268,10 @@ module Bool = struct
     module Stable = Bool_option_stable
     include Stable.V1
 
-    include%template
-      Quickcheckable.Of_quickcheckable [@modality portable]
+    include
+      Quickcheckable.Of_quickcheckable
         (struct
-          type t = bool option [@@deriving quickcheck ~portable]
+          type t = bool option [@@deriving quickcheck]
         end)
         (struct
           type nonrec t = t
@@ -339,10 +287,9 @@ module Bool = struct
       end
     end
 
-    include%template Identifiable.Make [@mode local] [@modality portable] (struct
+    include Identifiable.Make (struct
         include Stable.V1
-
-        include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
+        include Sexpable.To_stringable (Stable.V1)
 
         let hash (t : t) = t
         let module_name = "Immediate_kernel.Bool.Option"
@@ -362,9 +309,8 @@ module Int = struct
   end :
   sig
     include S_no_option with type t = int
-
-    include%template Sexplib0.Sexpable.Sexp_of [@alloc stack] with type t := t
-    include%template Stringable.S [@alloc stack] with type t := t
+    include Sexplib0.Sexpable.Sexp_of with type t := t
+    include Stringable.S with type t := t
   end)
 
   let type_immediacy = Type_immediacy.Always.of_typerep_exn typerep_of_t
@@ -373,10 +319,10 @@ module Int = struct
     module Stable = Int_option_stable
     include Stable.V1
 
-    include%template
-      Quickcheckable.Of_quickcheckable_filtered [@modality portable]
+    include
+      Quickcheckable.Of_quickcheckable_filtered
         (struct
-          type t = int option [@@deriving quickcheck ~portable]
+          type t = int option [@@deriving quickcheck]
         end)
         (struct
           type nonrec t = t
@@ -406,10 +352,9 @@ module Int = struct
       end
     end
 
-    include%template Identifiable.Make [@mode local] [@modality portable] (struct
+    include Identifiable.Make (struct
         include Stable.V1
-
-        include%template Sexpable.To_stringable [@modality portable] (Stable.V1)
+        include Sexpable.To_stringable (Stable.V1)
 
         let hash (t : t) = t
         let module_name = "Immediate_kernel.Int.Option"
@@ -424,8 +369,8 @@ module Of_intable = struct
   module type S = Intable_sexpable
 
   module Option = struct
-    module%template.portable [@modality p] Make (I : S) = struct
-      module Stable = Intable_sexpable_option_stable.Make [@modality p] (I)
+    module Make (I : S) = struct
+      module Stable = Intable_sexpable_option_stable.Make (I)
       include Stable.V1
 
       let typerep_of_t = [%typerep_of: int]
@@ -441,10 +386,9 @@ module Of_intable = struct
         end
       end
 
-      include%template Identifiable.Make [@mode local] [@modality p] (struct
+      include Identifiable.Make (struct
           include Stable.V1
-
-          include%template Sexpable.To_stringable [@modality p] (Stable.V1)
+          include Sexpable.To_stringable (Stable.V1)
 
           let hash (t : t) = t
           let module_name = "Immediate_kernel.Int.Option"

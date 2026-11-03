@@ -1,6 +1,6 @@
 open Core
 
-type t [@@deriving compare ~localize, equal ~localize]
+type t [@@deriving compare, equal]
 
 (** [get_conv_exn t header [%here] conv] extract the cell with column [header] from [row]
     and convert it using [conv]. If there is an error the error is raised including [row]

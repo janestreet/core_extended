@@ -2,4 +2,4 @@
  (name appendable_list_test)
  (libraries appendable_list core)
  (preprocess
-  (pps ppx_jane -dont-apply=sexp_message)))
+  (pps ppx_jane -compare-require-explicit-locality -dont-apply=sexp_message)))

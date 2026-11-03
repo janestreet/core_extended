@@ -35,13 +35,14 @@ val add_front : 'a -> 'a t -> 'a t
 val add_back : 'a t -> 'a -> 'a t
 val to_sequence : 'a t -> 'a Sequence.t
 val to_iarray : 'a t -> 'a iarray
+val to_list : 'a t -> 'a list
 
 include Monad.S with type 'a t := 'a t
 include Container.S1 with type 'a t := 'a t
 
 module For_testing : sig
   module Element : sig
-    type t [@@deriving compare ~localize, sexp_of]
+    type t [@@deriving compare, sexp_of]
 
     val quickcheck_generator : t Quickcheck.Generator.t
     val quickcheck_observer : t Quickcheck.Observer.t
@@ -53,6 +54,6 @@ end
 
 module Stable : sig
   module V1 : sig
-    type nonrec 'a t = 'a t [@@deriving bin_io, compare ~localize, sexp, stable_witness]
+    type nonrec 'a t = 'a t [@@deriving bin_io, compare, sexp, stable_witness]
   end
 end

@@ -36,10 +36,10 @@ end
 module type Open_on_rhs = sig
   type 'a t
 
-  val at_index : int -> f:(string -> 'a) -> 'a t
-  val at_header : string -> f:(string -> 'a) -> 'a t
-  val at_header_opt : string -> f:(string option -> 'a) -> 'a t
-  val label : 'a t -> Info.t -> 'a t
+  val at_index : 'a. int -> f:(string -> 'a) -> 'a t
+  val at_header : 'a. string -> f:(string -> 'a) -> 'a t
+  val at_header_opt : 'a. string -> f:(string option -> 'a) -> 'a t
+  val label : 'a. 'a t -> Info.t -> 'a t
 end
 
 module type Root = sig
@@ -87,20 +87,20 @@ module type Root = sig
     with module Open_on_rhs_intf := Open_on_rhs_intf
 
   (** Read a field at the given index. Use [f] to convert the field from string. *)
-  val at_index : int -> f:(string -> 'a) -> 'a t
+  val at_index : 'a. int -> f:(string -> 'a) -> 'a t
 
   (** Read a field at the given header. Use [f] to convert the field from string.
 
       Note that if the given header is not provided through either the file or the
       [~header] argument to the parsers, this will fail at runtime. *)
-  val at_header : string -> f:(string -> 'a) -> 'a t
+  val at_header : 'a. string -> f:(string -> 'a) -> 'a t
 
   (** Read a field at the given header, if it exists. Use [f] to convert the field from
       string. *)
-  val at_header_opt : string -> f:(string option -> 'a) -> 'a t
+  val at_header_opt : 'a. string -> f:(string option -> 'a) -> 'a t
 
   (** Provide a label to be used in exceptions raised by this builder *)
-  val label : 'a t -> Info.t -> 'a t
+  val label : 'a. 'a t -> Info.t -> 'a t
 
   module Record_builder : Record_builder.S with type 'a applicative = 'a t
 

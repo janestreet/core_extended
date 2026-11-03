@@ -22,7 +22,7 @@ let column to_string ~header =
 ;;
 
 let column_opt ?(default = "") to_string ~header =
-  column (Option.value_map ~default ~f:to_string) ~header
+  column (fun x -> Option.value_map x ~default ~f:to_string) ~header
 ;;
 
 let append l r =

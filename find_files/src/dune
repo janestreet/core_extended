@@ -3,4 +3,4 @@
  (public_name core_extended.find_files)
  (libraries core core_unix)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane -compare-require-explicit-locality)))

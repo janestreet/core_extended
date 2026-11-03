@@ -4,15 +4,16 @@ type t =
   { header_map : int String.Map.t
   ; fields : string iarray
   }
-[@@deriving compare ~localize]
+[@@deriving compare]
 
 let is_empty t = Iarray.for_all t.fields ~f:String.is_empty
 
 let sexp_of_t t =
   let names_by_indices =
     Map.to_sequence t.header_map
-    |> Sequence.fold ~init:Int.Map.empty ~f:(fun init (name, index) ->
-      Map.set init ~key:index ~data:name)
+    |> Sequence.fold
+         ~init:(Map.empty (module Int))
+         ~f:(fun init (name, index) -> Map.set init ~key:index ~data:name)
   in
   Iarray.mapi t.fields ~f:(fun i v ->
     let k =
@@ -113,8 +114,10 @@ let create' header_map fields = { header_map; fields }
 
 let create header_table fields =
   { header_map =
-      Hashtbl.fold header_table ~init:String.Map.empty ~f:(fun ~key ~data init ->
-        Map.set init ~key ~data)
+      Hashtbl.fold
+        header_table
+        ~init:(Map.empty (module String))
+        ~f:(fun ~key ~data init -> Map.set init ~key ~data)
   ; fields
   }
 ;;
@@ -128,7 +131,7 @@ let unsafe_to_array__promise_no_mutation t =
 
 let to_iarray t = t.fields
 let length t = Iarray.length t.fields
-let%template[@mode m = (local, global)] equal = ([%compare.equal: t] [@mode.explicit m])
+let equal = [%compare.equal: t]
 
 let fold t ~init ~f =
   Map.fold t.header_map ~init ~f:(fun ~key:header ~data:i acc ->

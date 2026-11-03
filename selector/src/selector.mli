@@ -67,7 +67,7 @@ module Stable : sig
   module Date_selector : sig
     module V1 : sig
       type t = Date_selector.t
-      [@@deriving bin_io, compare ~localize, sexp, sexp_grammar, stable_witness]
+      [@@deriving bin_io, compare, sexp, sexp_grammar, stable_witness]
     end
   end
 
@@ -81,7 +81,7 @@ module Stable : sig
 
     module V1 : sig
       type t = String_selector.t
-      [@@deriving bin_io, compare ~localize, sexp, sexp_grammar, stable_witness]
+      [@@deriving bin_io, compare, sexp, sexp_grammar, stable_witness]
     end
   end
 
